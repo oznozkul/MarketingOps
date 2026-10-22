@@ -36,6 +36,23 @@ public sealed class SiteConfiguration : IEntityTypeConfiguration<Site>
         });
         builder.Navigation(s => s.ExpectedTrackingIds).IsRequired();
 
+        builder.OwnsOne(s => s.Journey, journey =>
+        {
+            journey.Property(j => j.CartUrl).HasMaxLength(2048).HasColumnName("journey_cart_url");
+            journey.Property(j => j.CheckoutUrl).HasMaxLength(2048).HasColumnName("journey_checkout_url");
+            journey.Property(j => j.ThankYouUrl).HasMaxLength(2048).HasColumnName("journey_thank_you_url");
+            journey.Property(j => j.ConsentButtonSelector).HasMaxLength(TrackingJourney.SelectorMaxLength).HasColumnName("journey_consent_button_selector");
+        });
+        builder.Navigation(s => s.Journey).IsRequired();
+
+        builder.OwnsOne(s => s.OrderSource, source =>
+        {
+            source.Property(o => o.ProtectedConnection).HasColumnName("order_source_protected_connection");
+            source.Property(o => o.Query).HasMaxLength(OrderSourceSettings.QueryMaxLength).HasColumnName("order_source_query");
+            source.Ignore(o => o.IsConfigured);
+        });
+        builder.Navigation(s => s.OrderSource).IsRequired();
+
         builder.HasMany(s => s.PageTypes).WithOne().HasForeignKey(p => p.SiteId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(s => s.PageTypes).UsePropertyAccessMode(PropertyAccessMode.Field);
     }

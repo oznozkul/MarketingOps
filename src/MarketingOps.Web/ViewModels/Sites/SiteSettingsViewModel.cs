@@ -11,6 +11,9 @@ public sealed record SiteSettingsViewModel(
     SiteNameForm NameForm,
     CrawlSettingsForm CrawlForm,
     TrackingIdsForm TrackingForm,
+    TrackingJourneyForm JourneyForm,
+    OrderSourceForm OrderSourceForm,
+    MetaTokenForm MetaForm,
     TaskKeyPrefixForm TaskKeyForm,
     AiStatusResponse? Ai,
     ConnectorsResponse Connectors);

@@ -83,7 +83,7 @@
 
   builders['order-comparison'] = function (data, t, el) {
     var threshold = parseFloat(el.dataset.threshold || '5');
-    var over = data.map(function (d) { return Math.abs(d.diff) > threshold; });
+    var over = data.map(function (d) { return d.diff !== null && d.diff !== undefined && Math.abs(d.diff) > threshold; });
     return {
       type: 'bar',
       data: {
@@ -92,7 +92,7 @@
           { label: 'Sipariş (veritabanı)', data: data.map(function (d) { return d.orders; }), backgroundColor: t.series[0], maxBarThickness: 16 },
           {
             label: 'GA4 purchase', data: data.map(function (d) { return d.purchases; }),
-            backgroundColor: over.map(function (o) { return o ? t.critical : t.series[1]; }), maxBarThickness: 16
+            backgroundColor: over.map(function (o, i) { return data[i].diff === null || data[i].diff === undefined ? t.series[1] : o ? t.critical : t.series[1]; }), maxBarThickness: 16
           }
         ]
       },
@@ -109,11 +109,30 @@
               label: function (c) { return ' ' + c.dataset.label + ': ' + nf.format(c.parsed.y); },
               afterBody: function (items) {
                 var d = data[items[0].dataIndex];
+                if (d.diff === null || d.diff === undefined) return ['Fark: —'];
                 return ['Fark: ' + pct(d.diff) + (Math.abs(d.diff) > threshold ? ' (eşik aşıldı)' : '')];
               }
             }
           }
         }
+      }
+    };
+  };
+
+  builders['event-series'] = function (data, t) {
+    return {
+      type: 'line',
+      data: {
+        labels: data.map(function (d) { return d.label; }),
+        datasets: [{ label: 'Sayı', data: data.map(function (d) { return d.count; }), borderColor: t.series[0], backgroundColor: t.series[0], borderWidth: 1.75, pointRadius: 0, pointHoverRadius: 3, tension: 0 }]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+          y: { beginAtZero: true, ticks: { callback: function (v) { return nf.format(v); } } }
+        },
+        plugins: { legend: { display: false } }
       }
     };
   };

@@ -1,0 +1,27 @@
+@model MarketingOps.Web.ViewModels.Sites.TrackingJourneyForm
+<form id="tracking-journey-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateJourney", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <p class="max-w-prose text-sm text-fg-muted">Denetim bu adresleri açar. Ödeme adımı doldurulmaz; teşekkür sayfası yalnızca adres varsa dinlenir. Adresler bu sitenin domain'inde olmalı. Çerez seçicisi boşsa yalnızca onay vermeden senaryo çalışır ve onay öncesi iddia edilmez.</p>
+    <form-errors />
+    @{
+        (string Name, string Label, string? Value, string Placeholder)[] fields =
+        [
+            ("CartUrl", "Sepet adresi", Model.CartUrl, "https://site.com/sepet"),
+            ("CheckoutUrl", "Ödeme adresi", Model.CheckoutUrl, "https://site.com/odeme"),
+            ("ThankYouUrl", "Teşekkür adresi", Model.ThankYouUrl, "https://site.com/tesekkurler"),
+            ("ConsentButtonSelector", "Çerez onay butonu seçicisi", Model.ConsentButtonSelector, "#onayla, button.cookie-accept")
+        ];
+    }
+    <div class="grid gap-4">
+        @foreach (var f in fields)
+        {
+            var error = ViewData.ModelState.FirstError(f.Name);
+            <div>
+                <label class="label" for="journey-@f.Name">@f.Label</label>
+                <input id="journey-@f.Name" name="@f.Name" value="@f.Value" class="input font-mono" placeholder="@f.Placeholder" autocomplete="off" spellcheck="false"
+                       aria-invalid="@(error is null ? null : "true")" aria-describedby="@(error is null ? null : f.Name + "-error")" />
+                <field-error for="@f.Name" />
+            </div>
+        }
+    </div>
+    <div class="flex justify-end"><partial name="_SubmitButton" model="@("Adresleri kaydet")" /></div>
+</form>

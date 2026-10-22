@@ -32,7 +32,15 @@ public static class RuleCatalog
         new NotIndexedRule(),
         new LcpRule(),
         new InpRule(),
-        new ClsRule()
+        new ClsRule(),
+        new TagMissingRule(),
+        new TagDuplicateRule(),
+        new TagWrongIdRule(),
+        new ConsentPrefireRule(),
+        new PurchaseGapRule(),
+        new EventAnomalyRule(),
+        new MetaPixelCapiRule(),
+        new MetaDedupRule()
     ];
 
     public static IRule? Find(string code) => All.FirstOrDefault(r => r.Code == code);

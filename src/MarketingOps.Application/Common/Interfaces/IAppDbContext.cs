@@ -5,6 +5,7 @@ using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Organizations;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
+using MarketingOps.Domain.Tracking;
 using MarketingOps.Domain.WorkTasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,9 @@ public interface IAppDbContext
     DbSet<WebVitalsDaily> WebVitals { get; }
     DbSet<UrlIndexStatus> UrlIndexStatuses { get; }
     DbSet<SitemapStatus> Sitemaps { get; }
+    DbSet<TagAuditRun> TagAuditRuns { get; }
+    DbSet<TagAuditResult> TagAuditResults { get; }
+    DbSet<OrderComparisonDaily> OrderComparisons { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

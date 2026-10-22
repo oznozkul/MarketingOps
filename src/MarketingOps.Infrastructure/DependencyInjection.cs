@@ -8,8 +8,10 @@ using MarketingOps.Application.Connectors;
 using MarketingOps.Infrastructure.Ai;
 using MarketingOps.Infrastructure.Google;
 using MarketingOps.Infrastructure.Crawling;
+using MarketingOps.Application.Tracking;
 using MarketingOps.Infrastructure.Jobs;
 using MarketingOps.Infrastructure.Persistence;
+using MarketingOps.Infrastructure.Tracking;
 using MarketingOps.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -73,6 +75,11 @@ public static class DependencyInjection
                 InvisibilityTimeout = TimeSpan.FromMinutes(5)
             }));
         services.AddSingleton<ICrawlScheduler, HangfireCrawlScheduler>();
+        services.AddSingleton<ITrackingBrowser, PlaywrightTrackingBrowser>();
+        services.AddSingleton<IOrderSource, SqlServerOrderSource>();
+        services.AddHttpClient<IMetaGraphClient, MetaGraphClient>();
+        services.AddTransient<TrackingAuditJob>();
+        services.AddSingleton<ITrackingJobScheduler, HangfireTrackingScheduler>();
         return services;
     }
 

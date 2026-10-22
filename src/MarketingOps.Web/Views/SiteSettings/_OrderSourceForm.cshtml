@@ -1,0 +1,16 @@
+@model MarketingOps.Web.ViewModels.Sites.OrderSourceForm
+<form id="order-source-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateOrderSource", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <p class="max-w-prose text-sm text-fg-muted">SQL Server'da tek bir SELECT. Gün parametresi <span class="font-mono">@@date</span>. Sorgu sipariş sayısı ve tutarını döndürmeli (<span class="font-mono">order_count</span>, <span class="font-mono">order_revenue</span>). Bağlantı cümlesi şifreli saklanır ve tekrar gösterilmez. Sorguyu boş kaydetmek kaynağı siler.</p>
+    <form-errors />
+    <div>
+        <label class="label" for="order-connection">Bağlantı cümlesi</label>
+        <input id="order-connection" name="ConnectionString" type="password" class="input font-mono" autocomplete="off" placeholder="@(Model.IsConfigured ? "Kayıtlı · değiştirmek için yazın" : "Server=...;Database=...;User Id=...;Password=...")" aria-invalid="@(ViewData.ModelState.FirstError("ConnectionString") is null ? null : "true")" aria-describedby="ConnectionString-error" />
+        <field-error for="ConnectionString" />
+    </div>
+    <div>
+        <label class="label" for="order-query">Sorgu</label>
+        <textarea id="order-query" name="Query" rows="4" class="input font-mono" spellcheck="false" aria-invalid="@(ViewData.ModelState.FirstError("Query") is null ? null : "true")" aria-describedby="Query-error">@Model.Query</textarea>
+        <field-error for="Query" />
+    </div>
+    <div class="flex justify-end"><partial name="_SubmitButton" model="@("Sipariş kaynağını kaydet")" /></div>
+</form>

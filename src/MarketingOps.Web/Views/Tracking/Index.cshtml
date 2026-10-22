@@ -1,0 +1,233 @@
+@model MarketingOps.Web.ViewModels.Tracking.TrackingPageViewModel
+@using System.Text.Json
+@using MarketingOps.Domain.Tracking
+@using MarketingOps.Web.Infrastructure
+@{
+    var matrix = Model.Matrix;
+    var ids = Model.Site.ExpectedTrackingIds;
+    (string Label, string? Value)[] expected =
+    [
+        ("GA4", ids.Ga4MeasurementId),
+        ("GTM", ids.GtmContainerId),
+        ("Google Ads", ids.GoogleAdsConversionId),
+        ("Meta Pixel", ids.MetaPixelId)
+    ];
+    var orders = Model.Orders.Days.Select(d => new
+    {
+        label = Format.ShortDate(d.Date),
+        orders = d.OrderCount,
+        purchases = d.PurchaseCount,
+        diff = d.GapPercent
+    });
+}
+<div class="flex flex-col gap-8">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="eyebrow">Tracking</p>
+            <h1 class="page-title mt-1">Tracking Denetimi</h1>
+            <p class="mt-1 text-sm text-fg-muted">
+                Skor <span class="tabular font-medium text-fg">@Model.Score.Score</span>
+                · açık bulgu @Format.Number(Model.Score.OpenFindings)
+                @if (matrix.FinishedAt is { } at)
+                {
+                    <span> · son denetim @Format.DateTime(at)</span>
+                }
+                else if (matrix.Status == AuditStatus.Running)
+                {
+                    <span> · denetim çalışıyor</span>
+                }
+                else
+                {
+                    <span> · henüz denetim yok</span>
+                }
+            </p>
+        </div>
+        <partial name="_StartForm" />
+    </div>
+
+    @if (matrix.Error is not null)
+    {
+        <p role="alert" class="border-l-2 border-critical-solid bg-critical-soft px-3 py-2 text-sm text-critical">@matrix.Error</p>
+    }
+
+    <section class="space-y-3" aria-labelledby="orders-title">
+        <div>
+            <h2 id="orders-title" class="section-title">Sipariş ve purchase</h2>
+            <p class="text-xs text-fg-muted">Ödeme adımı simüle edilmez. Teşekkür sayfası yalnızca adresi tanımlıysa açılır. Eşik @Format.Percent((double)Model.Orders.ThresholdPercent, 1).</p>
+        </div>
+        @if (Model.Orders.Days.Count == 0)
+        {
+            <div class="card"><empty-state icon="activity" title="Henüz karşılaştırma yok" description="Denetim, sipariş kaynağı ve GA4 purchase sayılarını günlük yazınca grafik burada görünür." /></div>
+        }
+        else
+        {
+            <div class="card overflow-hidden">
+                <div class="card-body">
+                    <div class="h-64"><canvas data-chart="order-comparison" data-source="#orders-json" data-threshold="@Model.Orders.ThresholdPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)" role="img" aria-label="Sipariş ve GA4 purchase karşılaştırması"></canvas></div>
+                    <script type="application/json" id="orders-json">@Html.Raw(JsonSerializer.Serialize(orders))</script>
+                </div>
+                @if (matrix.OrderSourceError is not null)
+                {
+                    <p class="border-t border-line px-5 py-3 text-sm text-warn">@matrix.OrderSourceError</p>
+                }
+                <div class="table-wrap border-t border-line">
+                    <table class="table-base min-w-[720px]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Gün</th>
+                                <th scope="col" class="num">Sipariş</th>
+                                <th scope="col" class="num">Ciro</th>
+                                <th scope="col" class="num">Purchase</th>
+                                <th scope="col" class="num">Purchase değeri</th>
+                                <th scope="col" class="num">Fark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var day in Model.Orders.Days.OrderByDescending(d => d.Date))
+                            {
+                                <tr>
+                                    <td>@Format.ShortDate(day.Date)</td>
+                                    <td class="num">@(day.OrderCount is null ? "—" : Format.Number(day.OrderCount.Value))</td>
+                                    <td class="num">@(day.OrderRevenue is null ? "—" : Format.Number((double)day.OrderRevenue.Value, 2))</td>
+                                    <td class="num">@(day.PurchaseCount is null ? "—" : Format.Number(day.PurchaseCount.Value))</td>
+                                    <td class="num">@(day.PurchaseValue is null ? "—" : Format.Number((double)day.PurchaseValue.Value, 2))</td>
+                                    <td class="num">@(day.GapPercent is null ? "—" : Format.SignedPercent((double)day.GapPercent.Value))</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="space-y-3" aria-labelledby="matrix-title">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+                <h2 id="matrix-title" class="section-title">Tag matrisi</h2>
+                <p class="text-xs text-fg-muted">@(matrix.ConsentTested ? "Onay butonu denendi." : "Onay seçicisi yok ya da tıklanamadı; onay öncesi bu denetimde iddia edilmez.")</p>
+            </div>
+            <a class="link text-xs" href="@Url.SiteAction("Index", "SiteSettings")#kimlikler">Beklenen kimlikler</a>
+        </div>
+        <dl class="card card-body grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            @foreach (var (label, value) in expected)
+            {
+                <div>
+                    <dt class="label">@label</dt>
+                    <dd class="font-mono text-sm text-fg">@(value ?? "Tanımlı değil")</dd>
+                </div>
+            }
+        </dl>
+        @if (matrix.Rows.Count == 0)
+        {
+            <div class="card"><empty-state icon="scan-search" title="Henüz tag denetimi yok" description="Denetimi başlatın. Ana sayfa, son taramadaki sayfa tipi örnekleri ve tanımlı sepet, ödeme, teşekkür adresleri açılır." /></div>
+        }
+        else
+        {
+            <div class="card overflow-hidden">
+                <div class="table-wrap">
+                    <table class="table-base min-w-[760px]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Sayfa</th>
+                                @foreach (var vendor in Enum.GetValues<TagVendor>())
+                                {
+                                    <th scope="col">@DisplayText.Of(vendor)</th>
+                                }
+                                <th scope="col">Onay</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in matrix.Rows)
+                            {
+                                var prefire = row.Cells.Any(c => c.Status == TagAuditStatus.FiresBeforeConsent);
+                                <tr>
+                                    <th scope="row" class="text-left font-medium">
+                                        <div>@row.Label</div>
+                                        <div class="max-w-xs truncate font-mono text-2xs font-normal text-fg-muted">@row.Url</div>
+                                    </th>
+                                    @foreach (var cell in row.Cells)
+                                    {
+                                        <td>
+                                            <button type="button" class="inline-flex rounded-sm"
+                                                    hx-get="@Url.SiteAction("Cell", "Tracking", new { pageLabel = row.Label, vendor = cell.Vendor })"
+                                                    hx-target="#drawer-body"
+                                                    data-drawer-title="@row.Label · @DisplayText.Of(cell.Vendor)">
+                                                <status-badge value="@cell.Status" />
+                                            </button>
+                                        </td>
+                                    }
+                                    <td class="text-sm text-fg-muted">@(prefire ? "Onay öncesi" : matrix.ConsentTested ? "Onay sonrası" : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="space-y-3" aria-labelledby="events-title">
+        <div>
+            <h2 id="events-title" class="section-title">Event sağlığı</h2>
+            <p class="text-xs text-fg-muted">Dün, önceki 7 günün ortalamasına göre. Düşüş eşiği @Format.Percent((double)Model.Events.DropThresholdPercent, 0).</p>
+        </div>
+        @if (!Model.Events.HasGa4)
+        {
+            <div class="card"><empty-state icon="activity" title="GA4 event verisi yok" description="GA4 bağlandığında view_item, add_to_cart, begin_checkout, purchase ve diğer izlenen event'ler burada görünür." /></div>
+        }
+        else
+        {
+            <div class="card overflow-hidden">
+                <div class="table-wrap">
+                    <table class="table-base min-w-[640px]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Event</th>
+                                <th scope="col" class="num">Dün</th>
+                                <th scope="col" class="num">7 gün ort.</th>
+                                <th scope="col" class="num">Değişim</th>
+                                <th scope="col">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Events.Events)
+                            {
+                                <tr>
+                                    <th scope="row" class="text-left font-mono text-sm font-medium">
+                                        <button type="button" class="link"
+                                                hx-get="@Url.SiteAction("Event", "Tracking", new { name = row.Name })"
+                                                hx-target="#drawer-body"
+                                                data-drawer-title="@row.Name">@row.Name</button>
+                                    </th>
+                                    <td class="num">@Format.Number(row.Yesterday)</td>
+                                    <td class="num">@Format.Number((double)row.Average, 1)</td>
+                                    <td class="num">@(row.ChangePercent is null ? "—" : Format.SignedPercent((double)row.ChangePercent.Value))</td>
+                                    <td>@(row.Anomaly ? "Düşüş" : "Normal")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </section>
+
+    <section class="space-y-3" aria-labelledby="meta-title">
+        <h2 id="meta-title" class="section-title">Meta</h2>
+        @if (Model.MetaConnected)
+        {
+            <div class="card card-body">
+                <p class="text-sm text-fg-muted">Sistem kullanıcısı token'ı kayıtlı. Pixel ve CAPI kanıtı denetim sırasında salt okunur okunur. Kanıt yoksa bu kurallar bulgu açmaz ve mevcut bulguyu kapatmaz.</p>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <empty-state icon="plug" title="Meta bağlı değil" description="Pixel ve CAPI kuralları token olmadan çalışmaz.">
+                    <a class="btn btn-secondary" href="@Url.SiteAction("Index", "SiteSettings")#denetim">Bağla</a>
+                </empty-state>
+            </div>
+        }
+    </section>
+</div>

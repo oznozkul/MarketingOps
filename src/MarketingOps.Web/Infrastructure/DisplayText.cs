@@ -73,6 +73,21 @@ public static class DisplayText
         _ => "Onay öncesi tetikleniyor"
     };
 
+    public static string Of(TagVendor v) => v switch
+    {
+        TagVendor.Gtm => "GTM",
+        TagVendor.Ga4 => "GA4",
+        TagVendor.GoogleAds => "Google Ads",
+        _ => "Meta Pixel"
+    };
+
+    public static string Of(AuditStatus v) => v switch
+    {
+        AuditStatus.Running => "Çalışıyor",
+        AuditStatus.Completed => "Tamamlandı",
+        _ => "Başarısız"
+    };
+
     public static string Of(CrawlSchedule v) => v switch
     {
         CrawlSchedule.Daily => "Günde bir",
@@ -169,6 +184,8 @@ public static class DisplayText
         CrawlStatus v => Of(v),
         ConnectorStatus v => Of(v),
         TagAuditStatus v => Of(v),
+        TagVendor v => Of(v),
+        AuditStatus v => Of(v),
         CrawlSchedule v => Of(v),
         MatchMode v => Of(v),
         MatchConditionType v => Of(v),

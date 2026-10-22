@@ -9,5 +9,6 @@ public enum RuleDataSource
     Crawl,
     SearchConsole,
     UrlInspection,
-    PageSpeed
+    PageSpeed,
+    Tracking
 }

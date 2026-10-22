@@ -9,4 +9,6 @@ public sealed record SiteDetailResponse(
     CrawlSettingsResponse CrawlSettings,
     ExpectedTrackingIdsResponse ExpectedTrackingIds,
     IReadOnlyList<PageTypeResponse> PageTypes,
-    string TaskKeyPrefix);
+    string TaskKeyPrefix,
+    TrackingJourneyResponse Journey,
+    OrderSourceResponse OrderSource);

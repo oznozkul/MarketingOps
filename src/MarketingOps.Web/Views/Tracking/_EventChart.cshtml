@@ -1,0 +1,13 @@
+@model MarketingOps.Application.Tracking.Queries.GetEventHealth.EventHealthRowResponse
+@using System.Text.Json
+@using MarketingOps.Web.Infrastructure
+@{
+    var series = Model.Series.Select(p => new { label = Format.ShortDate(p.Date), count = p.Count });
+}
+<div class="space-y-4">
+    <p class="text-sm text-fg-muted">Dün @Format.Number(Model.Yesterday), 7 gün ortalaması @Format.Number((double)Model.Average, 1).</p>
+    <div class="h-48">
+        <canvas data-chart="event-series" data-source="#event-series-json" role="img" aria-label="@Model.Name son 30 gün"></canvas>
+    </div>
+    <script type="application/json" id="event-series-json">@Html.Raw(JsonSerializer.Serialize(series))</script>
+</div>

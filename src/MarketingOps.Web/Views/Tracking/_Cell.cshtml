@@ -1,0 +1,50 @@
+@model MarketingOps.Application.Tracking.Queries.GetTagAuditCell.TagAuditCellResponse
+@using MarketingOps.Web.Infrastructure
+<div class="space-y-5">
+    <div>
+        <p class="label">Sayfa</p>
+        <a class="break-all font-mono text-sm text-fg" href="@Model.Url">@Model.Url</a>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <p class="label">Beklenen</p>
+            <p class="font-mono text-sm text-fg">@(Model.ExpectedId ?? "Tanımlı değil")</p>
+        </div>
+        <div>
+            <p class="label">Bulunan</p>
+            <p class="font-mono text-sm text-fg">@(Model.FoundIds.Count == 0 ? "—" : string.Join(", ", Model.FoundIds))</p>
+        </div>
+    </div>
+    <div>
+        <p class="label mb-2">Durum</p>
+        <status-badge value="@Model.Status" />
+    </div>
+    @if (Model.FindingId is Guid findingId)
+    {
+        <p class="text-sm"><a class="link" href="@Url.SiteAction("Detail", "Findings", new { id = findingId })">İlgili bulgu@(Model.TaskKey is null ? "" : $" · {Model.TaskKey}")</a></p>
+    }
+    <div>
+        <h3 class="eyebrow mb-2">İstekler</h3>
+        @if (Model.Requests.Count == 0)
+        {
+            <p class="text-sm text-fg-muted">Bu satıcıya ait istek yakalanmadı.</p>
+        }
+        else
+        {
+            <ul class="space-y-3">
+                @foreach (var request in Model.Requests)
+                {
+                    <li class="border-l-2 border-line pl-3">
+                        <p class="break-all font-mono text-2xs text-fg">@request.Url</p>
+                        <p class="mt-1 text-xs text-fg-muted">
+                            @(request.Id is null ? "Kimlik yok" : request.Id)
+                            · @(request.BeforeConsent ? "Onay öncesi" : "Onay sonrası veya onay denemesi yok")
+                            @if (request.Gcs is not null) { <span> · gcs @request.Gcs</span> }
+                            @if (request.Gcd is not null) { <span> · gcd @request.Gcd</span> }
+                        </p>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

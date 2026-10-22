@@ -410,6 +410,53 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("ga4_event_daily", (string)null);
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.OrderComparisonDaily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<long?>("Ga4PurchaseCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ga4_purchase_count");
+
+                    b.Property<decimal?>("Ga4PurchaseValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("ga4_purchase_value");
+
+                    b.Property<decimal?>("GapPercent")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("numeric(9,2)")
+                        .HasColumnName("gap_percent");
+
+                    b.Property<int?>("OrderCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_count");
+
+                    b.Property<decimal?>("OrderRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("order_revenue");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_comparison_daily");
+
+                    b.HasIndex("SiteId", "Date")
+                        .IsUnique()
+                        .HasDatabaseName("ix_order_comparison_daily_site_id_date");
+
+                    b.ToTable("order_comparison_daily", (string)null);
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Metrics.SearchPerformanceDaily", b =>
                 {
                     b.Property<Guid>("Id")
@@ -772,6 +819,120 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("sites", (string)null);
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Tracking.TagAuditResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuditRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_run_id");
+
+                    b.Property<string>("PageLabel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("page_label");
+
+                    b.Property<Guid?>("PageTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("page_type_id");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequence");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.Property<string>("Vendor")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("vendor");
+
+                    b.Property<string>("_foundIds")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("found_ids");
+
+                    b.Property<string>("_requests")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("requests");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tag_audit_results");
+
+                    b.HasIndex("AuditRunId", "PageLabel", "Vendor")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tag_audit_results_audit_run_id_page_label_vendor");
+
+                    b.ToTable("tag_audit_results", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Tracking.TagAuditRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("ConsentTested")
+                        .HasColumnType("boolean")
+                        .HasColumnName("consent_tested");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<int>("Number")
+                        .HasColumnType("integer")
+                        .HasColumnName("number");
+
+                    b.Property<string>("OrderSourceError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("order_source_error");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tag_audit_runs");
+
+                    b.HasIndex("SiteId", "Number")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tag_audit_runs_site_id_number");
+
+                    b.ToTable("tag_audit_runs", (string)null);
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.WorkTasks.WorkTask", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1092,6 +1253,16 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_ga4_event_daily_sites_site_id");
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.OrderComparisonDaily", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_order_comparison_daily_sites_site_id");
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Metrics.SearchPerformanceDaily", b =>
                 {
                     b.HasOne("MarketingOps.Domain.Sites.Site", null)
@@ -1258,11 +1429,96 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                                 .HasConstraintName("fk_sites_sites_id");
                         });
 
+                    b.OwnsOne("MarketingOps.Domain.Sites.OrderSourceSettings", "OrderSource", b1 =>
+                        {
+                            b1.Property<Guid>("SiteId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("ProtectedConnection")
+                                .HasColumnType("text")
+                                .HasColumnName("order_source_protected_connection");
+
+                            b1.Property<string>("Query")
+                                .HasMaxLength(4000)
+                                .HasColumnType("character varying(4000)")
+                                .HasColumnName("order_source_query");
+
+                            b1.HasKey("SiteId");
+
+                            b1.ToTable("sites");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SiteId")
+                                .HasConstraintName("fk_sites_sites_id");
+                        });
+
+                    b.OwnsOne("MarketingOps.Domain.Sites.TrackingJourney", "Journey", b1 =>
+                        {
+                            b1.Property<Guid>("SiteId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("CartUrl")
+                                .HasMaxLength(2048)
+                                .HasColumnType("character varying(2048)")
+                                .HasColumnName("journey_cart_url");
+
+                            b1.Property<string>("CheckoutUrl")
+                                .HasMaxLength(2048)
+                                .HasColumnType("character varying(2048)")
+                                .HasColumnName("journey_checkout_url");
+
+                            b1.Property<string>("ConsentButtonSelector")
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("journey_consent_button_selector");
+
+                            b1.Property<string>("ThankYouUrl")
+                                .HasMaxLength(2048)
+                                .HasColumnType("character varying(2048)")
+                                .HasColumnName("journey_thank_you_url");
+
+                            b1.HasKey("SiteId");
+
+                            b1.ToTable("sites");
+
+                            b1.WithOwner()
+                                .HasForeignKey("SiteId")
+                                .HasConstraintName("fk_sites_sites_id");
+                        });
+
                     b.Navigation("CrawlSettings")
                         .IsRequired();
 
                     b.Navigation("ExpectedTrackingIds")
                         .IsRequired();
+
+                    b.Navigation("Journey")
+                        .IsRequired();
+
+                    b.Navigation("OrderSource")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Tracking.TagAuditResult", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Tracking.TagAuditRun", null)
+                        .WithMany("Results")
+                        .HasForeignKey("AuditRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tag_audit_results_tag_audit_runs_audit_run_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Tracking.TagAuditRun", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tag_audit_runs_sites_site_id");
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.WorkTasks.WorkTask", b =>
@@ -1285,6 +1541,11 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("MarketingOps.Domain.Sites.Site", b =>
                 {
                     b.Navigation("PageTypes");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Tracking.TagAuditRun", b =>
+                {
+                    b.Navigation("Results");
                 });
 #pragma warning restore 612, 618
         }

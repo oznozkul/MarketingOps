@@ -3,13 +3,13 @@
 @using MarketingOps.Web.ViewModels.Sites
 @{
     var site = Model.Site;
-    (string Key, string Label)[] tabs = [("genel", "Genel"), ("baglantilar", "Bağlantılar"), ("kimlikler", "Beklenen kimlikler"), ("sahiplik", "Sahiplik")];
+    (string Key, string Label)[] tabs = [("genel", "Genel"), ("baglantilar", "Bağlantılar"), ("kimlikler", "Beklenen kimlikler"), ("denetim", "Denetim"), ("sahiplik", "Sahiplik")];
     (ConnectorType Type, string Description)[] connectors =
     [
         (ConnectorType.GoogleAds, "Dönüşüm etiketleri ve dönüşüm kimlikleri."),
         (ConnectorType.Meta, "Pixel ve Conversions API event'leri."),
         (ConnectorType.MerchantCenter, "Ürün feed'i ve ürün durumu."),
-        (ConnectorType.OrderSource, "Günlük sipariş sayısı ve tutarı: SQL Server, PostgreSQL, Shopify, WooCommerce, ikas veya özel API."),
+        (ConnectorType.OrderSource, "Günlük sipariş sayısı ve tutarı SQL Server sorgusundan okunur. Ayar Denetim sekmesindedir."),
         (ConnectorType.TaskTracker, "Görevlerin aktarılacağı sistem (Jira vb.).")
     ];
 }
@@ -75,7 +75,7 @@
 
     @* ---------- Seçili sitenin ayarları ---------- *@
     <section aria-labelledby="site-heading"
-             x-data="{ tab: (['genel','baglantilar','kimlikler','sahiplik'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'genel') }"
+             x-data="{ tab: (['genel','baglantilar','kimlikler','denetim','sahiplik'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'genel') }"
              x-init="if (location.hash === '#yeni-site') $dispatch('open-modal', 'new-site')">
         <div class="mb-4">
             <h2 id="site-heading" class="section-title">@site.Name ayarları</h2>
@@ -177,6 +177,13 @@
         @* Beklenen kimlikler *@
         <div role="tabpanel" id="panel-kimlikler" aria-labelledby="tab-kimlikler" x-show="tab === 'kimlikler'" x-cloak class="pt-6">
             <div class="card card-body"><partial name="_TrackingIdsForm" model="Model.TrackingForm" /></div>
+        </div>
+
+        @* Denetim *@
+        <div role="tabpanel" id="panel-denetim" aria-labelledby="tab-denetim" x-show="tab === 'denetim'" x-cloak class="space-y-6 pt-6">
+            <div class="card card-body"><partial name="_TrackingJourneyForm" model="Model.JourneyForm" /></div>
+            <div class="card card-body"><partial name="_OrderSourceForm" model="Model.OrderSourceForm" /></div>
+            <div class="card card-body"><partial name="_MetaTokenForm" model="Model.MetaForm" /></div>
         </div>
 
         @* Sahiplik *@

@@ -78,6 +78,17 @@ public class ConnectorAccount : Entity
         UpdatedAt = now;
     }
 
+    /// <summary>Meta gibi token ile bağlanan salt okunur kaynak. Mülk seçimi yoktur.</summary>
+    public void ConnectToken(string protectedSecret, string? externalId, DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(protectedSecret)) throw new DomainException("Yetki bilgisi boş olamaz.");
+        ProtectedSecret = protectedSecret;
+        ExternalAccountId = string.IsNullOrWhiteSpace(externalId) ? null : externalId.Trim();
+        Status = ConnectorStatus.Connected;
+        LastError = null;
+        UpdatedAt = now;
+    }
+
     public void Disconnect(DateTimeOffset now)
     {
         Status = ConnectorStatus.NotConnected;

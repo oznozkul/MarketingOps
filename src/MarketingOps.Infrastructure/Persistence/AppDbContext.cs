@@ -8,6 +8,7 @@ using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Organizations;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
+using MarketingOps.Domain.Tracking;
 using MarketingOps.Domain.WorkTasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
     public DbSet<WebVitalsDaily> WebVitals => Set<WebVitalsDaily>();
     public DbSet<UrlIndexStatus> UrlIndexStatuses => Set<UrlIndexStatus>();
     public DbSet<SitemapStatus> Sitemaps => Set<SitemapStatus>();
+    public DbSet<TagAuditRun> TagAuditRuns => Set<TagAuditRun>();
+    public DbSet<TagAuditResult> TagAuditResults => Set<TagAuditResult>();
+    public DbSet<OrderComparisonDaily> OrderComparisons => Set<OrderComparisonDaily>();
 
     /// <summary>
     /// Domain olayları kayıt başarılı olduktan sonra yayınlanır; dinleyiciler kalıcı olmuş veriyi görür.

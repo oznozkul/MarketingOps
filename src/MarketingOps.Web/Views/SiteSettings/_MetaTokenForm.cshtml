@@ -1,0 +1,17 @@
+@model MarketingOps.Web.ViewModels.Sites.MetaTokenForm
+<form id="meta-token-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateMeta", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button" novalidate>
+    <p class="max-w-prose text-sm text-fg-muted">Salt okunur sistem kullanıcısı token'ı. Pixel kimliği beklenen kimliklerden okunur. Token tekrar gösterilmez. Boş bırakmak mevcut token'ı korur.</p>
+    <form-errors />
+    <div>
+        <label class="label" for="meta-token">Access token</label>
+        <input id="meta-token" name="AccessToken" type="password" class="input font-mono" autocomplete="off" placeholder="@(Model.IsConnected ? "Kayıtlı · değiştirmek için yazın" : "Token")" aria-invalid="@(ViewData.ModelState.FirstError("AccessToken") is null ? null : "true")" />
+        <field-error for="AccessToken" />
+    </div>
+    <div class="flex flex-wrap items-center justify-end gap-2">
+        @if (Model.IsConnected)
+        {
+            <button type="submit" name="Remove" value="true" class="btn btn-secondary">Bağlantıyı kaldır</button>
+        }
+        <partial name="_SubmitButton" model="@("Token'ı kaydet")" />
+    </div>
+</form>

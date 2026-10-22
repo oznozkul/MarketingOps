@@ -18,6 +18,8 @@ public class Site : Entity
     public DateTimeOffset CreatedAt { get; private set; }
     public CrawlSettings CrawlSettings { get; private set; } = CrawlSettings.Default;
     public ExpectedTrackingIds ExpectedTrackingIds { get; private set; } = ExpectedTrackingIds.None;
+    public TrackingJourney Journey { get; private set; } = TrackingJourney.Empty;
+    public OrderSourceSettings OrderSource { get; private set; } = OrderSourceSettings.None;
 
     /// <summary>Görev anahtarlarının öneki ("LB" → "LB-142").</summary>
     public string TaskKeyPrefix { get; private set; } = null!;
@@ -63,6 +65,25 @@ public class Site : Entity
     public void UpdateCrawlSettings(CrawlSettings settings) => CrawlSettings = settings;
 
     public void UpdateExpectedTrackingIds(ExpectedTrackingIds ids) => ExpectedTrackingIds = ids;
+
+    public void UpdateTrackingJourney(TrackingJourney journey)
+    {
+        RequireOnSite(journey.CartUrl, "Sepet adresi");
+        RequireOnSite(journey.CheckoutUrl, "Ödeme adresi");
+        RequireOnSite(journey.ThankYouUrl, "Teşekkür adresi");
+        Journey = journey;
+    }
+
+    public void UpdateOrderSource(OrderSourceSettings source) => OrderSource = source;
+
+    private void RequireOnSite(string? url, string label)
+    {
+        if (url is null) return;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            throw new DomainException($"{label} http veya https olmalı.");
+        if (!uri.Host.Equals(Domain, StringComparison.OrdinalIgnoreCase) && !uri.Host.Equals("www." + Domain, StringComparison.OrdinalIgnoreCase))
+            throw new DomainException($"{label} bu sitenin domain'inde olmalı.");
+    }
 
     public void MarkOwnershipVerified() => IsOwnershipVerified = true;
 
