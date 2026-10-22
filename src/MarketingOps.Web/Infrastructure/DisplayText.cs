@@ -4,6 +4,8 @@ using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Sites;
+using MarketingOps.Domain.Notifications;
+using MarketingOps.Domain.Scores;
 using MarketingOps.Domain.Tracking;
 using MarketingOps.Domain.WorkTasks;
 
@@ -170,6 +172,38 @@ public static class DisplayText
 
     public static string Of(VerificationType v) => v == VerificationType.Automatic ? "Otomatik · sonraki tarama" : "Ekip onayı";
 
+    public static string Of(ScoreCategory v) => v switch
+    {
+        ScoreCategory.Tracking => "Tracking Sağlığı",
+        ScoreCategory.Seo => "SEO Sağlığı",
+        _ => "Performans"
+    };
+
+    public static string Of(NotificationEventType v) => v switch
+    {
+        NotificationEventType.NewCriticalFinding => "Yeni kritik bulgu",
+        NotificationEventType.FindingReopened => "Tekrar açılan bulgu",
+        NotificationEventType.PurchaseGap => "Purchase farkı eşiği aştı",
+        NotificationEventType.ScoreDropped => "Skor düştü",
+        NotificationEventType.CrawlFailed => "Tarama başarısız",
+        _ => "Bağlantı yetkisi doldu"
+    };
+
+    public static string Of(NotificationChannelKind v) => v switch
+    {
+        NotificationChannelKind.Email => "E-posta",
+        NotificationChannelKind.Teams => "Teams",
+        NotificationChannelKind.Slack => "Slack",
+        _ => "Panel"
+    };
+
+    public static string Of(ReportPeriod v) => v switch
+    {
+        ReportPeriod.Daily => "Günlük",
+        ReportPeriod.Weekly => "Haftalık",
+        _ => "Aylık"
+    };
+
     public static string Of(Enum value) => value switch
     {
         Team v => Of(v),
@@ -194,6 +228,10 @@ public static class DisplayText
         CrawlStage v => Of(v),
         SkipReason v => Of(v),
         PageStatusFilter v => Of(v),
+        ScoreCategory v => Of(v),
+        NotificationEventType v => Of(v),
+        NotificationChannelKind v => Of(v),
+        ReportPeriod v => Of(v),
         _ => value.ToString()
     };
 }

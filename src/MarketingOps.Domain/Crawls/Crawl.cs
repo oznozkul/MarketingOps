@@ -136,6 +136,7 @@ public class Crawl : Entity
         Status = CrawlStatus.Failed;
         ErrorMessage = string.IsNullOrWhiteSpace(errorMessage) ? "Bilinmeyen hata." : errorMessage.Trim();
         FinishedAt = now;
+        Raise(new CrawlFailed(Id, SiteId, Number));
     }
 
     public void Cancel(DateTimeOffset now)

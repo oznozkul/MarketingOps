@@ -1,0 +1,195 @@
+@model MarketingOps.Application.Overview.Queries.GetOverview.OverviewResponse
+@using System.Text.Json
+@using MarketingOps.Application.Overview.Queries.GetOverview
+@using MarketingOps.Domain.Findings
+@using MarketingOps.Domain.Scores
+@using MarketingOps.Web.Infrastructure
+@using MarketingOps.Web.ViewModels
+@{
+    var shell = ViewData.Shell()!;
+    var days = Context.Request.Query["days"] == "7" ? 7 : 30;
+    var orders = Model.Orders.Days.Select(d => new { label = Format.ShortDate(d.Date), orders = d.OrderCount, purchases = d.PurchaseCount, diff = d.GapPercent });
+    var trend = new
+    {
+        points = Model.Trend.Select(p => new { label = Format.ShortDate(p.Date), tracking = p.Tracking, seo = p.Seo, performance = p.Performance }),
+        events = Model.Events.Select(e => new { label = Format.ShortDate(e.Date), kind = "finding", text = e.Text })
+    };
+}
+<div class="flex flex-col gap-8">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="eyebrow">@shell.Site.Domain</p>
+            <h1 class="page-title mt-1">Genel Bakış</h1>
+            @if (shell.CrawlStatus.LastFinished is { } last)
+            {
+                <p class="mt-1 text-sm text-fg-muted">Son tarama <time datetime="@Format.Iso(last.FinishedAt!.Value)">@Format.DateTime(last.FinishedAt.Value)</time> · @Format.Number(last.PagesCrawled) sayfa</p>
+            }
+        </div>
+        @if (shell.CrawlStatus.Active is null)
+        {
+            <form hx-post="@Url.SiteAction("Start", "Crawls")" hx-disabled-elt="find button[type=submit]">
+                <button type="submit" class="btn btn-primary">
+                    <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />
+                    <icon name="refresh-cw" />Şimdi tara
+                </button>
+            </form>
+        }
+    </div>
+
+    @if (shell.CrawlStatus.Active is { } active)
+    {
+        <partial name="~/Views/Crawls/_CrawlLiveCard.cshtml" model="active" />
+    }
+
+    @if (!Model.HasCompletedCrawl)
+    {
+        <div class="card">
+            <empty-state icon="scan-search" title="İlk tarama bekleniyor" description="Skorlar, öncelikli sorunlar ve sayfa tipi durumu ilk tarama tamamlanınca burada görünür.">
+                <a class="btn btn-secondary" href="@Url.SiteAction("Index", "SiteSettings")">Kuruluma git</a>
+            </empty-state>
+        </div>
+    }
+    else
+    {
+        @if (Model.Critical is { } critical)
+        {
+            <section class="border-l-2 border-critical-solid bg-critical-soft px-4 py-3" aria-label="Kritik uyarı">
+                <p class="text-sm text-fg"><a class="font-medium underline" href="@Url.SiteAction("Detail", "Findings", new { id = critical.Id })">@critical.Title</a></p>
+                @if (Model.ExtraCritical > 0)
+                {
+                    <p class="mt-1 text-sm"><a class="link" href="@Url.SiteAction("Index", "Findings", new { severity = Severity.Critical })">+@Format.Number(Model.ExtraCritical) kritik sorun daha</a></p>
+                }
+            </section>
+        }
+
+        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Skorlar">
+            @foreach (var score in Model.Scores)
+            {
+                @await Component.InvokeAsync("ScoreCard", new ScoreCardViewModel(DisplayText.Of(score.Category), score.Score, score.Previous, Url.SiteAction("Breakdown", "Overview", new { category = score.Category })))
+            }
+        </section>
+
+        <section class="grid gap-3 sm:grid-cols-2" aria-label="Görevler">
+            <stat-card label="Açık görevler" value="@Format.Number(Model.Tasks.Open)" href="@Url.SiteAction("Index", "Tasks")">
+                <span class="mt-1 flex flex-wrap gap-2 text-xs text-fg-muted">
+                    <span>Kritik @Format.Number(Model.Tasks.Critical)</span>
+                    <span>Yüksek @Format.Number(Model.Tasks.High)</span>
+                    <span>Orta @Format.Number(Model.Tasks.Medium)</span>
+                    <span>Düşük @Format.Number(Model.Tasks.Low)</span>
+                </span>
+            </stat-card>
+            <stat-card label="Bu hafta kapanan görevler" value="@Format.Number(Model.Tasks.ClosedThisWeek)" delta="@(Model.Tasks.ClosedThisWeek - Model.Tasks.ClosedLastWeek)" delta-good="up" delta-label="geçen haftaya göre" href="@Url.SiteAction("Index", "Tasks")" />
+        </section>
+
+        <section class="space-y-3" aria-labelledby="issues-title">
+            <h2 id="issues-title" class="section-title">Öncelikli sorunlar</h2>
+            @if (Model.Issues.Count == 0)
+            {
+                <div class="card"><empty-state variant="positive" title="Açık bulgu yok" description="Son değerlendirmede açık veya tekrar açılmış bulgu kalmadı." /></div>
+            }
+            else
+            {
+                <div class="card overflow-hidden">
+                    <div class="table-wrap">
+                        <table class="table-base">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Önem</th>
+                                    <th scope="col">Bulgu</th>
+                                    <th scope="col">Sayfa tipi</th>
+                                    <th scope="col" class="num">Etkilenen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var issue in Model.Issues)
+                                {
+                                    <tr class="cursor-pointer" onclick="location.href='@Url.SiteAction("Detail", "Findings", new { id = issue.Id })'">
+                                        <td><severity-badge value="@issue.Severity" /></td>
+                                        <td>
+                                            <a class="font-medium text-fg hover:underline" href="@Url.SiteAction("Detail", "Findings", new { id = issue.Id })">@issue.Title</a>
+                                            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+                                                <span class="font-mono">@issue.RuleCode</span>
+                                                @if (issue.Status == FindingStatus.Reopened)
+                                                {
+                                                    <status-badge value="@issue.Status" />
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>@(issue.PageTypeName ?? "—")</td>
+                                        <td class="num">@Format.Number(issue.AffectedCount)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="space-y-3" aria-labelledby="orders-title">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <h2 id="orders-title" class="section-title">Sipariş ve GA4 purchase</h2>
+                    <p class="text-xs text-fg-muted">Fark, sipariş sayısına göre yüzde. Eşik @Format.Percent((double)Model.Orders.ThresholdPercent, 0) aşılırsa o gün vurgulanır. Eşik, purchase event'inin sipariş kaydından ne kadar sapabileceğini gösterir.</p>
+                </div>
+                <div class="flex gap-2 text-sm">
+                    <a class="@(days == 7 ? "font-medium text-fg" : "link")" href="@Url.SiteAction("Index", "Overview", new { days = 7 })" aria-current="@(days == 7 ? "true" : null)">7 gün</a>
+                    <a class="@(days == 30 ? "font-medium text-fg" : "link")" href="@Url.SiteAction("Index", "Overview", new { days = 30 })" aria-current="@(days == 30 ? "true" : null)">30 gün</a>
+                </div>
+            </div>
+            @if (!Model.Ga4Connected)
+            {
+                <div class="card"><empty-state icon="activity" title="Veri yok" description="GA4 bağlı değil."><a class="link font-medium" href="@Url.SiteAction("Index", "SiteSettings")#baglantilar">Bağla</a></empty-state></div>
+            }
+            else if (Model.Orders.Days.Count == 0)
+            {
+                <div class="card"><empty-state icon="activity" title="Henüz karşılaştırma yok" description="Denetim, sipariş kaynağı ve GA4 purchase sayılarını günlük yazınca grafik burada görünür." /></div>
+            }
+            else
+            {
+                <div class="card card-body">
+                    <div class="h-64"><canvas data-chart="order-comparison" data-source="#overview-orders" data-threshold="@Model.Orders.ThresholdPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)" role="img" aria-label="Sipariş ve GA4 purchase karşılaştırması"></canvas></div>
+                    <script type="application/json" id="overview-orders">@Html.Raw(JsonSerializer.Serialize(orders))</script>
+                </div>
+            }
+        </section>
+
+        <section class="space-y-3" aria-labelledby="trend-title">
+            <h2 id="trend-title" class="section-title">Skor trendi</h2>
+            <p class="text-xs text-fg-muted">Son 30 gün. İşaretler, o gün açılan veya tekrar açılan bulgulardır.</p>
+            <div class="card card-body">
+                <div class="h-64"><canvas data-chart="score-trend" data-source="#overview-trend" role="img" aria-label="Skor trendi"></canvas></div>
+                <script type="application/json" id="overview-trend">@Html.Raw(JsonSerializer.Serialize(trend))</script>
+            </div>
+        </section>
+
+        <section class="space-y-3" aria-labelledby="types-title">
+            <h2 id="types-title" class="section-title">Sayfa tipleri</h2>
+            <div class="card overflow-hidden">
+                <div class="table-wrap">
+                    <table class="table-base">
+                        <thead>
+                            <tr>
+                                <th scope="col">Sayfa tipi</th>
+                                <th scope="col" class="num">Sayfa</th>
+                                <th scope="col" class="num">Açık bulgu</th>
+                                <th scope="col" class="num">SEO skoru</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.PageTypes)
+                            {
+                                <tr>
+                                    <td><a class="font-medium text-fg hover:underline" href="@Url.SiteAction("Index", "Findings", new { pageType = row.Id })">@row.Name</a></td>
+                                    <td class="num">@Format.Number(row.PageCount)</td>
+                                    <td class="num">@Format.Number(row.OpenFindings)</td>
+                                    <td class="num">@row.SeoScore</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    }
+</div>

@@ -23,6 +23,7 @@ public sealed class FindingConfiguration : IEntityTypeConfiguration<Finding>
         // Aynı kural + aynı sayfa tipi tek bulgudur; eşzamanlı iki değerlendirme kopya açamaz.
         builder.HasIndex(f => new { f.SiteId, f.Fingerprint }).IsUnique();
         builder.HasIndex(f => new { f.SiteId, f.Status });
+        builder.HasIndex(f => new { f.SiteId, f.Status, f.Category });
         builder.HasOne<Site>().WithMany().HasForeignKey(f => f.SiteId).OnDelete(DeleteBehavior.Cascade);
 
         builder.OwnsMany(f => f.Occurrences, occurrences => occurrences.ToJson());

@@ -1,0 +1,61 @@
+@model MarketingOps.Application.Scores.Queries.GetScoreBreakdown.ScoreBreakdownResponse
+@using MarketingOps.Web.Infrastructure
+@{
+    var total = Model.Deductions.Sum(d => d.Points);
+}
+<div class="space-y-5">
+    <div class="flex items-baseline gap-2">
+        <span class="tabular font-mono text-[32px] font-medium leading-none text-fg">@Model.Score</span>
+        <span class="text-sm text-fg-muted">/ 100</span>
+        @if (Model.Previous is int previous)
+        {
+            @Html.Raw(StatCardTagHelper.DeltaHtml(Model.Score - previous, "up", "önceki güne göre"))
+        }
+    </div>
+    <div class="border-l-2 border-fg bg-surface-2 p-3 text-sm text-fg-muted">
+        <p class="font-medium text-fg">Hesaplama</p>
+        <p class="mt-1">Skor 100'den başlar. Her açık bulgu, <span class="font-medium text-fg">önem ağırlığı × etkilenen sayfa oranı</span> kadar puan düşürür. Tek bir bulgunun düşürebileceği puan, önem ağırlığını aşmaz. Sayfa tipi yoksa ya da o tipte sayfa sayısı yoksa tam ağırlık düşer.</p>
+    </div>
+    <div>
+        <h3 class="section-title">Puanı en çok düşüren bulgular</h3>
+        @if (Model.Deductions.Count == 0)
+        {
+            <p class="mt-2 text-sm text-fg-muted">Bu kategoride açık bulgu yok.</p>
+        }
+        else
+        {
+            <div class="table-wrap mt-2 rounded border border-line">
+                <table class="table-base">
+                    <thead>
+                        <tr>
+                            <th scope="col">Bulgu</th>
+                            <th scope="col" class="num">Etkilenen</th>
+                            <th scope="col" class="num">Düşüş</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Model.Deductions)
+                        {
+                            var ratio = d.PageTypePageCount == 0 ? 1d : Math.Min(1d, d.AffectedCount / (double)d.PageTypePageCount);
+                            <tr>
+                                <td>
+                                    <a class="font-medium text-fg hover:underline" href="@Url.SiteAction("Detail", "Findings", new { id = d.FindingId })">@d.Title</a>
+                                    <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+                                        <severity-badge value="@d.Severity" />
+                                        <span>@(d.PageTypeName ?? "Sayfa tipi yok")</span>
+                                    </div>
+                                </td>
+                                <td class="num text-xs text-fg-muted">
+                                    @Format.Number(d.AffectedCount) / @Format.Number(d.PageTypePageCount)
+                                    <div>@Format.Percent(ratio * 100)</div>
+                                </td>
+                                <td class="num font-medium text-fg">@Format.Signed(-(int)Math.Round(d.Points))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-2 text-xs text-fg-muted">Listelenen bulgular toplam <span class="tabular font-medium text-fg">@Format.Number((double)total, 1)</span> puan düşürüyor.</p>
+        }
+    </div>
+</div>

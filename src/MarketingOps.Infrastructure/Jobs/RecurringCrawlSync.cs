@@ -27,9 +27,14 @@ public sealed class RecurringCrawlSync(IServiceScopeFactory scopes, ILogger<Recu
                 var scheduler = scope.ServiceProvider.GetRequiredService<ICrawlScheduler>();
                 var sites = await db.Sites.AsNoTracking().Select(s => new { s.Id, s.CrawlSettings.Schedule }).ToListAsync(stoppingToken);
                 foreach (var site in sites) scheduler.ScheduleSite(site.Id, site.Schedule);
-                scope.ServiceProvider.GetRequiredService<IRecurringJobManager>().AddOrUpdate<SnapshotRetentionJob>(
+                var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+                var istanbul = TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul");
+                recurring.AddOrUpdate<SnapshotRetentionJob>(
                     SnapshotRetentionJob.RecurringId, job => job.RunAsync(CancellationToken.None), "0 6 * * *",
-                    new RecurringJobOptions { TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul") });
+                    new RecurringJobOptions { TimeZone = istanbul });
+                recurring.AddOrUpdate<SendDueReportsJob>(
+                    SendDueReportsJob.RecurringId, job => job.RunAsync(CancellationToken.None), "*/15 * * * *",
+                    new RecurringJobOptions { TimeZone = istanbul });
                 logger.LogInformation("{Count} site için tekrarlayan tarama işi kaydedildi.", sites.Count);
                 return;
             }

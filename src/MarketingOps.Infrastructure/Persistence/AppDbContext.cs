@@ -5,7 +5,9 @@ using MarketingOps.Domain.Connectors;
 using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Metrics;
+using MarketingOps.Domain.Notifications;
 using MarketingOps.Domain.Organizations;
+using MarketingOps.Domain.Scores;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
 using MarketingOps.Domain.Tracking;
@@ -33,6 +35,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
     public DbSet<TagAuditRun> TagAuditRuns => Set<TagAuditRun>();
     public DbSet<TagAuditResult> TagAuditResults => Set<TagAuditResult>();
     public DbSet<OrderComparisonDaily> OrderComparisons => Set<OrderComparisonDaily>();
+    public DbSet<ScoreSnapshot> ScoreSnapshots => Set<ScoreSnapshot>();
+    public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+    public DbSet<NotificationChannelConfig> NotificationChannels => Set<NotificationChannelConfig>();
+    public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+    public DbSet<UserNotification> UserNotifications => Set<UserNotification>();
+    public DbSet<ReportSchedule> ReportSchedules => Set<ReportSchedule>();
 
     /// <summary>
     /// Domain olayları kayıt başarılı olduktan sonra yayınlanır; dinleyiciler kalıcı olmuş veriyi görür.

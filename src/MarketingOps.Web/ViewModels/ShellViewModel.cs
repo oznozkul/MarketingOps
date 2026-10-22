@@ -1,4 +1,5 @@
 using MarketingOps.Application.Crawls.Queries.GetCrawlStatus;
+using MarketingOps.Application.Notifications.Queries.GetNotifications;
 using MarketingOps.Application.Sites.Queries.GetSites;
 
 namespace MarketingOps.Web.ViewModels;
@@ -10,4 +11,5 @@ public sealed record ShellViewModel(
     CrawlStatusResponse CrawlStatus,
     string ActiveSection,
     string UserName,
-    string UserRole);
+    string UserRole,
+    NotificationsResponse Notifications);

@@ -8,8 +8,10 @@ using MarketingOps.Application.Connectors;
 using MarketingOps.Infrastructure.Ai;
 using MarketingOps.Infrastructure.Google;
 using MarketingOps.Infrastructure.Crawling;
+using MarketingOps.Application.Notifications;
 using MarketingOps.Application.Tracking;
 using MarketingOps.Infrastructure.Jobs;
+using MarketingOps.Infrastructure.Notifications;
 using MarketingOps.Infrastructure.Persistence;
 using MarketingOps.Infrastructure.Tracking;
 using MarketingOps.Infrastructure.Persistence.Seed;
@@ -80,6 +82,17 @@ public static class DependencyInjection
         services.AddHttpClient<IMetaGraphClient, MetaGraphClient>();
         services.AddTransient<TrackingAuditJob>();
         services.AddSingleton<ITrackingJobScheduler, HangfireTrackingScheduler>();
+
+        services.AddSingleton(configuration.GetSection(MailOptions.Section).Get<MailOptions>() ?? new MailOptions());
+        services.AddHttpClient("webhooks", client => client.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<ISummaryReportRenderer, SummaryReportHtml>();
+        services.AddScoped<INotificationChannel, EmailNotificationChannel>();
+        services.AddScoped<INotificationChannel, TeamsNotificationChannel>();
+        services.AddScoped<INotificationChannel, SlackNotificationChannel>();
+        services.AddScoped<INotificationChannel, InAppNotificationChannel>();
+        services.AddSingleton<INotificationJobScheduler, HangfireNotificationScheduler>();
+        services.AddTransient<NotificationDispatchJob>();
+        services.AddTransient<SendDueReportsJob>();
         return services;
     }
 

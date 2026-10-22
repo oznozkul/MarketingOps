@@ -1,5 +1,6 @@
 using MarketingOps.Application.Common.Validation;
 using MarketingOps.Application.Crawls.Queries.GetCrawlStatus;
+using MarketingOps.Application.Notifications.Queries.GetNotifications;
 using MarketingOps.Application.Sites.Queries.GetSites;
 using MarketingOps.Web.Infrastructure;
 using MarketingOps.Web.ViewModels;
@@ -52,13 +53,15 @@ public class SiteContextFilter(ISender sender, SiteContext context, LinkGenerato
         {
             var section = ctx.ActionDescriptor is ControllerActionDescriptor cad ? cad.ControllerName : "";
             var crawlStatus = await sender.Send(new GetCrawlStatusQuery(site.Id), ctx.HttpContext.RequestAborted);
+            var notifications = await sender.Send(new GetNotificationsQuery(site.Id), ctx.HttpContext.RequestAborted);
             controller.ViewData[ShellViewDataExtensions.Key] = new ShellViewModel(
                 site,
                 sites.Select(s => new SiteSwitchItem(s, SwitchUrl(ctx, s.Id, hasRouteSite), s.Id == site.Id)).ToList(),
                 crawlStatus,
                 section,
                 CurrentUser.Name,
-                CurrentUser.Role);
+                CurrentUser.Role,
+                notifications);
         }
 
         await next();

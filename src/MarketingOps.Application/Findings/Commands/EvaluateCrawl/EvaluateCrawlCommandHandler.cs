@@ -1,5 +1,6 @@
 using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Application.Rules;
+using MarketingOps.Application.Scores.Commands.RecordScoreSnapshots;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Rules.Definitions;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MarketingOps.Application.Findings.Commands.EvaluateCrawl;
 
-public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator evaluator, ExternalDataLoader externalData, TimeProvider clock) : IRequestHandler<EvaluateCrawlCommand>
+public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator evaluator, ExternalDataLoader externalData, ISender sender, TimeProvider clock) : IRequestHandler<EvaluateCrawlCommand>
 {
     public async Task Handle(EvaluateCrawlCommand request, CancellationToken cancellationToken)
     {
@@ -75,5 +76,6 @@ public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator 
 
         crawl.RecordEvaluation(startedAt, clock.GetUtcNow(), opened, resolved, reopened);
         await db.SaveChangesAsync(cancellationToken);
+        await sender.Send(new RecordScoreSnapshotsCommand(site.Id), cancellationToken);
     }
 }

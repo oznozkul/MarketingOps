@@ -1,4 +1,5 @@
 using MarketingOps.Application.Common.Exceptions;
+using MarketingOps.Application.Scores.Commands.RecordScoreSnapshots;
 using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Application.Connectors;
 using MarketingOps.Application.Connectors.Google;
@@ -23,6 +24,7 @@ public sealed class RunTrackingAuditCommandHandler(
     IOrderSource orders,
     IMetaGraphClient metaGraph,
     ConnectorSecretProtector protector,
+    ISender sender,
     TimeProvider clock,
     ILogger<RunTrackingAuditCommandHandler> logger) : IRequestHandler<RunTrackingAuditCommand, Guid>
 {
@@ -56,6 +58,7 @@ public sealed class RunTrackingAuditCommandHandler(
             run.Complete(cells, consentTested, clock.GetUtcNow());
             await ApplyFindings(site, run, cells, audited.Count > 0, comparisons, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
+            await sender.Send(new RecordScoreSnapshotsCommand(site.Id), cancellationToken);
         }
         catch (Exception ex) when (ex is not ConflictException)
         {

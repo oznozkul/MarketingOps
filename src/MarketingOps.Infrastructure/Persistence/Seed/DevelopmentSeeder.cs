@@ -1,3 +1,4 @@
+using MarketingOps.Domain.Notifications;
 using MarketingOps.Domain.Organizations;
 using MarketingOps.Domain.Sites;
 using Microsoft.EntityFrameworkCore;
@@ -60,5 +61,24 @@ public sealed class DevelopmentSeeder(AppDbContext db, TimeProvider clock)
         }
 
         await db.SaveChangesAsync(ct);
+        await SeedNotificationRules(ct);
+    }
+
+    /// <summary>Var olan sitelere de yazılır. E-posta adresi eklenmez; yalnızca panel içi kural.</summary>
+    private async Task SeedNotificationRules(CancellationToken ct)
+    {
+        var siteIds = await db.Sites.Select(s => s.Id).ToListAsync(ct);
+        foreach (var siteId in siteIds)
+        {
+            await EnsureRule(siteId, NotificationEventType.NewCriticalFinding, ct);
+            await EnsureRule(siteId, NotificationEventType.FindingReopened, ct);
+        }
+        await db.SaveChangesAsync(ct);
+    }
+
+    private async Task EnsureRule(Guid siteId, NotificationEventType eventType, CancellationToken ct)
+    {
+        if (await db.NotificationRules.AnyAsync(r => r.SiteId == siteId && r.EventType == eventType, ct)) return;
+        db.NotificationRules.Add(NotificationRule.Create(siteId, eventType, true, [NotificationChannelKind.InApp], null, null, null, 24, null));
     }
 }

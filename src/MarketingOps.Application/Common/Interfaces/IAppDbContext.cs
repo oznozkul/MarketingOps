@@ -2,6 +2,8 @@ using MarketingOps.Domain.Connectors;
 using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Metrics;
+using MarketingOps.Domain.Notifications;
+using MarketingOps.Domain.Scores;
 using MarketingOps.Domain.Organizations;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
@@ -30,6 +32,12 @@ public interface IAppDbContext
     DbSet<TagAuditRun> TagAuditRuns { get; }
     DbSet<TagAuditResult> TagAuditResults { get; }
     DbSet<OrderComparisonDaily> OrderComparisons { get; }
+    DbSet<ScoreSnapshot> ScoreSnapshots { get; }
+    DbSet<NotificationRule> NotificationRules { get; }
+    DbSet<NotificationChannelConfig> NotificationChannels { get; }
+    DbSet<NotificationDelivery> NotificationDeliveries { get; }
+    DbSet<UserNotification> UserNotifications { get; }
+    DbSet<ReportSchedule> ReportSchedules { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

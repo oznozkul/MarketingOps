@@ -18,6 +18,8 @@ public static class DependencyInjection
         services.AddScoped<Rules.RuleEvaluator>();
         services.AddScoped<Tasks.WorkTaskFactory>();
         services.AddScoped<Rules.ExternalDataLoader>();
+        services.AddScoped<Scores.ScoreReader>();
+        services.AddScoped<Notifications.SummaryReportFactory>();
         services.AddSingleton<Connectors.ConnectorSecretProtector>();
         services.AddScoped<Connectors.GoogleTokenProvider>();
         return services;

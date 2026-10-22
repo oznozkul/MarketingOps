@@ -115,6 +115,7 @@ public class ConnectorAccount : Entity
         Status = authorizationExpired ? ConnectorStatus.Expired : ConnectorStatus.Error;
         LastError = error.Length > ErrorMaxLength ? error[..ErrorMaxLength] : error;
         UpdatedAt = now;
+        if (authorizationExpired) Raise(new ConnectorAuthorizationExpired(Id, SiteId, Type));
     }
 
     public void RecordSuccessfulTest(DateTimeOffset now)
