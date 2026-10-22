@@ -6,16 +6,12 @@
     (string Key, string Label)[] tabs = [("genel", "Genel"), ("baglantilar", "Bağlantılar"), ("kimlikler", "Beklenen kimlikler"), ("sahiplik", "Sahiplik")];
     (ConnectorType Type, string Description)[] connectors =
     [
-        (ConnectorType.SearchConsole, "Arama performansı, index durumu ve site sahipliği doğrulaması."),
-        (ConnectorType.Ga4, "E-ticaret event sayıları ve purchase değerleri."),
-        (ConnectorType.Gtm, "Container ve etiket yapılandırması."),
         (ConnectorType.GoogleAds, "Dönüşüm etiketleri ve dönüşüm kimlikleri."),
         (ConnectorType.Meta, "Pixel ve Conversions API event'leri."),
         (ConnectorType.MerchantCenter, "Ürün feed'i ve ürün durumu."),
-        (ConnectorType.OrderSource, "Günlük sipariş sayısı ve tutarı: SQL Server, PostgreSQL, Shopify, WooCommerce, ikas veya özel API.")
+        (ConnectorType.OrderSource, "Günlük sipariş sayısı ve tutarı: SQL Server, PostgreSQL, Shopify, WooCommerce, ikas veya özel API."),
+        (ConnectorType.TaskTracker, "Görevlerin aktarılacağı sistem (Jira vb.).")
     ];
-    var tracker = Model.TaskTrackerForm;
-    var trackerConnected = tracker.HasToken;
 }
 
 <div class="flex flex-col gap-8">
@@ -135,32 +131,7 @@
         <div role="tabpanel" id="panel-baglantilar" aria-labelledby="tab-baglantilar" x-show="tab === 'baglantilar'" x-cloak class="space-y-4 pt-6">
             <p class="max-w-prose text-sm text-fg-muted">Tüm bağlantılar yalnızca okuma izniyle kurulur. MarketingOps siteye veya reklam hesaplarına hiçbir şey yazmaz.</p>
             <div class="grid gap-4 md:grid-cols-2">
-                @* Görev sistemi (Jira) *@
-                <div class="card card-body flex flex-col gap-3">
-                    <div class="flex items-start justify-between gap-2">
-                        <h3 class="text-sm font-semibold text-fg">Görev sistemi (Jira Cloud)</h3>
-                        <status-badge value="@(trackerConnected ? ConnectorStatus.Connected : ConnectorStatus.NotConnected)" />
-                    </div>
-                    <p class="flex-1 text-sm text-fg-muted">
-                        @if (trackerConnected)
-                        {
-                            <span>Görevler <span class="font-mono text-fg">@tracker.ProjectKey</span> projesine <span class="font-mono">@tracker.IssueType</span> olarak aktarılır. <span class="font-mono text-xs">@tracker.BaseUrl</span></span>
-                        }
-                        else
-                        {
-                            <span>Görevlerin aktarılacağı Jira projesi. Bulgu ve görev detayından tek tek, bulgu listesinden toplu aktarılır.</span>
-                        }
-                    </p>
-                    <div class="flex flex-wrap items-center justify-end gap-2">
-                        @if (trackerConnected)
-                        {
-                            <form hx-post="@Url.SiteAction("RemoveTaskTracker", "SiteSettings")" hx-confirm="Jira bağlantısı ve kayıtlı API anahtarı silinsin mi? Aktarılmış görevlerin Jira bağlantıları kalır." class="contents">
-                                <button type="submit" class="btn btn-ghost btn-sm">Bağlantıyı kaldır</button>
-                            </form>
-                        }
-                        <button type="button" class="btn btn-secondary btn-sm" x-data x-on:click="$dispatch('open-modal', 'task-tracker')">@(trackerConnected ? "Düzenle" : "Bağla")</button>
-                    </div>
-                </div>
+                <partial name="_GoogleConnectors" model="Model.Connectors" />
 
                 @* AI önerileri: sağlayıcı sunucu yapılandırmasından gelir. *@
                 <div class="card card-body flex flex-col gap-3">
@@ -230,14 +201,25 @@
                         <p>Sahipliği doğrulanmamış sitede zamanlanmış (otomatik) tarama çalışmaz. Taramalar ekranından elle tarama başlatılabilir.</p>
                     </div>
                 }
-                <button type="button" class="btn btn-secondary" disabled title="Bağlantı kurulumu henüz hazır değil">Search Console ile doğrula</button>
+                @if (!site.IsOwnershipVerified)
+                {
+                    @if (Model.Connectors.GoogleConfigured)
+                    {
+                        <form hx-post="@Url.SiteAction("ConnectGoogle", "Connectors")" hx-disabled-elt="find button">
+                            <button type="submit" class="btn btn-secondary"><icon name="shield-check" />Search Console ile doğrula</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-secondary" disabled title="Yönetici Google OAuth istemcisini ayarlamadı">Search Console ile doğrula</button>
+                    }
+                }
             </div>
         </div>
     </section>
 </div>
 
 <partial name="_Modal" model="@(new ModalViewModel("new-site", "Site ekle", "_CreateSiteForm", new CreateSiteForm()))" />
-<partial name="_Modal" model="@(new ModalViewModel("task-tracker", "Jira bağlantısı", "_TaskTrackerForm", Model.TaskTrackerForm))" />
 @{
     ViewData["Domain"] = site.Domain;
 }

@@ -101,16 +101,6 @@ public class WorkTaskTests
     }
 
     [Fact]
-    public void Export_link_is_recorded_once_and_updated_after()
-    {
-        var task = NewTask();
-        task.LinkExternal("SEO-1", "https://x.atlassian.net/browse/SEO-1", T0);
-        task.LinkExternal("SEO-1", "https://x.atlassian.net/browse/SEO-1", T0.AddHours(1));
-        task.History.Where(h => h.Type == TaskEventType.Exported).Select(h => h.Description)
-            .ShouldBe(["Görev sistemine aktarıldı: SEO-1.", "Görev sistemindeki kayıt güncellendi: SEO-1."]);
-    }
-
-    [Fact]
     public void Feedback_is_tied_to_the_current_suggestion_model()
     {
         var task = NewTask();

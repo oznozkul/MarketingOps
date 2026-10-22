@@ -12,6 +12,9 @@ public interface IRule
     FindingCategory Category { get; }
     Severity DefaultSeverity { get; }
     RuleScope Scope { get; }
+
+    /// <summary>Kuralın verisinin kaynağı; kaynağın güncel verisi yoksa kural çalıştırılmaz.</summary>
+    RuleDataSource DataSource { get; }
     IReadOnlyList<RuleThreshold> Thresholds { get; }
 
     /// <summary>Önerilerde kullanılacak kaynak (ör. "perf-doc:p30"); metinler Faz 4'te bağlanır.</summary>

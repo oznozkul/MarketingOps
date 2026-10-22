@@ -1,0 +1,170 @@
+@model MarketingOps.Web.ViewModels.Performance.PerformanceViewModel
+@using MarketingOps.Domain.Metrics
+@using MarketingOps.Domain.Rules.Definitions
+@{
+    var v = Model.Vitals;
+    (VitalsMetric Metric, Func<MarketingOps.Application.Metrics.Queries.GetWebVitals.PageTypeVitalsResponse, double?> Now, Func<MarketingOps.Application.Metrics.Queries.GetWebVitals.VitalsTrendPoint, double?> Trend)[] metrics =
+    [
+        (VitalsRating.Lcp, p => p.LcpMs, t => t.LcpMs),
+        (VitalsRating.Inp, p => p.InpMs, t => t.InpMs),
+        (VitalsRating.Cls, p => p.Cls, t => t.Cls),
+        (VitalsRating.Ttfb, p => p.TtfbMs, t => t.TtfbMs)
+    ];
+    var ttfbCode = new TtfbRule().Code;
+    var crawlerRules = Model.Rules.Where(r => r.Code != ttfbCode && !r.Code.StartsWith("perf.cwv.")).OrderByDescending(r => r.ActiveFindingCount).ToList();
+    var ttfbRule = Model.Rules.FirstOrDefault(r => r.Code == ttfbCode);
+    var slowTypes = v.PageTypes.Where(p => p.TtfbMs > VitalsRating.Ttfb.Good).OrderByDescending(p => p.TtfbMs).ToList();
+}
+<div class="flex flex-col gap-8">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <h1 class="page-title">Performans</h1>
+            <p class="mt-1 max-w-prose text-sm text-fg-muted">Gerçek kullanıcı metrikleri PageSpeed Insights / CrUX'tan, teknik sorunlar tarayıcının HTML ve header incelemesinden gelir.</p>
+        </div>
+        <form hx-post="@Url.SiteAction("Measure", "Performance")" hx-disabled-elt="find button">
+            <button type="submit" class="btn btn-secondary"><icon name="gauge" />Web Vitals'ı şimdi ölç</button>
+        </form>
+    </div>
+
+    @* 1. Core Web Vitals *@
+    <section class="space-y-3" aria-labelledby="cwv-title">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+                <h2 id="cwv-title" class="section-title">Core Web Vitals</h2>
+                <p class="text-xs text-fg-muted">
+                    Sayfa tipinin örnek sayfalarının ortancası (75. yüzdelik).
+                    @if (v.MeasuredOn is { } on) { <span>Son ölçüm @Format.ShortDate(on).</span> }
+                </p>
+            </div>
+            <div role="tablist" aria-label="Cihaz" class="inline-flex rounded-sm border border-line-strong p-0.5">
+                @foreach (var d in Enum.GetValues<DeviceStrategy>())
+                {
+                    var active = d == Model.Device;
+                    <a role="tab" aria-selected="@(active ? "true" : "false")" href="@Url.SiteAction("Index", "Performance", new { device = d })"
+                       class="inline-flex min-h-[36px] items-center rounded-sm px-3 text-sm @(active ? "bg-fg text-canvas" : "text-fg-muted hover:text-fg")">@DisplayText.Of(d)</a>
+                }
+            </div>
+        </div>
+        <div class="card overflow-hidden">
+            @if (v.PageTypes.Count == 0)
+            {
+                <empty-state icon="gauge" title="Henüz Web Vitals ölçümü yok" description="Sahipliği doğrulanmış sitelerde her gün otomatik ölçülür. Şimdi ölçmek için yukarıdaki düğmeyi kullanın; Google sayfa tipi başına birkaç örnek sayfayı açar." />
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-base min-w-[900px]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Sayfa tipi</th>
+                                @foreach (var m in metrics)
+                                {
+                                    <th scope="col" title="@VitalsRating.Tooltip(m.Metric)"><span class="underline decoration-dotted underline-offset-4">@m.Metric.Name</span></th>
+                                }
+                                <th scope="col">Kaynak</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in v.PageTypes)
+                            {
+                                <tr class="align-top">
+                                    <th scope="row" class="font-medium text-fg">
+                                        @p.Name
+                                        <span class="block text-xs font-normal text-fg-muted">@p.SampleCount örnek sayfa</span>
+                                    </th>
+                                    @foreach (var m in metrics)
+                                    {
+                                        var value = m.Now(p);
+                                        <td>
+                                            @if (value is { } val)
+                                            {
+                                                var (label, tone) = VitalsRating.Rate(m.Metric, val);
+                                                <span class="tabular block font-mono text-sm text-fg" title="@VitalsRating.Tooltip(m.Metric)">@VitalsRating.Format(m.Metric, val)</span>
+                                                <span class="badge @ToneClasses.Badge(tone) mt-1">@label</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-xs text-fg-subtle" title="Bu metrik için yeterli gerçek kullanıcı verisi yok">Veri yok</span>
+                                            }
+                                            <div class="mt-1.5">
+                                                @{ ViewData["Label"] = $"{m.Metric.Name} son 28 gün"; }
+                                                <partial name="_Sparkline" model="@((IReadOnlyList<double?>)p.Trend.Select(m.Trend).ToList())" view-data="ViewData" />
+                                            </div>
+                                        </td>
+                                    }
+                                    <td class="text-xs text-fg-muted">@DisplayText.Of(p.Source)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">Eşikler Google'ın Core Web Vitals değerleridir; başlığın üzerine gelince görünür. Laboratuvar ölçümünde INP yoktur.</p>
+            }
+        </div>
+    </section>
+
+    @* 2. Crawler'ın bulduğu performans sorunları *@
+    <section class="space-y-3" aria-labelledby="rules-title">
+        <h2 id="rules-title" class="section-title">Performans kuralları</h2>
+        <div class="card overflow-hidden">
+            <ul class="divide-y divide-line">
+                @foreach (var r in crawlerRules)
+                {
+                    <li>
+                        <a class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-surface-2" href="@Url.SiteAction("Index", "Findings", new { rule = r.Code })">
+                            <span class="min-w-0">
+                                <span class="flex flex-wrap items-center gap-2 text-sm text-fg">
+                                    @r.Name
+                                    <span class="badge @ToneClasses.Badge(Tone.Neutral)">Kesin bulgu</span>
+                                    @if (!r.IsEnabled) { <span class="badge @ToneClasses.Badge(Tone.Warn)">Kapalı</span> }
+                                </span>
+                                <span class="block text-xs text-fg-muted">@r.Description</span>
+                            </span>
+                            <span class="tabular shrink-0 text-sm @(r.ActiveFindingCount > 0 ? "text-fg" : "text-fg-subtle")">@Format.Number(r.ActiveFindingCount) açık bulgu</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </section>
+
+    @* 3. TTFB: sunucu tarafı sebep dışarıdan görülemez; öneriler hipotezdir. *@
+    <section class="card" aria-labelledby="ttfb-title">
+        <div class="card-header flex-wrap gap-2">
+            <h2 id="ttfb-title" class="card-title">TTFB yüksek sayfa tipleri</h2>
+            @if (ttfbRule is not null && ttfbRule.ActiveFindingCount > 0)
+            {
+                <a class="link text-xs" href="@Url.SiteAction("Index", "Findings", new { rule = ttfbRule.Code })">@ttfbRule.ActiveFindingCount açık bulgu</a>
+            }
+        </div>
+        <div class="card-body grid gap-6 lg:grid-cols-2">
+            <div>
+                <p class="mb-2 flex items-center gap-2 text-xs text-fg-muted"><span class="badge @ToneClasses.Badge(Tone.Neutral)">Kesin bulgu</span>Ölçülen ilk bayt süresi</p>
+                @if (slowTypes.Count == 0)
+                {
+                    <p class="text-sm text-fg-muted">@(v.PageTypes.Count == 0 ? "Ölçüm yok." : "Ölçülen sayfa tiplerinde TTFB eşiğin altında.")</p>
+                }
+                else
+                {
+                    <ul class="space-y-1.5 text-sm">
+                        @foreach (var p in slowTypes)
+                        {
+                            <li class="flex justify-between gap-3"><span class="text-fg">@p.Name</span><span class="tabular font-mono text-fg">@VitalsRating.Format(VitalsRating.Ttfb, p.TtfbMs!.Value)</span></li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div>
+                <p class="mb-2 flex items-center gap-2 text-xs text-fg-muted"><span class="badge @ToneClasses.Badge(Tone.Warn)">Kontrol önerisi</span>Sebep dışarıdan görülemez; kontrol edilecek hipotezler</p>
+                <ul class="list-disc space-y-1 pl-5 text-sm text-fg">
+                    <li>Sayfayı üreten sorgularda yalnızca gereken kolonların seçilmesi (projeksiyon)</li>
+                    <li>Salt okunur sorgularda değişiklik takibinin kapatılması (AsNoTracking)</li>
+                    <li>Filtre ve sıralama kolonlarında indeks</li>
+                    <li>Çoklu Include'larda split query</li>
+                    <li>Yanıt sıkıştırması ve sayfa önbelleği</li>
+                </ul>
+                <p class="mt-2 text-xs text-fg-muted">Kaynak: Web Sitesi Performans Optimizasyonu dokümanı.</p>
+            </div>
+        </div>
+    </section>
+</div>

@@ -2,12 +2,13 @@ using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Application.Rules;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Rules;
+using MarketingOps.Domain.Rules.Definitions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace MarketingOps.Application.Findings.Commands.EvaluateCrawl;
 
-public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator evaluator, TimeProvider clock) : IRequestHandler<EvaluateCrawlCommand>
+public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator evaluator, ExternalDataLoader externalData, TimeProvider clock) : IRequestHandler<EvaluateCrawlCommand>
 {
     public async Task Handle(EvaluateCrawlCommand request, CancellationToken cancellationToken)
     {
@@ -21,12 +22,16 @@ public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator 
         var site = await db.Sites.AsNoTracking().Include(s => s.PageTypes).FirstAsync(s => s.Id == crawl.SiteId, cancellationToken);
         var settings = await db.LoadAsync(site.Id, cancellationToken);
 
-        var enabled = RuleCatalog.All.Where(settings.IsEnabled).ToList();
-        var violations = await evaluator.EvaluateAsync(crawl.Id, crawl.AssetChecks, site,
+        // Verisi olmayan kaynağın kuralları çalışmaz; böylece bulguları "görülmedi" diye çözülmez.
+        var external = await externalData.LoadAsync(site.Id, cancellationToken);
+        var enabled = RuleCatalog.All.Where(r => settings.IsEnabled(r) && external.Available.Contains(r.DataSource)).ToList();
+        var violations = await evaluator.EvaluateAsync(crawl.Id, crawl.AssetChecks, site, external,
             enabled.Select(r => (r, settings.ThresholdsOf(r))).ToList(), cancellationToken);
 
         var observation = new CrawlObservation(crawl.Id, crawl.Number, crawl.IsPartial, crawl.FinishedAt!.Value);
         var findings = await db.Findings.Where(f => f.SiteId == site.Id).ToListAsync(cancellationToken);
+        var tasks = await db.WorkTasks.Where(t => t.SiteId == site.Id).ToListAsync(cancellationToken);
+        var taskByFinding = tasks.ToDictionary(t => t.FindingId);
         var byFingerprint = findings.ToDictionary(f => f.Fingerprint);
         var seen = new HashSet<string>();
         int opened = 0, reopened = 0, resolved = 0;
@@ -45,6 +50,11 @@ public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator 
             {
                 var wasResolved = finding.Status == FindingStatus.Resolved;
                 finding.Observe(rule.Title(count), severity, count, occurrences, observation);
+                if (rule is TtfbRule && taskByFinding.TryGetValue(finding.Id, out var task))
+                {
+                    var steps = TtfbRule.StepsFromDetail(occurrences.FirstOrDefault()?.Detail);
+                    if (steps is not null) task.ReplaceTemplateContent(steps, clock.GetUtcNow());
+                }
                 if (wasResolved && finding.Status == FindingStatus.Reopened) reopened++;
             }
             else

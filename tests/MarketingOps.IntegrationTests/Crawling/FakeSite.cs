@@ -43,9 +43,23 @@ public sealed class FakeSite : ICrawlerHttpClient
         for (var i = 1; i <= 12; i++) Html($"/urun/p{i}", shared ?? $"Ürün {i}", schema: "Product");
     }
 
+    /// <summary>Testin araya girmesi: null dışı bir yanıt dönerse sitenin normal yanıtı yerine o kullanılır.</summary>
+    public Func<string, CrawlerResponse?>? Intercept { get; set; }
+
+    /// <summary>Her istekten sonra çağrılır (istek sayısıyla); ör. belirli bir noktada işçiyi "kapatmak" için.</summary>
+    public Action<int>? AfterRequest { get; set; }
+
     public Task<CrawlerResponse> GetAsync(Uri url, CancellationToken cancellationToken)
     {
-        lock (Requested) Requested.Add(url.PathAndQuery);
+        int count;
+        lock (Requested)
+        {
+            Requested.Add(url.PathAndQuery);
+            count = Requested.Count;
+        }
+        AfterRequest?.Invoke(count);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (Intercept?.Invoke(url.AbsolutePath) is { } intercepted) return Task.FromResult(intercepted);
         var key = url.AbsolutePath.Length > 1 ? url.AbsolutePath.TrimEnd('/') : url.AbsolutePath;
         return Task.FromResult(_pages.TryGetValue(key, out var response)
             ? response

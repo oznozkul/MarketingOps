@@ -28,8 +28,6 @@ public class WorkTask : Entity
     public IReadOnlyList<string> References => _references;
     public Team AssignedTeam { get; private set; }
     public WorkTaskStatus Status { get; private set; }
-    public string? ExternalTrackerKey { get; private set; }
-    public string? ExternalUrl { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
@@ -133,6 +131,18 @@ public class WorkTask : Entity
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Şablon adımlarını son taramanın kanıtına göre yeniler. Eski AI metni ölçülen adımların yerine geçmesin diye
+    /// model işareti de kalkar; öneri yeniden şablondan sayılır.
+    /// </summary>
+    public void ReplaceTemplateContent(string content, DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return;
+        if (Suggestion.Model is null && content == Suggestion.Content) return;
+        Suggestion = Suggestion with { Content = content, Model = null };
+        UpdatedAt = now;
+    }
+
     /// <summary>AI zenginleştirmesi. Sayılar ve örnek URL'ler şablondan kalır; yalnızca etki ve öneri metni değişir.</summary>
     public void ApplyAiSuggestion(string impact, TaskSuggestion suggestion, DateTimeOffset now)
     {
@@ -140,14 +150,6 @@ public class WorkTask : Entity
         if (!string.IsNullOrWhiteSpace(impact)) Impact = impact.Trim();
         Suggestion = suggestion;
         Record(now, TaskEventType.SuggestionGenerated, $"Öneri AI ile zenginleştirildi ({suggestion.Model}).");
-    }
-
-    public void LinkExternal(string key, string url, DateTimeOffset now)
-    {
-        var first = ExternalTrackerKey is null;
-        ExternalTrackerKey = key;
-        ExternalUrl = url;
-        Record(now, TaskEventType.Exported, first ? $"Görev sistemine aktarıldı: {key}." : $"Görev sistemindeki kayıt güncellendi: {key}.");
     }
 
     public void AddFeedback(bool isHelpful, string? note, string author, DateTimeOffset now)

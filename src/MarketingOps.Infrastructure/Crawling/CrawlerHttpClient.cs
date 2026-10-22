@@ -11,7 +11,10 @@ namespace MarketingOps.Infrastructure.Crawling;
 public sealed class CrawlerHttpClient(HttpClient http) : ICrawlerHttpClient
 {
     public const string UserAgent = "MarketingOpsBot/1.0 (+https://marketingops.app/bot)";
-    private const int MaxBodyBytes = 5 * 1024 * 1024;
+    private const int MaxPageBytes = 5 * 1024 * 1024;
+
+    // Sitemap protokolü dosya başına 50 MB'a izin verir.
+    private const int MaxSitemapBytes = 60 * 1024 * 1024;
 
     public async Task<CrawlerResponse> GetAsync(Uri url, CancellationToken cancellationToken)
     {
@@ -30,38 +33,52 @@ public sealed class CrawlerHttpClient(HttpClient http) : ICrawlerHttpClient
 
         string? body = null;
         int? size = null;
-        if (IsText(contentType) && (int)response.StatusCode is >= 200 and < 300)
+        var gzipFile = IsGzipFile(url, contentType);
+        if ((IsText(contentType) || gzipFile) && (int)response.StatusCode is >= 200 and < 300)
         {
-            var bytes = await ReadLimitedAsync(response, encoding, cancellationToken);
+            var xml = gzipFile || contentType?.Contains("xml", StringComparison.OrdinalIgnoreCase) == true;
+            var bytes = await ReadLimitedAsync(response, encoding, gzipFile, xml ? MaxSitemapBytes : MaxPageBytes, cancellationToken);
             size = bytes.Length;
             body = Decode(bytes, response.Content.Headers.ContentType?.CharSet);
         }
 
+        var retryAfter = response.Headers.RetryAfter is { } ra
+            ? ra.Delta ?? (ra.Date is { } at ? at - DateTimeOffset.UtcNow : null)
+            : null;
         return new CrawlerResponse((int)response.StatusCode, location, contentType, encoding,
-            response.Headers.CacheControl?.ToString(), body, size, ttfb);
+            response.Headers.CacheControl?.ToString(), body, size, ttfb, retryAfter);
     }
 
     private static bool IsText(string? contentType) =>
         contentType is null || contentType.Contains("html", StringComparison.OrdinalIgnoreCase)
-        || contentType.Contains("xml", StringComparison.OrdinalIgnoreCase) || contentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase);
+        || contentType.Contains("xml", StringComparison.OrdinalIgnoreCase)
+        || contentType.Contains("javascript", StringComparison.OrdinalIgnoreCase)
+        || contentType.Contains("json", StringComparison.OrdinalIgnoreCase)
+        || contentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase);
 
-    private static async Task<byte[]> ReadLimitedAsync(HttpResponseMessage response, string? encoding, CancellationToken ct)
+    /// <summary>Sıkıştırılmış sitemap (sitemap.xml.gz): dosyanın kendisi gzip'tir, Content-Encoding'den bağımsız.</summary>
+    private static bool IsGzipFile(Uri url, string? contentType) =>
+        url.AbsolutePath.EndsWith(".gz", StringComparison.OrdinalIgnoreCase)
+        || contentType?.Contains("gzip", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static async Task<byte[]> ReadLimitedAsync(HttpResponseMessage response, string? encoding, bool gzipFile, int maxBytes, CancellationToken ct)
     {
         await using var raw = await response.Content.ReadAsStreamAsync(ct);
-        await using Stream stream = encoding?.ToLowerInvariant() switch
+        await using Stream transport = encoding?.ToLowerInvariant() switch
         {
             "gzip" => new GZipStream(raw, CompressionMode.Decompress),
             "br" => new BrotliStream(raw, CompressionMode.Decompress),
             "deflate" => new ZLibStream(raw, CompressionMode.Decompress),
             _ => raw
         };
+        await using Stream stream = gzipFile ? new GZipStream(transport, CompressionMode.Decompress) : transport;
         using var buffer = new MemoryStream();
         var chunk = new byte[81920];
         int read;
         while ((read = await stream.ReadAsync(chunk, ct)) > 0)
         {
             buffer.Write(chunk, 0, read);
-            if (buffer.Length >= MaxBodyBytes) break;
+            if (buffer.Length >= maxBytes) break;
         }
         return buffer.ToArray();
     }

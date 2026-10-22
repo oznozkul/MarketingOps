@@ -6,13 +6,13 @@ AI görev önerileri bu klasördeki iç dokümanlara dayanır. Her kuralın bir 
 Biçim: Markdown dosyası. Bir parçanın başına anahtarı HTML yorumu olarak yazın; parça bir sonraki işarete kadar sürer.
 
 ```markdown
-<!-- ref: perf-doc:p30 -->
+<!-- ref: perf-doc:p26 -->
 Görsellere width ve height öznitelikleri verilmelidir ...
 
-<!-- ref: perf-doc:p32 -->
+<!-- ref: perf-doc:p18 -->
 İlk görünümün altındaki görseller loading="lazy" ile yüklenmelidir ...
 ```
 
-Kurallardaki anahtarlar: `perf-doc:p18`, `p22`, `p24`, `p26`, `p30`, `p32`, `p34` (Web Sitesi Performans Optimizasyonu dokümanının
-sayfaları) ve `google:*` (Google Search Central). İşaretsiz dosyalar ve README.md dosyaları yok sayılır.
+Kurallardaki anahtarlar: `perf-doc:p18`, `p22`, `p24`, `p26`, `p30`, `p32`, `p34`, `p36` (Web Sitesi Performans Optimizasyonu
+dokümanının sayfaları) ve `google:*` (Google Search Central). İşaretsiz dosyalar ve README.md dosyaları yok sayılır.
 Dosyalar uygulama açılışında okunur; değişiklikten sonra web ve worker'ı yeniden başlatın.

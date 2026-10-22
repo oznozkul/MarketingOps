@@ -16,8 +16,6 @@ public sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         builder.Property(t => t.Title).HasMaxLength(500);
         builder.Property(t => t.AssignedTeam).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Status).HasConversion<string>().HasMaxLength(30);
-        builder.Property(t => t.ExternalTrackerKey).HasMaxLength(50);
-        builder.Property(t => t.ExternalUrl).HasMaxLength(500);
 
         // Bulgu başına tek görev; anahtar numarası site içinde benzersiz.
         builder.HasIndex(t => t.FindingId).IsUnique();

@@ -7,7 +7,8 @@ public sealed class RuleContext(
     Site site,
     IReadOnlyDictionary<string, decimal> thresholds,
     IReadOnlySet<string> failedUrls,
-    IReadOnlyList<AssetCheck> assets)
+    IReadOnlyList<AssetCheck> assets,
+    ExternalData? external = null)
 {
     public Site Site { get; } = site;
 
@@ -15,6 +16,9 @@ public sealed class RuleContext(
     public IReadOnlySet<string> FailedUrls { get; } = failedUrls;
 
     public IReadOnlyList<AssetCheck> Assets { get; } = assets;
+
+    /// <summary>Search Console, URL Inspection ve PageSpeed verisi; bağlantı yoksa boştur.</summary>
+    public ExternalData External { get; } = external ?? ExternalData.CrawlOnly;
 
     public decimal Threshold(RuleThreshold threshold) =>
         thresholds.TryGetValue(threshold.Key, out var value) ? value : threshold.Default;

@@ -1,0 +1,49 @@
+# Arama görünürlüğü notları
+
+Kısa özgün özetler. Resmi kaynak bağlantıları ekranda ayrıca gösterilir; bu metinler o sayfaların kopyası değildir.
+
+<!-- ref: google:title-links -->
+
+Title, arama sonucundaki başlık bağlantısının ana kaynağıdır. İndekslenebilir her sayfada, o sayfayı anlatan bir title bulunur. Title yoksa arama motoru içerikten kendi başlığını üretir.
+
+Aynı title'ı paylaşan sayfalar sonuçlarda birbirinden ayırt edilemez ve aynı sorgu için yarışır. Title sayfaya özgüdür: ürün adı, kategori adı ya da ebat gibi sayfayı tanımlayan bilgi başlığa girer. Çok uzun title sonuçta kesilir; çok kısa title sayfayı tanımlamaz. Aralık site eşiğindedir.
+
+<!-- ref: google:snippets -->
+
+Meta description sıralamayı doğrudan belirlemez. Arama sonucundaki açıklamayı ve dolayısıyla tıklamayı etkiler. İndekslenebilir sayfada, o sayfanın vaadini anlatan bir açıklama bulunur. Açıklama yoksa arama motoru sayfadaki cümlelerden birini seçebilir.
+
+Aynı açıklamayı paylaşan sayfalar sonuçlarda birbirine benzer. Her sayfanın açıklaması kendi içeriğine aittir; şablon cümlesi bütün kataloğa kopyalanmaz.
+
+<!-- ref: google:headings -->
+
+Sayfada tek bir H1 bulunur ve sayfanın ana konusunu söyler. H1 yoksa konu belirsiz kalır. Birden fazla H1, sayfanın hangi başlıkla anılacağını dağıtır. Alt başlıklar H2 ve sonrası ile sıralanır. H1, title ile aynı cümle olmak zorunda değildir; ikisi de aynı konuyu anlatır.
+
+<!-- ref: google:canonical -->
+
+Canonical, aynı içeriğin asıl adresini bildirir. İndekslenebilir sayfada canonical bulunur ve sitenin kendi alanında bir adrese işaret eder. Parametreli kopyalar (sıralama, filtre, oturum) asıl adresi göstermelidir.
+
+Başka bir domaine işaret eden canonical, sayfanın bu sitede indekslenmemesine yol açabilir. Canonical, yönlendirme hedefiyle ve sitemap'teki adresle çelişmemelidir.
+
+<!-- ref: google:redirects -->
+
+Kalıcı taşınan bir adres, hedefe tek yönlendirmeyle gider. Zincir (A → B → C) her adımda gecikme ekler ve hedefin bulunmasını zorlaştırır. Eski adres, güncel adrese doğrudan bağlanır. Yönlendirme döngüsü olmaz.
+
+<!-- ref: google:sitemaps -->
+
+Sitemap, indekslenmesi istenen adresleri bildirir. `noindex` dönen ya da robots ile kapatılan bir sayfa sitemap'te durmaz. Listede duran adres 200 döner, canonical'ı kendisidir ve yönlendirme zincirinin ortasında değildir. Sitemap ile sayfanın verdiği sinyal çelişirse tarama boşa harcanır ve hatalı bir noindex fark edilmeyebilir.
+
+<!-- ref: google:images -->
+
+İçerik görselinin `alt` özniteliği, görselin ne olduğunu yazar. Bu metin görsel aramada ve ekran okuyucuda kullanılır. Süs amaçlı görselde öznitelik boş bırakılabilir (`alt=""`); özniteliğin hiç olmaması, görselin içeriğinin bilinmediği anlamına gelir. Dosya adı ve çevresindeki metin alt metnin yerine geçmez.
+
+<!-- ref: google:structured-data -->
+
+Yapılandırılmış veri, sayfadaki öğenin türünü (örneğin ürün) arama motoruna açıkça söyler. Sayfa tipinin beklediği tür sayfada yoksa fiyat, stok ya da puan gibi zengin sonuçlar üretilemez. İşaretleme, sayfada görünen bilgiyle aynı olmalıdır. Beklenen tür, sayfa tipinin eşleşme koşullarında tanımlıdır.
+
+<!-- ref: google:helpful-content -->
+
+Sayfanın ana metni, o sayfanın konusunu anlatır. Ürün, kategori ya da ebat sayfasında yalnızca şablon cümlesi ve filtre listesi varsa sayfa benzerlerinden ayrışamaz. Kelime eşiği site ayarındadır. Metin, sayfadaki ürüne ya da kategoriye özgüdür; aynı paragraf kataloğun tamamına yapıştırılmaz.
+
+<!-- ref: google:links -->
+
+İç bağlantı, taranabilir bir adres olmalıdır: gerçek bir `href`, javascript: veya boş hedef değil. Hedef 4xx ya da 5xx dönüyorsa ya da yanıt vermiyorsa bağlantı kırık sayılır. Kırık bağlantı ziyaretçiyi hata sayfasına götürür ve tarama bütçesini harcar. Kaldırılan bir sayfanın bağlantısı güncel adrese çevrilir ya da şablondan çıkarılır.

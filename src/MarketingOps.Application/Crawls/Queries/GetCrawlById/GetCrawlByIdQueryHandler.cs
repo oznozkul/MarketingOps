@@ -20,7 +20,8 @@ public sealed class GetCrawlByIdQueryHandler(IAppDbContext db) : IRequestHandler
                 c.ErrorMessage,
                 c.Stages,
                 c.SkippedCount,
-                c.SkippedUrls
+                c.SkippedUrls,
+                c.SnapshotsPrunedAt
             })
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Tarama bulunamadı.");
@@ -44,6 +45,7 @@ public sealed class GetCrawlByIdQueryHandler(IAppDbContext db) : IRequestHandler
             await failed.OrderBy(p => p.FetchedAt).Take(ListLimit)
                 .Select(p => new FailedPageResponse(p.Url, p.StatusCode, p.FetchError)).ToListAsync(cancellationToken),
             crawl.SkippedCount,
-            crawl.SkippedUrls.Take(ListLimit).Select(s => new SkippedUrlResponse(s.Url, s.Reason)).ToList());
+            crawl.SkippedUrls.Take(ListLimit).Select(s => new SkippedUrlResponse(s.Url, s.Reason)).ToList(),
+            crawl.SnapshotsPrunedAt);
     }
 }

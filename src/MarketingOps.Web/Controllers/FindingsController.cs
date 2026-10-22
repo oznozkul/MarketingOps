@@ -8,9 +8,9 @@ using MarketingOps.Application.Findings.Queries.ExportFindings;
 using MarketingOps.Application.Findings.Queries.GetFindingById;
 using MarketingOps.Application.Findings.Queries.GetFindings;
 using MarketingOps.Application.Findings.Queries.GetFindingSummary;
+using MarketingOps.Application.Metrics.Queries.GetSearchPerformance;
 using MarketingOps.Application.Sites.Queries.GetSiteById;
 using MarketingOps.Application.Tasks.Commands.CreateTasks;
-using MarketingOps.Application.Tasks.Commands.ExportTasks;
 using MarketingOps.Application.Tasks.Queries.GetTaskById;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Rules;
@@ -87,21 +87,6 @@ public class FindingsController(ISender sender) : SiteControllerBase
         return Refresh($"{created} görev oluşturuldu." + (skipped > 0 ? $" {skipped} bulgunun görevi zaten vardı." : ""));
     }
 
-    /// <summary>Seçili bulguların görevlerini Jira'ya aktarır; görevi olmayanlara önce görev oluşturulur.</summary>
-    [HttpPost("bulk-export")]
-    public async Task<IActionResult> BulkExport(Guid siteId, List<Guid> ids)
-    {
-        var (created, _) = await TrySendAsync(sender, new CreateTasksCommand(siteId, ids));
-        var (ok, result) = created ? await TrySendAsync(sender, new ExportTasksCommand(siteId, [], ids)) : (false, null);
-        if (!ok) return ErrorToast();
-        if (result!.Exported == 0 && result.Errors.Count > 0)
-        {
-            Response.Toast(result.Errors[0], "error");
-            return NoContent();
-        }
-        return Refresh($"{result.Exported} görev Jira'ya aktarıldı." + (result.Errors.Count > 0 ? $" {result.Errors.Count} görev aktarılamadı: {result.Errors[0]}" : ""));
-    }
-
     [HttpGet("{id:guid}")]
     [SiteSwitchFallback(nameof(Index))]
     public async Task<IActionResult> Detail(Guid siteId, Guid id, string? q, int page = 1, int pageSize = 25, CancellationToken ct = default)
@@ -112,7 +97,7 @@ public class FindingsController(ISender sender) : SiteControllerBase
         if (Request.IsHtmxPartial()) return PartialView("_OccurrencesTable", new FindingDetailViewModel(detail, search, null));
 
         var task = detail.Item.TaskId is { } taskId ? await sender.Send(new GetTaskByIdQuery(siteId, taskId), ct) : null;
-        var model = new FindingDetailViewModel(detail, search, task);
+        var model = new FindingDetailViewModel(detail, search, task, await sender.Send(new GetSearchPerformanceQuery(siteId, id), ct));
 
         ViewData["Title"] = detail.Item.Title;
         return View(model);

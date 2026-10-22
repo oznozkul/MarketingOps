@@ -15,6 +15,4 @@ public sealed record TaskListItemResponse(
     WorkTaskStatus Status,
     int CriteriaMet,
     int CriteriaTotal,
-    string? ExternalTrackerKey,
-    string? ExternalUrl,
     DateTimeOffset UpdatedAt);

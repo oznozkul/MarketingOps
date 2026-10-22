@@ -13,5 +13,7 @@ public sealed class MarketingOpsWebFactory(string connectionString) : WebApplica
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("ConnectionStrings:Default", connectionString);
+        // Testler makinedeki AI ayarından bağımsızdır; AI gereken testler sahte sağlayıcı ekler.
+        builder.UseSetting("Ai:Provider", "None");
     }
 }

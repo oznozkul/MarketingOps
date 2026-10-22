@@ -74,7 +74,10 @@
                             {
                                 <tr class="align-top">
                                     <td class="max-w-xs"><a class="break-all font-mono text-xs text-fg hover:underline" href="@e.Url" target="_blank" rel="noopener noreferrer">@e.Url</a></td>
-                                    <td class="max-w-xs text-xs text-fg-muted"><span class="line-clamp-3 break-words" title="@e.Current">@(e.Current ?? "—")</span></td>
+                                    <td class="max-w-xs text-xs text-fg-muted">
+                                        <span class="block">@(e.Current ?? "—")</span>
+                                        @if (e.Detail is not null) { <span class="mt-0.5 line-clamp-3 break-words text-fg" title="@e.Detail">@e.Detail</span> }
+                                    </td>
                                     @if (hasSuggested) { <td class="max-w-xs text-xs text-fg">@(e.Suggested ?? "—")</td> }
                                 </tr>
                             }

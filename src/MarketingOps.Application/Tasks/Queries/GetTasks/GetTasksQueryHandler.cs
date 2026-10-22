@@ -36,13 +36,13 @@ public sealed class GetTasksQueryHandler(IAppDbContext db) : IRequestHandler<Get
             {
                 x.Task.Id, x.Task.Key, x.Task.Title, x.Task.FindingId, x.Finding.Severity, FindingStatus = x.Finding.Status,
                 PageTypeName = pageTypes.Where(p => p.Id == x.Finding.PageTypeId).Select(p => p.Name).FirstOrDefault(),
-                x.Task.AssignedTeam, x.Task.Status, x.Task.Criteria, x.Task.ExternalTrackerKey, x.Task.ExternalUrl, x.Task.UpdatedAt
+                x.Task.AssignedTeam, x.Task.Status, x.Task.Criteria, x.Task.UpdatedAt
             })
             .ToListAsync(cancellationToken);
 
         // Kriterler JSON kolonunda; sayım bellekte yapılır (sayfa başına en fazla 100 satır).
         var items = rows.Select(r => new TaskListItemResponse(r.Id, r.Key, r.Title, r.FindingId, r.Severity, r.FindingStatus, r.PageTypeName,
-            r.AssignedTeam, r.Status, r.Criteria.Count(c => c.IsMet), r.Criteria.Count, r.ExternalTrackerKey, r.ExternalUrl, r.UpdatedAt)).ToList();
+            r.AssignedTeam, r.Status, r.Criteria.Count(c => c.IsMet), r.Criteria.Count, r.UpdatedAt)).ToList();
         return new PagedResponse<TaskListItemResponse>(items, request.Page, request.PageSize, total);
     }
 }

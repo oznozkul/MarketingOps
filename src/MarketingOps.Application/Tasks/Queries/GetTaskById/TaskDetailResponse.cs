@@ -3,7 +3,7 @@ using MarketingOps.Domain.WorkTasks;
 namespace MarketingOps.Application.Tasks.Queries.GetTaskById;
 
 /// <summary>
-/// <see cref="AiModel"/>: ayarlı AI modelinin adı (null ise AI kapalı). <see cref="HasTaskTracker"/>: site için Jira bağlı mı.
+/// <see cref="AiModel"/>: ayarlı AI modelinin adı (null ise AI kapalı).
 /// Geri bildirim sayıları güncel öneri sürümüne (aynı model) aittir.
 /// </summary>
 public sealed record TaskDetailResponse(
@@ -17,8 +17,6 @@ public sealed record TaskDetailResponse(
     IReadOnlyList<string> References,
     Team Team,
     WorkTaskStatus Status,
-    string? ExternalTrackerKey,
-    string? ExternalUrl,
     DateTimeOffset CreatedAt,
     DateTimeOffset? ClosedAt,
     IReadOnlyList<AcceptanceCriterion> Criteria,
@@ -26,5 +24,4 @@ public sealed record TaskDetailResponse(
     IReadOnlyList<TaskComment> Comments,
     int HelpfulCount,
     int NotHelpfulCount,
-    string? AiModel,
-    bool HasTaskTracker);
+    string? AiModel);

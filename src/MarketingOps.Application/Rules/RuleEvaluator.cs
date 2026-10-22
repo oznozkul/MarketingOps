@@ -13,13 +13,13 @@ namespace MarketingOps.Application.Rules;
 public sealed class RuleEvaluator(IAppDbContext db)
 {
     public async Task<IReadOnlyList<RuleViolation>> EvaluateAsync(
-        Guid crawlId, IReadOnlyList<AssetCheck> assets, Site site,
+        Guid crawlId, IReadOnlyList<AssetCheck> assets, Site site, ExternalData external,
         IReadOnlyList<(IRule Rule, IReadOnlyDictionary<string, decimal> Thresholds)> rules, CancellationToken ct) =>
-        (await EvaluateEachAsync(crawlId, assets, site, rules, ct)).SelectMany(v => v).ToList();
+        (await EvaluateEachAsync(crawlId, assets, site, external, rules, ct)).SelectMany(v => v).ToList();
 
     /// <summary>Her kural girdisinin ihlalleri ayrı listede; aynı kural farklı eşiklerle tek geçişte karşılaştırılabilir.</summary>
     public async Task<IReadOnlyList<IReadOnlyList<RuleViolation>>> EvaluateEachAsync(
-        Guid crawlId, IReadOnlyList<AssetCheck> assets, Site site,
+        Guid crawlId, IReadOnlyList<AssetCheck> assets, Site site, ExternalData external,
         IReadOnlyList<(IRule Rule, IReadOnlyDictionary<string, decimal> Thresholds)> rules, CancellationToken ct)
     {
         var failedUrls = (await db.PageSnapshots.AsNoTracking()
@@ -33,7 +33,7 @@ public sealed class RuleEvaluator(IAppDbContext db)
         var outputs = new List<List<RuleViolation>>();
         foreach (var (rule, thresholds) in rules)
         {
-            var context = new RuleContext(site, thresholds, failedUrls, assets);
+            var context = new RuleContext(site, thresholds, failedUrls, assets, external);
             var output = new List<RuleViolation>();
             outputs.Add(output);
             if (rule is IPageRule pageRule) pageRules.Add((pageRule, context, output));

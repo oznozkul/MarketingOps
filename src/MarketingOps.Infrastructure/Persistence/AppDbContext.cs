@@ -4,6 +4,7 @@ using MarketingOps.Domain.Common;
 using MarketingOps.Domain.Connectors;
 using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
+using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Organizations;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
@@ -22,7 +23,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
     public DbSet<Finding> Findings => Set<Finding>();
     public DbSet<SiteRuleSetting> SiteRuleSettings => Set<SiteRuleSetting>();
     public DbSet<WorkTask> WorkTasks => Set<WorkTask>();
-    public DbSet<TaskTrackerConnection> TaskTrackerConnections => Set<TaskTrackerConnection>();
+    public DbSet<ConnectorAccount> ConnectorAccounts => Set<ConnectorAccount>();
+    public DbSet<SearchPerformanceDaily> SearchPerformance => Set<SearchPerformanceDaily>();
+    public DbSet<Ga4EventDaily> Ga4Events => Set<Ga4EventDaily>();
+    public DbSet<WebVitalsDaily> WebVitals => Set<WebVitalsDaily>();
+    public DbSet<UrlIndexStatus> UrlIndexStatuses => Set<UrlIndexStatus>();
+    public DbSet<SitemapStatus> Sitemaps => Set<SitemapStatus>();
 
     /// <summary>
     /// Domain olayları kayıt başarılı olduktan sonra yayınlanır; dinleyiciler kalıcı olmuş veriyi görür.

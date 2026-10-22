@@ -1,0 +1,21 @@
+@model IReadOnlyList<double?>
+@* 28 günlük küçük trend çizgisi. Boş günler atlanır; tek nokta varsa çizilmez. Ekran okuyucu için ilk/son değer metni ViewData["Label"]'dan gelir. *@
+@{
+    var points = Model.Select((v, i) => (Index: i, Value: v)).Where(p => p.Value is not null).Select(p => (p.Index, Value: p.Value!.Value)).ToList();
+    const double width = 96, height = 24;
+}
+@if (points.Count >= 2)
+{
+    var min = points.Min(p => p.Value);
+    var max = points.Max(p => p.Value);
+    var span = max - min == 0 ? 1 : max - min;
+    var step = Model.Count > 1 ? width / (Model.Count - 1) : width;
+    var coords = string.Join(" ", points.Select(p => $"{(p.Index * step).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)},{(height - 2 - (p.Value - min) / span * (height - 4)).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}"));
+    <svg viewBox="0 0 @width @height" width="@width" height="@height" class="text-fg-muted" role="img" aria-label="@ViewData["Label"]">
+        <polyline points="@coords" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+    </svg>
+}
+else
+{
+    <span class="text-xs text-fg-subtle">Trend yok</span>
+}

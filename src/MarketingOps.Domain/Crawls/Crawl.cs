@@ -39,6 +39,9 @@ public class Crawl : Entity
 
     /// <summary>Kurallar bu tarama üzerinde çalıştırıldı mı; bir tarama yalnızca bir kez değerlendirilir.</summary>
     public DateTimeOffset? EvaluatedAt { get; private set; }
+
+    /// <summary>Saklama süresi dolduğu için bu taramanın sayfa verisi (snapshot'lar) silindi; özet ve bulgu değişimleri kalır.</summary>
+    public DateTimeOffset? SnapshotsPrunedAt { get; private set; }
     public int NewFindings { get; private set; }
     public int ResolvedFindings { get; private set; }
     public int ReopenedFindings { get; private set; }
@@ -118,6 +121,12 @@ public class Crawl : Entity
         var attempted = PagesCrawled + PagesFailed;
         Status = attempted > 0 && PagesFailed > attempted * PartialFailureRatio ? CrawlStatus.PartiallyCompleted : CrawlStatus.Completed;
         FinishedAt = now;
+    }
+
+    public void MarkSnapshotsPruned(DateTimeOffset now)
+    {
+        if (IsActive) throw new DomainException("Devam eden taramanın sayfa verisi silinemez.");
+        SnapshotsPrunedAt ??= now;
     }
 
     public void Fail(string errorMessage, DateTimeOffset now)

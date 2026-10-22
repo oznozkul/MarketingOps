@@ -64,10 +64,6 @@
             <template x-for="id in selected" :key="id"><input type="hidden" name="ids" :value="id" /></template>
             <button type="submit" class="btn btn-secondary btn-sm"><icon name="clipboard-list" />Görev oluştur</button>
         </form>
-        <form hx-post="@Url.SiteAction("BulkExport", "Findings")" hx-disabled-elt="find button" class="contents">
-            <template x-for="id in selected" :key="id"><input type="hidden" name="ids" :value="id" /></template>
-            <button type="submit" class="btn btn-secondary btn-sm"><icon name="external-link" />Jira'ya aktar</button>
-        </form>
         <button type="button" class="btn btn-secondary btn-sm" x-on:click="$dispatch('open-modal', 'bulk-snooze')"><icon name="clock" />Ertele</button>
         <button type="button" class="btn btn-secondary btn-sm" x-on:click="$dispatch('open-modal', 'bulk-false-positive')"><icon name="bell-off" />Yanlış alarm olarak işaretle</button>
         <button type="button" class="btn btn-ghost btn-sm sm:ml-auto" x-on:click="selected = []">Seçimi temizle</button>

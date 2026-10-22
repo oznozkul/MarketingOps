@@ -163,6 +163,16 @@
 
     <section id="sayfalar" class="scroll-mt-20 space-y-3" aria-labelledby="pages-title">
         <h2 id="pages-title" class="section-title">Taranan sayfalar</h2>
-        <partial name="_PagesTable" model="Model" />
+        @if (d.SnapshotsPrunedAt is { } pruned)
+        {
+            <div role="note" class="flex items-start gap-2 border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm text-fg">
+                <icon name="history" class="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+                <p>Bu taramanın sayfa kayıtları <time datetime="@Format.Iso(pruned)">@Format.ShortDate(pruned)</time> tarihinde saklama süresi dolduğu için silindi. Özet, aşamalar ve bulgu değişimleri korunur; sayfa listesi son taramalarda görülebilir.</p>
+            </div>
+        }
+        else
+        {
+            <partial name="_PagesTable" model="Model" />
+        }
     </section>
 </div>

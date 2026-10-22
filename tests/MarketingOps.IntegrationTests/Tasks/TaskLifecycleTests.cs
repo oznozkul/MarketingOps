@@ -4,7 +4,6 @@ using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Application.Common.Models;
 using MarketingOps.Application.Findings.Commands.EvaluateCrawl;
 using MarketingOps.Application.Tasks.Commands.EnrichTask;
-using MarketingOps.Application.Tasks.Commands.ExportTasks;
 using MarketingOps.Application.Tasks.Queries;
 using MarketingOps.Application.Tasks.Queries.GetTaskById;
 using MarketingOps.Domain.WorkTasks;
@@ -24,7 +23,7 @@ namespace MarketingOps.IntegrationTests.Tasks;
 public class TaskLifecycleTests(IntegrationTestContext context)
 {
     private sealed record Scenario(WebApplicationFactory<Program> Factory, HttpClient Client, SiteCrawler Crawler, FakeSite Site, Guid SiteId,
-        FakeTaskTracker Tracker, FakeAiSuggestionService Ai)
+        FakeAiSuggestionService Ai)
     {
         public async Task CrawlAndEvaluateAsync()
         {
@@ -50,17 +49,15 @@ public class TaskLifecycleTests(IntegrationTestContext context)
     private async Task<Scenario> ArrangeAsync(bool withAi = false)
     {
         var site = new FakeSite(UniqueDomain.Next());
-        var tracker = new FakeTaskTracker();
         var ai = new FakeAiSuggestionService();
         var factory = context.Factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
         {
             s.AddSingleton<ICrawlerHttpClient>(site);
-            s.AddSingleton<ITaskTracker>(tracker);
             if (withAi) s.AddSingleton<IAiSuggestionService>(ai);
         }));
         var client = factory.CreateClient();
         var siteId = await TestSites.CreateAsync(client, site.Domain);
-        return new Scenario(factory, client, factory.Services.GetRequiredService<SiteCrawler>(), site, siteId, tracker, ai);
+        return new Scenario(factory, client, factory.Services.GetRequiredService<SiteCrawler>(), site, siteId, ai);
     }
 
     [Fact]
@@ -113,45 +110,6 @@ public class TaskLifecycleTests(IntegrationTestContext context)
         await using var scope = s.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         (await db.WorkTasks.CountAsync(t => t.SiteId == s.SiteId)).ShouldBe(await db.Findings.CountAsync(f => f.SiteId == s.SiteId));
-    }
-
-    [Fact]
-    public async Task Export_creates_the_issue_once_and_updates_it_afterwards_with_an_encrypted_token()
-    {
-        var s = await ArrangeAsync();
-        s.Site.SetProductTitles("Aynı ürün başlığı");
-        await s.CrawlAndEvaluateAsync();
-        var task = await s.TitleDuplicateTaskAsync();
-
-        // Bağlantı yokken aktarma çakışma döner.
-        (await s.Client.PostAsJsonAsync($"/api/sites/{s.SiteId}/tasks/export", new { taskIds = new[] { task.Id } })).StatusCode.ShouldBe(HttpStatusCode.Conflict);
-
-        (await s.Client.PutAsJsonAsync($"/api/sites/{s.SiteId}/task-tracker",
-            new { baseUrl = "http://jira.local", projectKey = "SEO", issueType = "Task", email = "a@b.com", apiToken = "gizli" }))
-            .StatusCode.ShouldBe(HttpStatusCode.BadRequest); // https zorunlu
-        (await s.Client.PutAsJsonAsync($"/api/sites/{s.SiteId}/task-tracker",
-            new { baseUrl = "https://ornek.atlassian.net/jira", projectKey = "seo", issueType = "Task", email = "a@b.com", apiToken = "gizli" }))
-            .StatusCode.ShouldBe(HttpStatusCode.OK);
-
-        var first = await (await s.Client.PostAsJsonAsync($"/api/sites/{s.SiteId}/tasks/export", new { taskIds = new[] { task.Id } }))
-            .Content.ReadFromJsonAsync<ExportTasksResult>(IntegrationTestContext.Json);
-        first!.Exported.ShouldBe(1);
-        await s.Client.PostAsJsonAsync($"/api/sites/{s.SiteId}/tasks/export", new { taskIds = new[] { task.Id } });
-
-        s.Tracker.Calls.Count.ShouldBe(2);
-        s.Tracker.Calls[0].Request.ExistingKey.ShouldBeNull();
-        s.Tracker.Calls[1].Request.ExistingKey.ShouldBe("SEO-1");
-        s.Tracker.Calls[0].Credentials.ShouldBe(new MarketingOps.Application.Tasks.Tracking.TaskTrackerCredentials("https://ornek.atlassian.net", "a@b.com", "gizli", "SEO", "Task"));
-        s.Tracker.Calls[0].Request.Title.ShouldStartWith($"[{task.Key}] ");
-        s.Tracker.Calls[0].Request.Description.ShouldContain("Kabul kriterleri");
-
-        task = await s.TitleDuplicateTaskAsync();
-        task.ExternalTrackerKey.ShouldBe("SEO-1");
-        task.ExternalUrl.ShouldBe("https://ornek.atlassian.net/browse/SEO-1");
-
-        await using var scope = s.Factory.Services.CreateAsyncScope();
-        var stored = await scope.ServiceProvider.GetRequiredService<AppDbContext>().TaskTrackerConnections.SingleAsync(c => c.SiteId == s.SiteId);
-        stored.ProtectedApiToken.ShouldNotContain("gizli");
     }
 
     [Fact]
@@ -210,7 +168,6 @@ public class TaskLifecycleTests(IntegrationTestContext context)
         detail.ShouldContain("Kabul kriterleri");
         detail.ShouldContain("Otomatik · sonraki tarama");
         detail.ShouldContain("Öneri faydalı mı?");
-        detail.ShouldContain("Jira bağlı değil");
         detail.ShouldNotContain(">Düzelt<");
 
         var findings = await s.Client.GetStringAsync($"/sites/{s.SiteId}/findings");
@@ -218,7 +175,6 @@ public class TaskLifecycleTests(IntegrationTestContext context)
         findings.ShouldContain("Görev oluştur");
 
         var settings = await s.Client.GetStringAsync($"/sites/{s.SiteId}/settings/sites");
-        settings.ShouldContain("Görev sistemi (Jira Cloud)");
         settings.ShouldContain("AI önerileri");
         settings.ShouldContain("Görev öneki");
     }

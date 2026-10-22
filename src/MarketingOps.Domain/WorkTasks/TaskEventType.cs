@@ -9,6 +9,5 @@ public enum TaskEventType
     CriterionReverted,
     Closed,
     Reopened,
-    SuggestionGenerated,
-    Exported
+    SuggestionGenerated
 }

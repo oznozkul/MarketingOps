@@ -17,6 +17,7 @@ public abstract class RuleBase : IRule
     public abstract Severity DefaultSeverity { get; }
     public abstract RuleScope Scope { get; }
     public virtual IReadOnlyList<RuleThreshold> Thresholds => [];
+    public virtual RuleDataSource DataSource => RuleDataSource.Crawl;
     public abstract string ReferenceKey { get; }
     public abstract string Impact { get; }
     public abstract Team Team { get; }

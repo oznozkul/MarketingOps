@@ -31,7 +31,7 @@
                                 </td>
                                 <td class="max-w-sm text-xs">
                                     @if (o.CurrentValue is not null) { <span class="block break-words text-fg">@o.CurrentValue</span> }
-                                    @if (o.Detail is not null) { <span class="mt-0.5 line-clamp-3 break-all text-fg-muted" title="@o.Detail">@o.Detail</span> }
+                                    @if (o.Detail is not null) { <span class="mt-0.5 break-all text-fg-muted" title="@o.Detail">@o.Detail</span> }
                                     @if (o.CurrentValue is null && o.Detail is null) { <span class="text-fg-subtle">—</span> }
                                 </td>
                             </tr>

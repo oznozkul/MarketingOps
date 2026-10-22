@@ -2,6 +2,9 @@
 @using MarketingOps.Domain.Sites
 @{
     string? E(string f) => ViewData.ModelState.FirstError(f);
+    // Sayfa başına en az bir istek; yönlendirme, sitemap ve robots.txt istekleri hariç alt sınır.
+    var hours = Model.MaxPages / (double)Math.Max(1, Model.MaxRequestsPerSecond) / 3600;
+    var window = Model.Schedule switch { CrawlSchedule.Every12Hours => 12, CrawlSchedule.Daily => 24, _ => 168 };
 }
 <form id="crawl-settings-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateCrawlSettings", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
     <form-errors />
@@ -25,7 +28,7 @@
                 <span class="text-sm text-fg-muted">istek / saniye</span>
             </div>
             <field-error for="MaxRequestsPerSecond" />
-            <p id="crawl-rps-hint" class="hint">@CrawlSettings.MinRequestsPerSecond–@CrawlSettings.MaxRequestsPerSecondLimit arası. Siteyi yormamak için düşük tutun.</p>
+            <p id="crawl-rps-hint" class="hint">@CrawlSettings.MinRequestsPerSecond–@CrawlSettings.MaxRequestsPerSecondLimit arası. robots.txt'de Crawl-delay varsa o uygulanır; sunucu 429/503 dönerse tarama kendiliğinden yavaşlar.</p>
         </div>
         <div>
             <label class="label" for="crawl-max-pages">Maksimum sayfa</label>
@@ -34,6 +37,15 @@
             <field-error for="MaxPages" />
         </div>
     </div>
+    <p class="text-xs @(hours > window * 0.8 ? "text-warn" : "text-fg-muted")" x-data
+       x-init="const f = $el.closest('form'); const calc = () => { const p = +f.MaxPages.value || 0, r = Math.max(1, +f.MaxRequestsPerSecond.value || 1); const h = p / r / 3600; $el.querySelector('[data-est]').textContent = h < 1 ? Math.max(1, Math.round(h * 60)) + ' dakika' : h.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' saat'; }; f.addEventListener('input', calc);">
+        Tam tarama en az <span data-est class="font-medium text-fg">@(hours < 1 ? $"{Math.Max(1, Math.Round(hours * 60))} dakika" : $"{Format.Number(hours)} saat")</span> sürer (sayfa sayısı ÷ hız).
+        @if (hours > window * 0.8)
+        {
+            <span>Tarama sıklığına göre uzun: bir sonraki tarama zamanı geldiğinde önceki bitmemiş olabilir; o tur atlanır. Hızı artırın ya da sıklığı azaltın.</span>
+        }
+        Kesintide tarama kaldığı yerden devam eder.
+    </p>
     <div>
         <label class="label" for="crawl-excluded">Hariç tutulan path'ler</label>
         <textarea id="crawl-excluded" name="ExcludedPathPatterns" rows="4" class="textarea font-mono text-xs" spellcheck="false"

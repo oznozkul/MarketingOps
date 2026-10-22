@@ -92,5 +92,6 @@ Domain/Sites/Site.cs, PageType.cs, CrawlSettings.cs, MatchCondition.cs, MatchCon
 ## Komutlar
 - Build: `dotnet build` · Test: `dotnet test` (entegrasyon testleri için Docker çalışıyor olmalı)
 - Çalıştır: `docker compose up --build` ya da `dotnet run --project src/MarketingOps.Web` (yerel Postgres ile)
+- Yapılandırma yalnızca `src/MarketingOps.Web/appsettings.json`'dadır (Worker aynı dosyayı kullanır). `.env`, `.env.example`, `appsettings.{Ortam}.json` açılmaz; docker-compose ayar taşımaz.
 - Migration: `dotnet ef migrations add <Ad> -p src/MarketingOps.Infrastructure -s src/MarketingOps.Web -o Persistence/Migrations`
 - Razor derleyici garip konum hataları verirse (ör. `'scor' adı yok`): `dotnet build-server shutdown` ve `bin/obj` temizliği.

@@ -27,7 +27,12 @@ public static class RuleCatalog
         new LazyLoadMissingRule(),
         new PreconnectRule(),
         new HtmlSizeRule(),
-        new TtfbRule()
+        new TtfbRule(),
+        new OpportunityRule(),
+        new NotIndexedRule(),
+        new LcpRule(),
+        new InpRule(),
+        new ClsRule()
     ];
 
     public static IRule? Find(string code) => All.FirstOrDefault(r => r.Code == code);

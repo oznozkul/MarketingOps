@@ -2,7 +2,6 @@ using MarketingOps.Application.Tasks.Commands.AddTaskComment;
 using MarketingOps.Application.Tasks.Commands.AssignTaskTeam;
 using MarketingOps.Application.Tasks.Commands.ConfirmAcceptanceCriterion;
 using MarketingOps.Application.Tasks.Commands.CreateTasks;
-using MarketingOps.Application.Tasks.Commands.ExportTasks;
 using MarketingOps.Application.Tasks.Commands.RequestTaskEnrichment;
 using MarketingOps.Application.Tasks.Commands.SubmitSuggestionFeedback;
 using MarketingOps.Application.Tasks.Commands.UpdateTaskStatus;
@@ -106,19 +105,6 @@ public class TasksController(ISender sender) : SiteControllerBase
         await TrySendAsync(sender, new SubmitSuggestionFeedbackCommand(siteId, id, form.IsHelpful, form.Note, CurrentUser.Name))
             ? Refresh("Geri bildiriminiz kaydedildi. Teşekkürler.")
             : ErrorToast();
-
-    [HttpPost("{id:guid}/export")]
-    public async Task<IActionResult> Export(Guid siteId, Guid id)
-    {
-        var (ok, result) = await TrySendAsync(sender, new ExportTasksCommand(siteId, [id]));
-        if (!ok) return ErrorToast();
-        if (result!.Errors.Count > 0)
-        {
-            Response.Toast(result.Errors[0], "error");
-            return NoContent();
-        }
-        return Refresh("Görev Jira'ya aktarıldı.");
-    }
 
     [HttpPost("{id:guid}/suggestion")]
     public async Task<IActionResult> RegenerateSuggestion(Guid siteId, Guid id) =>

@@ -1,12 +1,11 @@
+using MarketingOps.Application.Connectors.Queries.GetConnectors;
 using MarketingOps.Application.Sites.Commands.CreateSite;
 using MarketingOps.Application.Sites.Commands.DeleteSite;
 using MarketingOps.Application.Sites.Commands.UpdateSite;
 using MarketingOps.Application.Sites.Commands.UpdateTaskKeyPrefix;
 using MarketingOps.Application.Sites.Queries.GetSiteById;
-using MarketingOps.Application.Tasks.Commands.RemoveTaskTrackerConnection;
-using MarketingOps.Application.Tasks.Commands.SaveTaskTrackerConnection;
 using MarketingOps.Application.Tasks.Queries.GetAiStatus;
-using MarketingOps.Application.Tasks.Queries.GetTaskTrackerConnection;
+
 using MarketingOps.Web.Infrastructure;
 using MarketingOps.Web.ViewModels.Sites;
 using MediatR;
@@ -29,8 +28,8 @@ public class SiteSettingsController(ISender sender, ISiteContext context) : Site
             CrawlSettingsForm.From(site.CrawlSettings),
             TrackingIdsForm.From(site.ExpectedTrackingIds),
             new TaskKeyPrefixForm { Prefix = site.TaskKeyPrefix },
-            TaskTrackerForm.From(await sender.Send(new GetTaskTrackerConnectionQuery(siteId), ct)),
-            await sender.Send(new GetAiStatusQuery(), ct)));
+            await sender.Send(new GetAiStatusQuery(), ct),
+            await sender.Send(new GetConnectorsQuery(siteId), ct)));
     }
 
     /// <summary>Site kimliği olmayan adres: henüz hiç site yokken de site eklenebilsin.</summary>
@@ -102,25 +101,4 @@ public class SiteSettingsController(ISender sender, ISiteContext context) : Site
         return PartialView("_TaskKeyPrefixForm", form);
     }
 
-    [HttpPost("task-tracker")]
-    public async Task<IActionResult> SaveTaskTracker(Guid siteId, TaskTrackerForm form)
-    {
-        if ((await TrySendAsync(sender, new SaveTaskTrackerConnectionCommand(siteId, form.BaseUrl, form.ProjectKey, form.IssueType, form.Email, form.ApiToken))).Ok)
-        {
-            TempData[FlashMessage.Key] = "Jira bağlantısı kaydedildi.";
-            Response.Headers["HX-Refresh"] = "true";
-            return NoContent();
-        }
-        form.ApiToken = null;
-        return PartialView("_TaskTrackerForm", form);
-    }
-
-    [HttpPost("task-tracker/remove")]
-    public async Task<IActionResult> RemoveTaskTracker(Guid siteId)
-    {
-        await TrySendAsync(sender, new RemoveTaskTrackerConnectionCommand(siteId));
-        TempData[FlashMessage.Key] = "Jira bağlantısı kaldırıldı.";
-        Response.Headers["HX-Refresh"] = "true";
-        return NoContent();
-    }
 }

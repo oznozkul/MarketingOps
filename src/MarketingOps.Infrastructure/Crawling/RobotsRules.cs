@@ -10,17 +10,22 @@ public sealed class RobotsRules
 
     public IReadOnlyList<string> Sitemaps { get; }
 
-    public static RobotsRules AllowAll { get; } = new([], []);
+    /// <summary>Site sahibinin istediği istekler arası bekleme (Crawl-delay); site ayarındaki hızdan yavaşsa bu uygulanır.</summary>
+    public TimeSpan? CrawlDelay { get; }
 
-    private RobotsRules(List<(string Pattern, bool Allow)> rules, IReadOnlyList<string> sitemaps)
+    public static RobotsRules AllowAll { get; } = new([], [], null);
+
+    private RobotsRules(List<(string Pattern, bool Allow)> rules, IReadOnlyList<string> sitemaps, TimeSpan? crawlDelay)
     {
         _rules = rules;
         Sitemaps = sitemaps;
+        CrawlDelay = crawlDelay;
     }
 
     public static RobotsRules Parse(string content, string userAgentToken)
     {
         var groups = new List<(List<string> Agents, List<(string, bool)> Rules)>();
+        var delays = new Dictionary<List<(string, bool)>, double>();
         var sitemaps = new List<string>();
         (List<string> Agents, List<(string, bool)> Rules)? current = null;
         var lastWasAgent = false;
@@ -48,6 +53,10 @@ public sealed class RobotsRules
                     // Boş Disallow "her şeye izin" demektir; kural eklenmez.
                     if (value.Length > 0) current.Value.Rules.Add((value, key == "allow"));
                     break;
+                case "crawl-delay" when current is not null:
+                    if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) && seconds > 0)
+                        delays[current.Value.Rules] = seconds;
+                    break;
                 case "sitemap":
                     if (value.Length > 0) sitemaps.Add(value);
                     break;
@@ -56,9 +65,10 @@ public sealed class RobotsRules
         }
 
         var token = userAgentToken.ToLowerInvariant();
-        var ours = groups.Where(g => g.Agents.Any(a => a != "*" && token.Contains(a))).SelectMany(g => g.Rules).ToList();
-        var rules = ours.Count > 0 ? ours : groups.Where(g => g.Agents.Contains("*")).SelectMany(g => g.Rules).ToList();
-        return new RobotsRules(rules, sitemaps);
+        var ourGroups = groups.Where(g => g.Agents.Any(a => a != "*" && token.Contains(a))).ToList();
+        var chosen = ourGroups.Count > 0 ? ourGroups : groups.Where(g => g.Agents.Contains("*")).ToList();
+        var delay = chosen.Select(g => delays.TryGetValue(g.Rules, out var d) ? d : (double?)null).Max();
+        return new RobotsRules(chosen.SelectMany(g => g.Rules).ToList(), sitemaps, delay is { } s ? TimeSpan.FromSeconds(Math.Min(s, 60)) : null);
     }
 
     public bool IsAllowed(Uri url)

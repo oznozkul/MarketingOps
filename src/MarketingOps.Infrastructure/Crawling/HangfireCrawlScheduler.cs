@@ -14,13 +14,27 @@ public sealed class HangfireCrawlScheduler(IBackgroundJobClient jobs, IRecurring
 
     public void EnqueueEvaluation(Guid crawlId) => jobs.Enqueue<EvaluateCrawlJob>(job => job.RunAsync(crawlId, CancellationToken.None));
 
-    public void ScheduleSite(Guid siteId, CrawlSchedule schedule) =>
-        recurring.AddOrUpdate<ScheduledCrawlJob>(RecurringId(siteId), job => job.RunAsync(siteId, CancellationToken.None), Cron(schedule),
-            new RecurringJobOptions { TimeZone = TimeZone });
+    public void EnqueueConnectorSync(Guid siteId) => jobs.Enqueue<ConnectorSyncJob>(job => job.RunAsync(siteId, false, CancellationToken.None));
 
-    public void RemoveSite(Guid siteId) => recurring.RemoveIfExists(RecurringId(siteId));
+    public void EnqueueWebVitals(Guid siteId) => jobs.Enqueue<ConnectorSyncJob>(job => job.MeasureWebVitalsAsync(siteId, CancellationToken.None));
+
+    /// <summary>Tarama sıklığa göre gece; connector senkronu her gün taramalardan sonra (05:00).</summary>
+    public void ScheduleSite(Guid siteId, CrawlSchedule schedule)
+    {
+        var options = new RecurringJobOptions { TimeZone = TimeZone };
+        recurring.AddOrUpdate<ScheduledCrawlJob>(RecurringId(siteId), job => job.RunAsync(siteId, CancellationToken.None), Cron(schedule), options);
+        recurring.AddOrUpdate<ConnectorSyncJob>(SyncId(siteId), job => job.RunAsync(siteId, true, CancellationToken.None), "0 5 * * *", options);
+    }
+
+    public void RemoveSite(Guid siteId)
+    {
+        recurring.RemoveIfExists(RecurringId(siteId));
+        recurring.RemoveIfExists(SyncId(siteId));
+    }
 
     private static string RecurringId(Guid siteId) => $"site-crawl:{siteId}";
+
+    private static string SyncId(Guid siteId) => $"site-sync:{siteId}";
 
     private static string Cron(CrawlSchedule schedule) => schedule switch
     {

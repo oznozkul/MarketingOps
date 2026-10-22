@@ -1,6 +1,7 @@
 using MarketingOps.Domain.Connectors;
 using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
+using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Organizations;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
@@ -19,7 +20,12 @@ public interface IAppDbContext
     DbSet<Finding> Findings { get; }
     DbSet<SiteRuleSetting> SiteRuleSettings { get; }
     DbSet<WorkTask> WorkTasks { get; }
-    DbSet<TaskTrackerConnection> TaskTrackerConnections { get; }
+    DbSet<ConnectorAccount> ConnectorAccounts { get; }
+    DbSet<SearchPerformanceDaily> SearchPerformance { get; }
+    DbSet<Ga4EventDaily> Ga4Events { get; }
+    DbSet<WebVitalsDaily> WebVitals { get; }
+    DbSet<UrlIndexStatus> UrlIndexStatuses { get; }
+    DbSet<SitemapStatus> Sitemaps { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

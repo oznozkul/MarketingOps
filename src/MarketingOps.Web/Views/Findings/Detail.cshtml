@@ -47,19 +47,6 @@
                         <button type="submit" class="btn btn-primary"><icon name="clipboard-list" />Görev oluştur</button>
                     </form>
                 }
-                else if (task.HasTaskTracker)
-                {
-                    <form hx-post="@Url.SiteAction("Export", "Tasks", new { id = task.Id })" hx-disabled-elt="find button" class="contents">
-                        <button type="submit" class="btn btn-secondary">
-                            <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />
-                            <icon name="external-link" />@(task.ExternalTrackerKey is null ? "Jira'ya aktar" : "Jira kaydını güncelle")
-                        </button>
-                    </form>
-                }
-                @if (task?.ExternalUrl is { } externalUrl)
-                {
-                    <a class="btn btn-secondary" href="@externalUrl" target="_blank" rel="noopener noreferrer"><icon name="external-link" />Jira'da aç<span class="sr-only"> (yeni sekmede açılır)</span></a>
-                }
                 @if (canSnooze)
                 {
                     <button type="button" class="btn btn-secondary" x-data x-on:click="$dispatch('open-modal', 'snooze')"><icon name="clock" />Ertele</button>
@@ -104,7 +91,24 @@
             <section class="card card-body space-y-2" aria-labelledby="impact-title">
                 <h2 id="impact-title" class="eyebrow">Etki</h2>
                 <p class="max-w-prose whitespace-pre-line text-sm text-fg">@(task?.Impact ?? d.Impact)</p>
-                <p class="text-xs text-fg-muted">Search Console ve sipariş verisi bağlandığında bu sayfalara ait ölçümler burada gösterilir; şu an genel açıklamadır.</p>
+                @if (Model.Search is { PageCount: > 0 } sc)
+                {
+                    <dl class="grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-4" aria-label="Etkilenen sayfaların arama performansı">
+                        <div><dt class="text-xs text-fg-muted">Tıklama</dt><dd class="tabular font-mono text-sm text-fg">@Format.Number(sc.Clicks)</dd></div>
+                        <div><dt class="text-xs text-fg-muted">Gösterim</dt><dd class="tabular font-mono text-sm text-fg">@Format.Number(sc.Impressions)</dd></div>
+                        <div><dt class="text-xs text-fg-muted">CTR</dt><dd class="tabular font-mono text-sm text-fg">@Format.Percent(sc.Ctr * 100, 1)</dd></div>
+                        <div><dt class="text-xs text-fg-muted">Ort. sıra</dt><dd class="tabular font-mono text-sm text-fg">@(sc.AveragePosition is { } pos ? Format.Number(pos) : "—")</dd></div>
+                    </dl>
+                    <p class="text-xs text-fg-muted">Search Console, @Format.ShortDate(sc.From)–@Format.ShortDate(sc.To) · etkilenen sayfalardan @sc.PageCount tanesinin verisi var.</p>
+                }
+                else if (Model.Search is not null)
+                {
+                    <p class="text-xs text-fg-muted">Etkilenen sayfaların son 28 günde Search Console'da gösterimi yok.</p>
+                }
+                else
+                {
+                    <p class="text-xs text-fg-muted">Search Console bağlandığında bu sayfaların tıklama, gösterim ve sıra verisi burada gösterilir; şu an genel açıklamadır.</p>
+                }
             </section>
 
             @if (task is not null)
@@ -175,23 +179,6 @@
                                         }
                                     </select>
                                 </form>
-                            </dd>
-                        </div>
-                        <div class="flex justify-between gap-3 px-4 py-2.5">
-                            <dt class="text-fg-muted">Dış görev</dt>
-                            <dd class="text-right">
-                                @if (task.ExternalUrl is { } jiraUrl)
-                                {
-                                    <a class="link font-mono text-xs" href="@jiraUrl" target="_blank" rel="noopener noreferrer">@task.ExternalTrackerKey</a>
-                                }
-                                else if (task.HasTaskTracker)
-                                {
-                                    <span class="text-fg-muted">Aktarılmadı</span>
-                                }
-                                else
-                                {
-                                    <a class="link text-xs" href="@(Url.SiteAction("Index", "SiteSettings") + "#baglantilar")">Jira bağlı değil</a>
-                                }
                             </dd>
                         </div>
                     }

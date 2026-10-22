@@ -2,6 +2,7 @@ using MarketingOps.Application.Crawls.Queries.GetPages;
 using MarketingOps.Domain.Connectors;
 using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
+using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Sites;
 using MarketingOps.Domain.Tracking;
 using MarketingOps.Domain.WorkTasks;
@@ -128,6 +129,15 @@ public static class DisplayText
         _ => "Görev hedefi"
     };
 
+    public static string Of(DeviceStrategy v) => v == DeviceStrategy.Mobile ? "Mobil" : "Masaüstü";
+
+    public static string Of(VitalsSource v) => v switch
+    {
+        VitalsSource.UrlField => "Gerçek kullanıcı (sayfa)",
+        VitalsSource.OriginField => "Gerçek kullanıcı (site geneli)",
+        _ => "Laboratuvar ölçümü"
+    };
+
     public static string Of(Team v) => v switch
     {
         Team.Frontend => "Frontend",
@@ -148,6 +158,8 @@ public static class DisplayText
     public static string Of(Enum value) => value switch
     {
         Team v => Of(v),
+        DeviceStrategy v => Of(v),
+        VitalsSource v => Of(v),
         SuggestionKind v => Of(v),
         VerificationType v => Of(v),
         Severity v => Of(v),

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MarketingOps.Application.Rules.Queries.PreviewRuleThresholdImpact;
 
-public sealed class PreviewRuleThresholdImpactQueryHandler(IAppDbContext db, RuleEvaluator evaluator)
+public sealed class PreviewRuleThresholdImpactQueryHandler(IAppDbContext db, RuleEvaluator evaluator, ExternalDataLoader externalData)
     : IRequestHandler<PreviewRuleThresholdImpactQuery, ThresholdImpactResponse>
 {
     public async Task<ThresholdImpactResponse> Handle(PreviewRuleThresholdImpactQuery request, CancellationToken cancellationToken)
@@ -21,7 +21,7 @@ public sealed class PreviewRuleThresholdImpactQueryHandler(IAppDbContext db, Rul
         if (crawl is null) return new ThresholdImpactResponse(null, 0, 0, 0, 0, 0);
 
         var settings = await db.LoadAsync(site.Id, cancellationToken);
-        var results = await evaluator.EvaluateEachAsync(crawl.Id, crawl.AssetChecks, site,
+        var results = await evaluator.EvaluateEachAsync(crawl.Id, crawl.AssetChecks, site, await externalData.LoadAsync(site.Id, cancellationToken),
             [(rule, settings.ThresholdsOf(rule)), (rule, request.Thresholds)], cancellationToken);
 
         var current = Group(results[0]);

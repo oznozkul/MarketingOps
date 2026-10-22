@@ -10,9 +10,14 @@ E-ticaret siteleri için **salt okunur** pazarlama denetim platformu. .NET 10, A
 
 ## Çalıştırma
 
+### Yapılandırma
+Tüm ayarlar tek dosyadadır: `src/MarketingOps.Web/appsettings.json` (`.env` ya da ortama göre ayrı appsettings dosyası yok).
+Worker aynı dosyayı kullanır; Docker'da dosya konteynerlere bağlanır, değişiklikten sonra `docker compose restart web worker` yeterlidir.
+- `ConnectionStrings:Default` — `Host=postgres,localhost`: Docker içinde `postgres`, yerelde `localhost` kullanılır (Npgsql sırayla dener).
+- `Ai` — görev önerileri sağlayıcısı (aşağıda). `DataProtection:KeysPath`, `Knowledge:Path`.
+
 ### Docker Compose (önerilen)
 ```sh
-cp .env.example .env
 docker compose up --build
 ```
 - Uygulama: http://localhost:8080 (Development: migration'lar ve örnek veri başlangıçta otomatik uygulanır)
@@ -25,7 +30,7 @@ docker compose up --build
 docker compose up -d postgres
 dotnet run --project src/MarketingOps.Web
 ```
-Bağlantı cümlesi `appsettings.Development.json` içindedir. İlk build Tailwind standalone CLI'yi `tools/tailwind/` altına indirir; Node gerekmez. `dotnet watch` sırasında CSS'i canlı derlemek için:
+Ayarlar aynı `appsettings.json`'dan okunur. İlk build Tailwind standalone CLI'yi `tools/tailwind/` altına indirir; Node gerekmez. `dotnet watch` sırasında CSS'i canlı derlemek için:
 ```sh
 cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.js -i Styles/app.css -o wwwroot/css/app.css --watch
 ```
@@ -37,6 +42,13 @@ cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.j
 - **Tarayıcı:** robots.txt'ye uyar, sitemap (index dahil) ve iç linklerle keşfeder, hariç tutulan path'leri ve maksimum sayfayı uygular, sitenin hız limitine (istek/sn) uyar. User-Agent: `MarketingOpsBot/1.0`.
 - **Canlı ilerleme:** Worker ilerlemeyi veritabanına yazar; Web 2 saniyede bir aktif taramaları okuyup SignalR (`/hubs/crawls`) ile ilgili sitenin grubuna yayınlar. İki süreç arasında Redis backplane ya da Postgres LISTEN/NOTIFY yerine bu yöntem seçildi: ek altyapı gerektirmez ve 2 saniyelik gecikme ilerleme göstergesi için yeterli.
 - Yerelde Worker'ı çalıştırmak için: `dotnet run --project src/MarketingOps.Worker`
+
+### Büyük siteler (üretim)
+- **Kapasite:** Site başına en fazla 500.000 sayfa, 1–10 istek/sn. Tahmini süre ayar ekranında gösterilir (sayfa ÷ hız). Tarama sıklığından uzun süren taramada bir sonraki zamanlanmış tur atlanır.
+- **İşçi havuzu:** Eşzamanlılık hızdan türetilir (yavaş yanıt veren sitede de hedef hıza ulaşılır, en fazla 30 bağlantı). robots.txt `Crawl-delay` ayardaki hızdan yavaşsa uygulanır; 429/503'te `Retry-After` süresince (en fazla 5 dk) tüm işçiler bekler ve sayfa bir kez yeniden denenir.
+- **Kesinti:** İşçi kapanırsa tarama "hata" olmaz; Hangfire işi (kayan görünmezlik süresi, 5 dk) yeniden çalıştırır ve tarama yazılmış sayfaları atlayıp kaldığı yerden devam eder.
+- **Sitemap:** Sitemap index, `.xml.gz` ve 50 MB'a kadar dosyalar; en fazla 1.000 sitemap.
+- **Saklama:** Her sitede son 3 bitmiş taramanın sayfa verisi tutulur (`Crawling:KeepSnapshotsForCrawls`); daha eskilerin özeti ve bulgu değişimleri kalır. Temizlik her gün 06:00.
 
 ## Kural motoru ve bulgular (Faz 3)
 - **Kurallar** kodda tanımlıdır (`Domain/Rules/Definitions`, her biri ayrı sınıf; liste `RuleCatalog`). 21 kural: 13 teknik SEO/içerik, 8 performans. Sayfa kuralları (`IPageRule`) tek snapshot'a, site kuralları (`ISiteRule`; title/meta tekrarı, TTFB ortalaması, statik dosya önbelleği) taramanın tamamına bakar.
@@ -53,10 +65,17 @@ cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.j
 - **AI zenginleştirme (isteğe bağlı):** Hangfire işi etki ve öneri metnini üretir; sayılar ve URL'ler şablonda kalır, model yalnızca verilen URL'ler için önerilen değer ekleyebilir. Sağlayıcı `Ai:Provider` ile seçilir:
   - `Anthropic` — `Ai:Anthropic:ApiKey`, model `claude-opus-5-5` (yapılandırılmış çıktı; güvenlik reddinde `Ai:Anthropic:FallbackModel` ile sunucu tarafı yedek).
   - `DeepSeek` — `Ai:DeepSeek:ApiKey`, model `deepseek-chat` (OpenAI uyumlu API; sunucular Çin'de).
-  - `Ollama` — `Ai:Ollama:BaseUrl`, `Ai:Ollama:Model` (yerel, veri dışarı çıkmaz; Türkçe için 30B+ model önerilir).
-  - `None` (varsayılan) — adım atlanır. Docker'da `.env` içindeki `AI_PROVIDER`, `ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `OLLAMA_*`.
+  - `Ollama` (şu an seçili) — `Ai:Ollama:BaseUrl` (Docker'dan makinedeki Ollama: `http://host.docker.internal:11434/v1`), `Ai:Ollama:Model` (`qwen2.5:7b`), `Ai:Ollama:TimeoutSeconds`. Veri makineden çıkmaz. 7B modelde bir öneri M1/16 GB'ta yaklaşık 1,5–2 dakika sürer; Türkçe metin kalitesi sınırlıdır, belleğiniz yetiyorsa `qwen2.5:14b` daha iyi sonuç verir.
+  - `None` — adım atlanır. Entegrasyon testleri her zaman `None` ile çalışır.
+- Modele kuralın sitedeki eşikleri ve etkilenen sayfaların ayrıntısı (ör. asıl title) verilir; mevcut değerin aynısı olan öneriler atılır.
 - **Bilgi tabanı:** `knowledge/*.md` içindeki `<!-- ref: perf-doc:p30 -->` işaretli parçalar, kuralın referans anahtarına göre AI'a verilir (vektör DB yok). Biçim: `knowledge/README.md`.
-- **Jira:** Ayarlar > Siteler > Bağlantılar'dan site bazlı bağlantı (API anahtarı Data Protection ile şifreli). Aktarma tekrar edilirse mevcut kayıt güncellenir; Jira'dan durum okunmaz.
+
+## Google connector'ları (Faz 5)
+- **Bağlama:** Ayarlar > Siteler > Bağlantılar'da "Google ile bağlan". Kullanıcı kendi Google hesabıyla salt okunur izin verir (Search Console, Analytics, Tag Manager), döner ve siteye ait mülkleri seçer. Refresh token Data Protection ile şifreli saklanır.
+- **Sahiplik:** Seçilen Search Console mülkü sitenin domainine aitse ve erişim doğrulanmışsa site sahipliği doğrulanır; zamanlanmış taramalar ve günlük Web Vitals ölçümü yalnızca doğrulanmış sitelerde çalışır.
+- **Günlük senkron (05:00, Türkiye saati):** Search Console son 28 gün sayfa performansı, sitemap durumu, URL Inspection (`Google:UrlInspectionDailyLimit`, öncelik açık bulgulu sayfalar); GA4 son 30 gün e-ticaret event'leri; PageSpeed Insights ile sayfa tipi başına örnek sayfaların LCP/INP/CLS/TTFB değerleri. Tekrar çalıştırma kayıtları günceller (upsert). Kota/429 için standart yeniden deneme.
+- **Yeni kurallar:** `seo.opportunity.striking_distance` (11–20. sıra, yüksek gösterim), `seo.index.not_indexed`, `perf.cwv.lcp|inp|cls`. Kaynağın güncel verisi yoksa kural çalışmaz; bağlantı koparsa mevcut bulgular yanlışlıkla çözülmez.
+- **Kurulum (SaaS sahibi, bir kez):** Google Cloud Console'da bir proje açın → Search Console API, Google Analytics Admin API, Google Analytics Data API, Tag Manager API ve PageSpeed Insights API'yi etkinleştirin → OAuth izin ekranını yapılandırın (geliştirmede "Testing" + test kullanıcıları) → "Web application" türünde OAuth istemcisi oluşturup yetkili yönlendirme adresine `http://localhost:8080/connectors/google/callback` (canlıda kendi domaininiz) ekleyin → Client ID/Secret'ı `appsettings.json` içindeki `Google` bölümüne yazın. Herkese açık kullanım için Google'ın hassas scope doğrulaması gerekir. İsteğe bağlı: `Google:PageSpeedApiKey`.
 
 ## Migration
 ```sh
@@ -87,7 +106,9 @@ dotnet test tests/MarketingOps.IntegrationTests   # Testcontainers ile gerçek P
 - **Bulgu detayı** (`/sites/{siteId}/findings/{id}`): problem, etki, kaynak, etkilenen sayfalar (arama, CSV), ayrıntılar, geçmiş; ertele, yanlış alarm / geri al. Görev alanları Faz 4'te.
 - **Ayarlar > Kurallar** (`/sites/{siteId}/settings/rules`): kategoriye göre liste ve aç/kapa; detayda eşikler (canlı etki önizlemesi), site geneli ve sayfa tipine göre önem, kuralın bulguları ve susturulduğu sayfa tipleri.
 - **Taramalar:** listede ve detayda bulgu değişimleri (yeni / çözülen / tekrar açılan).
-- **Görevler** (`/sites/{siteId}/tasks`): tablo ve pano görünümü; durum, ekip, önem filtreleri. Görev detayı bulgu detayının içindedir (önerilen çözüm, kabul kriterleri, durum/ekip, yorumlar, geri bildirim, Jira).
+- **Performans** (`/sites/{siteId}/performance`): sayfa tipi bazında Core Web Vitals (mobil/masaüstü, Google eşiklerine göre İyi / İyileştirilmeli / Zayıf, 28 günlük trend), performans kuralları ve bulgu sayıları, TTFB kartı ("Kesin bulgu" / "Kontrol önerisi").
+- **Bulgu detayı / Etki:** Search Console bağlıysa etkilenen sayfaların son 28 günlük tıklama, gösterim, CTR ve ortalama sırası.
+- **Görevler** (`/sites/{siteId}/tasks`): tablo ve pano görünümü; durum, ekip, önem filtreleri. Görev detayı bulgu detayının içindedir (önerilen çözüm, kabul kriterleri, durum/ekip, yorumlar, geri bildirim).
 
 ## API
 - `GET/POST /api/sites`, `GET/PUT/DELETE /api/sites/{siteId}`
@@ -99,8 +120,7 @@ dotnet test tests/MarketingOps.IntegrationTests   # Testcontainers ile gerçek P
 - `POST .../findings/{id}/false-positive`, `.../revert-false-positive`, `.../snooze`, `POST .../findings/bulk`
 - `GET /api/sites/{siteId}/rules`, `GET/PUT .../rules/{code}`, `POST .../rules/{code}/impact`
 - `POST /api/sites/{siteId}/crawls/{crawlId}/evaluate`
-- `GET/POST /api/sites/{siteId}/tasks`, `GET .../tasks/{id}`, `POST .../tasks/{id}/status|team|comments|feedback`, `POST .../tasks/{id}/criteria/{criterionId}`, `POST .../tasks/export`
-- `PUT/DELETE /api/sites/{siteId}/task-tracker`
+- `GET/POST /api/sites/{siteId}/tasks`, `GET .../tasks/{id}`, `POST .../tasks/{id}/status|team|comments|feedback`, `POST .../tasks/{id}/criteria/{criterionId}`
 
 Hatalar RFC 7807 ProblemDetails olarak, Türkçe mesajlarla döner: 400 (doğrulama/domain kuralı, alan bazlı `errors`), 404, 409.
 

@@ -9,13 +9,15 @@ public class SuggestionPromptTests
     private static AiSuggestionRequest Request(SuggestionKind kind = SuggestionKind.Text) => new(
         "seo.title.duplicate", "Title tekrarı", "Aynı title'ı paylaşan sayfaları bulur.", "google:title-links", "Ebat", 14,
         "Ebat sayfalarından 14 tanesi etkileniyor.", "Etki", kind, "Özet", "Kalıp",
-        [new SuggestionExample("https://ornek.com/a", "Aynı", null), new SuggestionExample("https://ornek.com/b", "Aynı", null)]);
+        [new SuggestionExample("https://ornek.com/a", "Aynı", null), new SuggestionExample("https://ornek.com/b", "Aynı", null)],
+        ["En uzun title: 60 karakter"]);
 
     [Fact]
     public void Prompt_contains_only_given_data_and_knowledge()
     {
         var prompt = SuggestionPrompt.User(Request(), ["Title 60 karakteri geçmemeli."]);
         prompt.ShouldContain("Etkilenen sayfa sayısı: 14");
+        prompt.ShouldContain("Kuralın bu sitedeki eşikleri: En uzun title: 60 karakter");
         prompt.ShouldContain("https://ornek.com/a | Aynı");
         prompt.ShouldContain("Bilgi tabanı (google:title-links):");
         prompt.ShouldContain("Title 60 karakteri geçmemeli.");

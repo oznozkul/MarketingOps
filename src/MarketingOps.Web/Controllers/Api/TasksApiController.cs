@@ -3,9 +3,6 @@ using MarketingOps.Application.Tasks.Commands.AddTaskComment;
 using MarketingOps.Application.Tasks.Commands.AssignTaskTeam;
 using MarketingOps.Application.Tasks.Commands.ConfirmAcceptanceCriterion;
 using MarketingOps.Application.Tasks.Commands.CreateTasks;
-using MarketingOps.Application.Tasks.Commands.ExportTasks;
-using MarketingOps.Application.Tasks.Commands.RemoveTaskTrackerConnection;
-using MarketingOps.Application.Tasks.Commands.SaveTaskTrackerConnection;
 using MarketingOps.Application.Tasks.Commands.SubmitSuggestionFeedback;
 using MarketingOps.Application.Tasks.Commands.UpdateTaskStatus;
 using MarketingOps.Application.Tasks.Queries;
@@ -70,18 +67,4 @@ public sealed class TasksApiController(ISender sender) : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("tasks/export")]
-    public Task<ExportTasksResult> Export(Guid siteId, ExportTasksRequest request, CancellationToken ct) =>
-        sender.Send(new ExportTasksCommand(siteId, request.TaskIds), ct);
-
-    [HttpPut("task-tracker")]
-    public Task<Guid> SaveTaskTracker(Guid siteId, TaskTrackerRequest request, CancellationToken ct) =>
-        sender.Send(new SaveTaskTrackerConnectionCommand(siteId, request.BaseUrl, request.ProjectKey, request.IssueType, request.Email, request.ApiToken), ct);
-
-    [HttpDelete("task-tracker")]
-    public async Task<IActionResult> RemoveTaskTracker(Guid siteId, CancellationToken ct)
-    {
-        await sender.Send(new RemoveTaskTrackerConnectionCommand(siteId), ct);
-        return NoContent();
-    }
 }

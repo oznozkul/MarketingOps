@@ -4,12 +4,13 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.DataProtection;
 using MarketingOps.Application.Common.Interfaces;
+using MarketingOps.Application.Connectors;
 using MarketingOps.Infrastructure.Ai;
+using MarketingOps.Infrastructure.Google;
 using MarketingOps.Infrastructure.Crawling;
 using MarketingOps.Infrastructure.Jobs;
 using MarketingOps.Infrastructure.Persistence;
 using MarketingOps.Infrastructure.Persistence.Seed;
-using MarketingOps.Infrastructure.Tracking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +35,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
 
         // Konteyner yeniden oluşturulduğunda anahtarlar kaybolursa antiforgery çerezleri ve şifreli connector kimlik bilgileri
-        // (Jira API anahtarı) çözülemez. Web ve Worker aynı anahtar klasörünü kullanır.
+        // (Google refresh token) çözülemez. Web ve Worker aynı anahtar klasörünü kullanır.
         var dataProtection = services.AddDataProtection().SetApplicationName("MarketingOps");
         if (configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
             dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
@@ -55,16 +56,42 @@ public static class DependencyInjection
         services.AddTransient<ScheduledCrawlJob>();
         services.AddTransient<EvaluateCrawlJob>();
         services.AddTransient<EnrichTaskJob>();
+        services.AddTransient<SnapshotRetentionJob>();
         services.AddSingleton<ITaskJobScheduler, HangfireTaskJobScheduler>();
-        services.AddHttpClient<ITaskTracker, JiraTaskTracker>(client => client.Timeout = TimeSpan.FromSeconds(30));
         services.AddAiSuggestions(configuration);
+        AddGoogle(services, configuration);
 
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
-            .UsePostgreSqlStorage(storage => storage.UseNpgsqlConnection(connectionString)));
+            // Taramalar saatlerce sürebilir. Kayan görünmezlik süresi açık değilse 30. dakikada iş "sahipsiz" sayılır ve
+            // aynı tarama ikinci bir işçide de başlar. Açıkken çalışan iş canlı tutulur; işçi ölürse 5 dakikada başka işçiye geçer.
+            .UsePostgreSqlStorage(storage => storage.UseNpgsqlConnection(connectionString), new PostgreSqlStorageOptions
+            {
+                UseSlidingInvisibilityTimeout = true,
+                InvisibilityTimeout = TimeSpan.FromMinutes(5)
+            }));
         services.AddSingleton<ICrawlScheduler, HangfireCrawlScheduler>();
         return services;
+    }
+
+    /// <summary>Google istemcileri: kota (429) ve geçici hatalar için standart yeniden deneme ve zaman aşımı.</summary>
+    private static void AddGoogle(IServiceCollection services, IConfiguration configuration)
+    {
+        var options = configuration.GetSection(GoogleOptions.Section).Get<GoogleOptions>() ?? new GoogleOptions();
+        services.AddSingleton(options);
+        services.AddSingleton(configuration.GetSection(GoogleOptions.Section).Get<GoogleSyncOptions>() ?? new GoogleSyncOptions());
+        services.AddTransient<ConnectorSyncJob>();
+        services.AddHttpClient<IGoogleAuthClient, GoogleAuthClient>().AddStandardResilienceHandler();
+        services.AddHttpClient<ISearchConsoleClient, SearchConsoleClient>().AddStandardResilienceHandler();
+        services.AddHttpClient<IGa4Client, Ga4Client>().AddStandardResilienceHandler();
+        // PageSpeed bir ölçümü 30–60 sn'de tamamlayabilir.
+        services.AddHttpClient<IPageSpeedClient, PageSpeedClient>().AddStandardResilienceHandler(o =>
+        {
+            o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(90);
+            o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(4);
+            o.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(3);
+        });
     }
 }

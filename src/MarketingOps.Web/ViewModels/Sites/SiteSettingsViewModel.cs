@@ -1,3 +1,4 @@
+using MarketingOps.Application.Connectors.Queries.GetConnectors;
 using MarketingOps.Application.Sites.Queries.GetSiteById;
 using MarketingOps.Application.Sites.Queries.GetSites;
 using MarketingOps.Application.Tasks.Queries.GetAiStatus;
@@ -11,5 +12,5 @@ public sealed record SiteSettingsViewModel(
     CrawlSettingsForm CrawlForm,
     TrackingIdsForm TrackingForm,
     TaskKeyPrefixForm TaskKeyForm,
-    TaskTrackerForm TaskTrackerForm,
-    AiStatusResponse? Ai);
+    AiStatusResponse? Ai,
+    ConnectorsResponse Connectors);

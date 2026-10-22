@@ -6,7 +6,7 @@ public sealed record CrawlSettings
 {
     public const int MinRequestsPerSecond = 1;
     public const int MaxRequestsPerSecondLimit = 10;
-    public const int MaxPagesLimit = 100_000;
+    public const int MaxPagesLimit = 500_000;
 
     public CrawlSchedule Schedule { get; }
     public int MaxRequestsPerSecond { get; }

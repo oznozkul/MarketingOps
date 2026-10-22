@@ -17,7 +17,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
         services.AddScoped<Rules.RuleEvaluator>();
         services.AddScoped<Tasks.WorkTaskFactory>();
-        services.AddSingleton<Tasks.Tracking.TaskTrackerTokenProtector>();
+        services.AddScoped<Rules.ExternalDataLoader>();
+        services.AddSingleton<Connectors.ConnectorSecretProtector>();
+        services.AddScoped<Connectors.GoogleTokenProvider>();
         return services;
     }
 }

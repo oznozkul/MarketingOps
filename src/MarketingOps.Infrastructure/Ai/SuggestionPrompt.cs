@@ -17,9 +17,12 @@ public static class SuggestionPrompt
         Kurallar:
         - Türkçe yaz, sade ve uygulanabilir ol. Geliştirici başka bir yere bakmadan işi yapabilmeli.
         - Yalnızca sana verilen veriyi kullan. Verilmeyen hiçbir sayı, yüzde, trafik, sıralama, sipariş ya da gelir değeri yazma; tahmin etme.
+        - Sınır ve eşik olarak yalnızca "Kuralın bu sitedeki eşikleri" satırındaki değerleri kullan.
         - Sayfa sayıları ve örnek URL'ler verildiği gibidir; onları değiştirme.
         - Araç siteye hiçbir şey yazmaz; öneri ekibin uygulaması içindir. "Uygula", "Düzelt" gibi aracın işi yapacağını ima eden ifadeler kullanma.
         - Bilgi tabanı parçası verildiyse önerini ona dayandır.
+        - Şablon öneriyi aynen kopyalama; bu sayfa grubuna ve örneklere özgü, somut bir öneri yaz.
+        - Önerilen değerleri sayfanın mevcut değerine ve ayrıntısına (ör. asıl title metni) dayandır. URL'deki kısaltmaları yorumlamaya çalışma; anlamından emin olmadığın kelimeyi değiştirme.
         Yanıtın yalnızca istenen JSON nesnesi olsun.
         """;
 
@@ -58,6 +61,7 @@ public static class SuggestionPrompt
             .AppendLine($"Etkilenen sayfa sayısı: {r.AffectedCount}")
             .AppendLine($"Problem: {r.Problem}")
             .AppendLine($"Genel etki açıklaması (şablon): {r.TemplateImpact}")
+            .AppendLine(r.Thresholds.Count > 0 ? $"Kuralın bu sitedeki eşikleri: {string.Join("; ", r.Thresholds)}" : "Kuralın ayarlanabilir eşiği yok.")
             .AppendLine()
             .AppendLine($"İstenen öneri türü: {Kind(r.Kind)}")
             .AppendLine($"Şablon öneri özeti: {r.TemplateSummary}")
@@ -65,8 +69,8 @@ public static class SuggestionPrompt
             .AppendLine();
         if (r.Examples.Count > 0)
         {
-            text.AppendLine("Örnek sayfalar (URL | mevcut değer):");
-            foreach (var e in r.Examples) text.AppendLine($"- {e.Url} | {e.Current ?? "-"}");
+            text.AppendLine("Örnek sayfalar (URL | mevcut değer | ayrıntı):");
+            foreach (var e in r.Examples) text.AppendLine($"- {e.Url} | {e.Current ?? "-"} | {e.Detail ?? "-"}");
             text.AppendLine();
         }
         if (knowledge.Count > 0)
@@ -75,7 +79,7 @@ public static class SuggestionPrompt
             foreach (var chunk in knowledge) text.AppendLine(chunk).AppendLine("---");
         }
         text.AppendLine(r.Kind == SuggestionKind.Text
-            ? "suggestedValues alanında yukarıdaki örnek URL'lerin her biri için sayfaya özgü önerilen değeri ver."
+            ? "suggestedValues alanında yukarıdaki örnek URL'lerin her biri için, mevcut metni temel alan ve sorunu gideren (eşiklere uyan) yeni değeri ver; mevcut değeri aynen tekrar etme."
             : "suggestedValues alanını boş dizi bırak.");
         return text.ToString();
     }

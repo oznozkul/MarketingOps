@@ -1,7 +1,9 @@
 using MarketingOps.Domain.Crawls;
+using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Rules.Definitions;
 using MarketingOps.Domain.Sites;
+using MarketingOps.Domain.WorkTasks;
 using static MarketingOps.UnitTests.Domain.Rules.RuleFixture;
 
 namespace MarketingOps.UnitTests.Domain.Rules;
@@ -187,6 +189,61 @@ public class RuleTests
             Page(path: "/c", ttfbMs: 2000), Page(path: "/d", ttfbMs: 100), Page(path: "/e", ttfbMs: 100));
         // Yavaş tipin ortalaması 1100 ms: yalnızca eşiği aşan sayfa raporlanır. Eşleşmeyenlerin ortalaması 733 ms: bulgu yok.
         violations.ShouldHaveSingleItem().Url.ShouldBe("https://example.com/a");
+    }
+
+    [Fact]
+    public void Ttfb_detail_names_the_response_and_does_not_blame_css_for_ttfb()
+    {
+        var data = Good with
+        {
+            Scripts =
+            [
+                new ScriptInfo("https://example.com/analytics.js", false, true, true),
+                new ScriptInfo("https://example.com/jquery.js", false, false, true),
+                new ScriptInfo("https://example.com/app.js", false, false, true),
+                new ScriptInfo("https://example.com/vendor.js", false, false, true)
+            ],
+            Stylesheets = ["https://example.com/extra.css", "https://example.com/site.css"]
+        };
+        var assets = new AssetCheck[]
+        {
+            new("https://example.com/jquery.js", 200, "application/javascript", null, null, 240, 86 * 1024),
+            new("https://example.com/app.js", 200, "application/javascript", "max-age=60", "gzip", 180, 40 * 1024),
+            new("https://example.com/site.css", 200, "text/css", null, null, 520, 210 * 1024),
+            new("https://example.com/extra.css", 200, "text/css", null, "br", 90, 12 * 1024)
+        };
+        var violation = Run(new TtfbRule(), Context(assets: assets), Page(data, path: "/kategori", ttfbMs: 1840, sizeBytes: 640 * 1024)).ShouldHaveSingleItem();
+
+        violation.Detail.ShouldNotBeNull();
+        violation.Detail.ShouldContain("GET https://example.com/kategori 1.840 ms, 200, text/html, 640 KB");
+        violation.Detail.ShouldContain("GET /jquery.js 240 ms, 200, application/javascript, 86 KB, Content-Encoding yok, Cache-Control yok (head, bloklayan)");
+        violation.Detail.ShouldContain("GET /app.js 180 ms, 200, application/javascript, 40 KB, Content-Encoding gzip, Cache-Control max-age=60 (head, bloklayan)");
+        violation.Detail.ShouldContain("GET /vendor.js (head, bloklayan)");
+        violation.Detail.ShouldNotContain("analytics.js");
+        violation.Detail.ShouldContain("GET /site.css 520 ms");
+        violation.Detail.IndexOf("/site.css", StringComparison.Ordinal).ShouldBeLessThan(violation.Detail.IndexOf("/extra.css", StringComparison.Ordinal));
+        violation.Detail.ShouldContain("Bu dosya süreleri TTFB'ye dahil değildir.");
+        violation.Detail.ShouldNotContain("nedeniyle");
+        violation.Detail.ShouldNotContain("kaynaklı");
+
+        var rule = new TtfbRule();
+        var finding = Finding.Open(Guid.CreateVersion7(), rule.Code, null, rule.Category, rule.DefaultSeverity, rule.Title(1), 1,
+            [new FindingOccurrence(violation.Url, violation.CurrentValue, violation.Detail, Guid.Empty)],
+            new CrawlObservation(Guid.CreateVersion7(), 1, false, T0));
+        var draft = TaskTemplate.Build(rule, finding, "Kategori");
+        draft.Suggestion.Content.ShouldContain("HTML yanıtı büyük ve önbelleksiz.");
+        draft.Suggestion.Content.ShouldContain("Birden fazla bloklayan script");
+        draft.Suggestion.Content.ShouldContain("defer");
+        draft.Suggestion.Content.ShouldContain("Birden fazla stil dosyası");
+        draft.Suggestion.Content.ShouldContain("TTFB'ye dahil değildir.");
+        draft.Suggestion.Content.ShouldNotContain("Sunucu kaynaklarını");
+    }
+
+    [Fact]
+    public void Ttfb_without_assets_reports_only_the_document_response()
+    {
+        var violation = Run(new TtfbRule(), Page(path: "/urun", ttfbMs: 1500)).ShouldHaveSingleItem();
+        violation.Detail.ShouldBe("GET https://example.com/urun 1.500 ms, 200, text/html, 39 KB, Content-Encoding gzip, Cache-Control yok (tip ortalaması 1.500 ms).");
     }
 
     [Fact]

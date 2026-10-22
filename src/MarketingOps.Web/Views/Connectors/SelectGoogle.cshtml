@@ -1,0 +1,94 @@
+@model MarketingOps.Application.Connectors.Queries.GetGoogleProperties.GooglePropertiesResponse
+@{
+    var domain = ViewData.Shell()?.Site.Domain;
+    var defaultSc = Model.SelectedSearchConsoleSite ?? Model.SearchConsoleSites.FirstOrDefault(s => s.MatchesSite && s.IsVerified)?.SiteUrl;
+}
+<div class="flex max-w-3xl flex-col gap-6">
+    <div>
+        <a class="link text-sm" href="@(Url.SiteAction("Index", "SiteSettings") + "#baglantilar")">← Bağlantılar</a>
+        <h1 class="page-title mt-2">Google mülklerini seç</h1>
+        <p class="mt-1 text-sm text-fg-muted">
+            <span class="text-fg">@Model.AccountEmail</span> hesabının erişebildiği mülkler. Seçimi istediğiniz zaman değiştirebilirsiniz; aradığınız mülk listede yoksa
+            Bağlantılar'dan <span class="text-fg">Hesabı değiştir</span> ile başka bir Google hesabı bağlayın. MarketingOps yalnızca okuma izniyle bağlanır.
+        </p>
+    </div>
+
+    <form class="flex flex-col gap-6" hx-post="@Url.SiteAction("SaveGoogleSelection", "Connectors")" hx-disabled-elt="find button[type=submit]">
+        <fieldset id="search-console" class="card scroll-mt-20">
+            <legend class="sr-only">Search Console mülkü</legend>
+            <div class="card-header"><h2 class="card-title">Search Console</h2><span class="text-xs text-fg-muted">Arama performansı, index durumu, sahiplik</span></div>
+            @if (Model.SearchConsoleSites.Count == 0)
+            {
+                <p class="px-4 py-3 text-sm text-fg-muted">Bu Google hesabının Search Console'da mülkü yok. Mülk ekleyip doğruladıktan sonra yeniden bağlanın.</p>
+            }
+            else
+            {
+                <div class="divide-y divide-line">
+                    <label class="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-fg-muted hover:bg-surface-2">
+                        <input type="radio" name="searchConsoleSiteUrl" value="" checked="@(defaultSc is null)" />Search Console bağlama
+                    </label>
+                    @foreach (var s in Model.SearchConsoleSites)
+                    {
+                        <label class="flex cursor-pointer items-start gap-3 px-4 py-3 hover:bg-surface-2">
+                            <input type="radio" name="searchConsoleSiteUrl" value="@s.SiteUrl" class="mt-1" checked="@(s.SiteUrl == defaultSc)" />
+                            <span class="min-w-0 flex-1">
+                                <span class="block break-all font-mono text-sm text-fg">@s.SiteUrl</span>
+                                <span class="mt-1 flex flex-wrap gap-2 text-xs">
+                                    @if (s.MatchesSite)
+                                    {
+                                        <span class="badge @ToneClasses.Badge(Tone.Primary)">@domain ile eşleşiyor</span>
+                                    }
+                                    @if (s.IsVerified)
+                                    {
+                                        <span class="badge @ToneClasses.Badge(Tone.Ok)"><icon name="shield-check" />Doğrulanmış erişim</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge @ToneClasses.Badge(Tone.Warn)">Doğrulanmamış erişim</span>
+                                    }
+                                </span>
+                            </span>
+                        </label>
+                    }
+                </div>
+                <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">Doğrulanmış erişimle bu sitenin domainine ait mülk seçilirse site sahipliği doğrulanır ve zamanlanmış taramalar açılır.</p>
+            }
+        </fieldset>
+
+        <fieldset id="ga4" class="card scroll-mt-20">
+            <legend class="sr-only">GA4 mülkü</legend>
+            <div class="card-header"><h2 class="card-title">Google Analytics 4</h2><span class="text-xs text-fg-muted">E-ticaret event sayıları ve purchase değeri</span></div>
+            @if (Model.Ga4Properties.Count == 0)
+            {
+                <p class="px-4 py-3 text-sm text-fg-muted">Bu Google hesabının erişebildiği GA4 mülkü yok.</p>
+            }
+            else
+            {
+                <div class="max-h-96 divide-y divide-line overflow-y-auto">
+                    <label class="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-fg-muted hover:bg-surface-2">
+                        <input type="radio" name="ga4PropertyId" value="" checked="@(Model.SelectedGa4Property is null)" />GA4 bağlama
+                    </label>
+                    @foreach (var p in Model.Ga4Properties)
+                    {
+                        <label class="flex cursor-pointer items-start gap-3 px-4 py-2.5 hover:bg-surface-2">
+                            <input type="radio" name="ga4PropertyId" value="@p.Id" class="mt-1" checked="@(p.Id == Model.SelectedGa4Property)" />
+                            <span>
+                                <span class="flex flex-wrap items-center gap-2 text-sm text-fg">
+                                    @p.DisplayName
+                                    @if (p.LikelyMatch) { <span class="badge @ToneClasses.Badge(Tone.Primary)">Bu siteyle ilgili olabilir</span> }
+                                    @if (p.IsDemo) { <span class="badge @ToneClasses.Badge(Tone.Warn)">Google demo verisi</span> }
+                                </span>
+                                <span class="block text-xs text-fg-muted">@p.AccountName · <span class="font-mono">@p.Id</span></span>
+                            </span>
+                        </label>
+                    }
+                </div>
+            }
+        </fieldset>
+
+        <div class="flex justify-end gap-2">
+            <a class="btn btn-ghost" href="@(Url.SiteAction("Index", "SiteSettings") + "#baglantilar")">Vazgeç</a>
+            <partial name="_SubmitButton" model="@("Kaydet")" />
+        </div>
+    </form>
+</div>

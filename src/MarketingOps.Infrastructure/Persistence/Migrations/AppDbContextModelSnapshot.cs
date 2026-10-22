@@ -23,57 +23,73 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("MarketingOps.Domain.Connectors.TaskTrackerConnection", b =>
+            modelBuilder.Entity("MarketingOps.Domain.Connectors.ConnectorAccount", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("BaseUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("base_url");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
+                    b.Property<string>("AccountEmail")
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
-                        .HasColumnName("email");
+                        .HasColumnName("account_email");
 
-                    b.Property<string>("IssueType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("issue_type");
+                    b.Property<string>("ExternalAccountId")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("external_account_id");
 
-                    b.Property<string>("ProjectKey")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("project_key");
+                    b.Property<string>("ExternalAccountName")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("external_account_name");
 
-                    b.Property<string>("ProtectedApiToken")
-                        .IsRequired()
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("LastSyncAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_sync_at");
+
+                    b.Property<string>("ProtectedSecret")
                         .HasColumnType("text")
-                        .HasColumnName("protected_api_token");
+                        .HasColumnName("protected_secret");
 
                     b.Property<Guid>("SiteId")
                         .HasColumnType("uuid")
                         .HasColumnName("site_id");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("type");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.PrimitiveCollection<List<string>>("_scopes")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("scopes");
+
                     b.HasKey("Id")
-                        .HasName("pk_task_tracker_connections");
+                        .HasName("pk_connector_accounts");
 
-                    b.HasIndex("SiteId")
+                    b.HasIndex("SiteId", "Type")
                         .IsUnique()
-                        .HasDatabaseName("ix_task_tracker_connections_site_id");
+                        .HasDatabaseName("ix_connector_accounts_site_id_type");
 
-                    b.ToTable("task_tracker_connections", (string)null);
+                    b.ToTable("connector_accounts", (string)null);
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.Crawls.Crawl", b =>
@@ -134,6 +150,10 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.Property<int>("SkippedCount")
                         .HasColumnType("integer")
                         .HasColumnName("skipped_count");
+
+                    b.Property<DateTimeOffset?>("SnapshotsPrunedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("snapshots_pruned_at");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -351,6 +371,261 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("findings", (string)null);
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.Ga4EventDaily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<long>("EventCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("event_count");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("event_name");
+
+                    b.Property<decimal>("EventValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("event_value");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ga4_event_daily");
+
+                    b.HasIndex("SiteId", "Date", "EventName")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ga4_event_daily_site_id_date_event_name");
+
+                    b.ToTable("ga4_event_daily", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.SearchPerformanceDaily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Clicks")
+                        .HasColumnType("integer")
+                        .HasColumnName("clicks");
+
+                    b.Property<double>("Ctr")
+                        .HasColumnType("double precision")
+                        .HasColumnName("ctr");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<int>("Impressions")
+                        .HasColumnType("integer")
+                        .HasColumnName("impressions");
+
+                    b.Property<double>("Position")
+                        .HasColumnType("double precision")
+                        .HasColumnName("position");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_search_performance_daily");
+
+                    b.HasIndex("SiteId", "Date", "Url")
+                        .IsUnique()
+                        .HasDatabaseName("ix_search_performance_daily_site_id_date_url");
+
+                    b.ToTable("search_performance_daily", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.SitemapStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Errors")
+                        .HasColumnType("integer")
+                        .HasColumnName("errors");
+
+                    b.Property<long?>("Indexed")
+                        .HasColumnType("bigint")
+                        .HasColumnName("indexed");
+
+                    b.Property<bool>("IsPending")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_pending");
+
+                    b.Property<DateTimeOffset?>("LastDownloaded")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_downloaded");
+
+                    b.Property<DateTimeOffset?>("LastSubmitted")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_submitted");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("path");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<long?>("Submitted")
+                        .HasColumnType("bigint")
+                        .HasColumnName("submitted");
+
+                    b.Property<DateTimeOffset>("SyncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at");
+
+                    b.Property<int>("Warnings")
+                        .HasColumnType("integer")
+                        .HasColumnName("warnings");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sitemap_statuses");
+
+                    b.HasIndex("SiteId", "Path")
+                        .IsUnique()
+                        .HasDatabaseName("ix_sitemap_statuses_site_id_path");
+
+                    b.ToTable("sitemap_statuses", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.UrlIndexStatus", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CoverageState")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("coverage_state");
+
+                    b.Property<string>("IndexingState")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("indexing_state");
+
+                    b.Property<DateTimeOffset>("InspectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inspected_at");
+
+                    b.Property<DateTimeOffset?>("LastCrawlTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_crawl_time");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.Property<string>("Verdict")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("verdict");
+
+                    b.HasKey("Id")
+                        .HasName("pk_url_index_statuses");
+
+                    b.HasIndex("SiteId", "Url")
+                        .IsUnique()
+                        .HasDatabaseName("ix_url_index_statuses_site_id_url");
+
+                    b.ToTable("url_index_statuses", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.WebVitalsDaily", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<double?>("Cls")
+                        .HasColumnType("double precision")
+                        .HasColumnName("cls");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<int?>("InpMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("inp_ms");
+
+                    b.Property<int?>("LcpMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("lcp_ms");
+
+                    b.Property<Guid?>("PageTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("page_type_id");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("source");
+
+                    b.Property<string>("Strategy")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("strategy");
+
+                    b.Property<int?>("TtfbMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("ttfb_ms");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_web_vitals_daily");
+
+                    b.HasIndex("SiteId", "Date", "Url", "Strategy")
+                        .IsUnique()
+                        .HasDatabaseName("ix_web_vitals_daily_site_id_date_url_strategy");
+
+                    b.ToTable("web_vitals_daily", (string)null);
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Organizations.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -517,16 +792,6 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("ExternalTrackerKey")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("external_tracker_key");
-
-                    b.Property<string>("ExternalUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("external_url");
-
                     b.Property<Guid>("FindingId")
                         .HasColumnType("uuid")
                         .HasColumnName("finding_id");
@@ -618,14 +883,14 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("work_tasks", (string)null);
                 });
 
-            modelBuilder.Entity("MarketingOps.Domain.Connectors.TaskTrackerConnection", b =>
+            modelBuilder.Entity("MarketingOps.Domain.Connectors.ConnectorAccount", b =>
                 {
                     b.HasOne("MarketingOps.Domain.Sites.Site", null)
                         .WithMany()
                         .HasForeignKey("SiteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_task_tracker_connections_sites_site_id");
+                        .HasConstraintName("fk_connector_accounts_sites_site_id");
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.Crawls.Crawl", b =>
@@ -702,6 +967,10 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                             b1.Property<string>("ContentEncoding");
 
                             b1.Property<string>("ContentType");
+
+                            b1.Property<int?>("ResponseTimeMs");
+
+                            b1.Property<int?>("SizeBytes");
 
                             b1.Property<int?>("StatusCode");
 
@@ -811,6 +1080,56 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.Navigation("History");
 
                     b.Navigation("Occurrences");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.Ga4EventDaily", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ga4_event_daily_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.SearchPerformanceDaily", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_search_performance_daily_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.SitemapStatus", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sitemap_statuses_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.UrlIndexStatus", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_url_index_statuses_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Metrics.WebVitalsDaily", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_web_vitals_daily_sites_site_id");
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.Rules.SiteRuleSetting", b =>

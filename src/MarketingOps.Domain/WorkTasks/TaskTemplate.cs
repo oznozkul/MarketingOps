@@ -1,6 +1,7 @@
 using System.Globalization;
 using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Rules;
+using MarketingOps.Domain.Rules.Definitions;
 
 namespace MarketingOps.Domain.WorkTasks;
 
@@ -16,12 +17,15 @@ public static class TaskTemplate
     public static TaskDraft Build(IRule rule, Finding finding, string? pageTypeName)
     {
         var suggestion = rule.Suggestion;
-        var examples = finding.Occurrences.Take(ExampleCount).Select(o => new SuggestionExample(o.Url, o.CurrentValue, null)).ToList();
+        var content = rule is TtfbRule
+            ? TtfbRule.StepsFromDetail(finding.Occurrences.FirstOrDefault()?.Detail) ?? suggestion.Content
+            : suggestion.Content;
+        var examples = finding.Occurrences.Take(ExampleCount).Select(o => new SuggestionExample(o.Url, o.CurrentValue, null, o.Detail)).ToList();
         return new TaskDraft(
             finding.Title,
             Problem(finding.AffectedCount, pageTypeName, finding.Occurrences.FirstOrDefault()),
             rule.Impact,
-            new TaskSuggestion(suggestion.Kind, suggestion.Summary, suggestion.Content, examples),
+            new TaskSuggestion(suggestion.Kind, suggestion.Summary, content, examples),
             [rule.ReferenceKey],
             rule.Team,
             [(AutomaticCriterion(rule, pageTypeName), VerificationType.Automatic), (rule.TeamCriterion, VerificationType.TeamConfirmation)]);

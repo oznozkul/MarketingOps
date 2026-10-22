@@ -8,4 +8,5 @@ public sealed record CrawlDetailResponse(
     int FailedCount,
     IReadOnlyList<FailedPageResponse> FailedPages,
     int SkippedCount,
-    IReadOnlyList<SkippedUrlResponse> SkippedUrls);
+    IReadOnlyList<SkippedUrlResponse> SkippedUrls,
+    DateTimeOffset? SnapshotsPrunedAt);

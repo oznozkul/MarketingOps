@@ -1,0 +1,109 @@
+@model MarketingOps.Application.Connectors.Queries.GetConnectors.ConnectorsResponse
+@using MarketingOps.Domain.Connectors
+@{
+    (ConnectorType Type, string Description)[] google =
+    [
+        (ConnectorType.SearchConsole, "Sayfa bazında tıklama, gösterim, CTR ve sıra; sitemap ve index durumu; site sahipliği."),
+        (ConnectorType.Ga4, "Günlük e-ticaret event sayıları ve purchase değeri."),
+        (ConnectorType.Gtm, "Container ve etiket yapılandırması (tracking denetiminde kullanılır).")
+    ];
+    var accounts = Model.Connectors.Where(c => google.Any(g => g.Type == c.Type)).ToDictionary(c => c.Type);
+    var authorized = accounts.Values.Any(a => a.AccountEmail is not null);
+    var email = accounts.Values.Select(a => a.AccountEmail).FirstOrDefault(e => e is not null);
+    var needsSelection = accounts.Values.Any(a => a.Status == ConnectorStatus.PendingApproval);
+}
+<section class="card md:col-span-2" aria-labelledby="google-title">
+    <div class="card-header flex-wrap gap-3">
+        <div>
+            <h3 id="google-title" class="card-title">Google</h3>
+            <p class="mt-0.5 text-xs text-fg-muted">
+                @if (authorized) { <span>Yetki veren hesap: <span class="text-fg">@email</span></span> }
+                else { <span>Tek yetkiyle Search Console, GA4 ve Tag Manager'a salt okunur bağlanılır.</span> }
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="badge @ToneClasses.Badge(Tone.Neutral)"><icon name="lock" />Salt okunur</span>
+            @if (authorized)
+            {
+                <form hx-post="@Url.SiteAction("Sync", "Connectors")" hx-disabled-elt="find button" class="contents">
+                    <button type="submit" class="btn btn-ghost btn-sm"><icon name="refresh-cw" />Şimdi senkronla</button>
+                </form>
+                <a class="btn btn-secondary btn-sm" href="@Url.SiteAction("SelectGoogle", "Connectors")">Mülkleri seç</a>
+            }
+            @if (Model.GoogleConfigured)
+            {
+                <form hx-post="@Url.SiteAction("ConnectGoogle", "Connectors")" hx-disabled-elt="find button" class="contents">
+                    <button type="submit" class="btn @(authorized ? "btn-ghost" : "btn-primary") btn-sm"><icon name="link" />@(authorized ? "Hesabı değiştir" : "Google ile bağlan")</button>
+                </form>
+            }
+            else
+            {
+                <button type="button" class="btn btn-primary btn-sm" disabled title="Yönetici Google OAuth istemcisini (Google:ClientId / ClientSecret) ayarlamadı">Google ile bağlan</button>
+            }
+        </div>
+    </div>
+    @if (!Model.GoogleConfigured)
+    {
+        <p class="border-b border-line bg-surface-2 px-4 py-2 text-xs text-fg-muted">Bu kurulumda Google OAuth istemcisi ayarlı değil. Yönetici <span class="font-mono">appsettings.json</span> içindeki <span class="font-mono">Google:ClientId</span> ve <span class="font-mono">Google:ClientSecret</span> değerlerini girdiğinde bağlama açılır.</p>
+    }
+    else if (needsSelection)
+    {
+        <p class="border-b border-line bg-primary-soft px-4 py-2 text-sm text-fg">Yetki verildi. Veri toplanması için <a class="link" href="@Url.SiteAction("SelectGoogle", "Connectors")">bu siteye ait mülkleri seçin</a>.</p>
+    }
+    <ul class="divide-y divide-line">
+        @foreach (var (type, description) in google)
+        {
+            var a = accounts[type];
+            <li class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-sm font-medium text-fg">@DisplayText.Of(type)</span>
+                        <status-badge value="@a.Status" />
+                    </div>
+                    <p class="mt-0.5 text-xs text-fg-muted">@description</p>
+                    @if (a.ExternalAccountName is not null)
+                    {
+                        <p class="mt-1 flex flex-wrap items-center gap-x-2 text-xs">
+                            <span class="break-all font-mono text-fg">@a.ExternalAccountName</span>
+                            <a class="link" href="@(Url.SiteAction("SelectGoogle", "Connectors") + (type == ConnectorType.Ga4 ? "#ga4" : "#search-console"))">Değiştir</a>
+                        </p>
+                    }
+                    else if (a.Status == ConnectorStatus.PendingApproval)
+                    {
+                        <p class="mt-1 text-xs"><a class="link" href="@(Url.SiteAction("SelectGoogle", "Connectors") + (type == ConnectorType.Ga4 ? "#ga4" : "#search-console"))">Mülk seç</a></p>
+                    }
+                    @if (type == ConnectorType.SearchConsole && Model.Sitemaps is { } sm)
+                    {
+                        <p class="mt-1 text-xs text-fg-muted">@sm.Count sitemap · @Format.Number(sm.Submitted ?? 0) URL gönderilmiş@(sm.Errors > 0 ? $" · {sm.Errors} hata" : "")@(sm.Warnings > 0 ? $" · {sm.Warnings} uyarı" : "")</p>
+                    }
+                    @if (a.LastSyncAt is { } synced)
+                    {
+                        <p class="mt-1 text-xs text-fg-muted">Son senkron <time datetime="@Format.Iso(synced)">@Format.DateTime(synced)</time></p>
+                    }
+                    @if (a.LastError is not null)
+                    {
+                        <p class="mt-1 flex items-start gap-1 text-xs text-critical"><icon name="circle-alert" class="mt-px h-3.5 w-3.5 shrink-0" />@a.LastError</p>
+                    }
+                </div>
+                @if (a.AccountEmail is null && Model.GoogleConfigured)
+                {
+                    @* Bağlantısı kesilmiş satır: aynı Google akışı yeniden başlar, dönüşte mülk seçilir. *@
+                    <form hx-post="@Url.SiteAction("ConnectGoogle", "Connectors")" hx-disabled-elt="find button" class="shrink-0">
+                        <button type="submit" class="btn btn-secondary btn-sm"><icon name="link" />Bağla</button>
+                    </form>
+                }
+                else if (a.AccountEmail is not null)
+                {
+                    <div class="flex shrink-0 gap-2">
+                        <form hx-post="@Url.SiteAction("Test", "Connectors", new { type })" hx-disabled-elt="find button" class="contents">
+                            <button type="submit" class="btn btn-ghost btn-sm">Test et</button>
+                        </form>
+                        <form hx-post="@Url.SiteAction("Disconnect", "Connectors", new { type })" hx-confirm="@DisplayText.Of(type) bağlantısı kesilsin mi? Toplanmış veriler korunur." class="contents">
+                            <button type="submit" class="btn btn-ghost btn-sm">Bağlantıyı kes</button>
+                        </form>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+</section>
