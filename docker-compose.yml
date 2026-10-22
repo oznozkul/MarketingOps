@@ -1,0 +1,57 @@
+# Uygulama ayarları yalnızca src/MarketingOps.Web/appsettings.json'dadır; web ve worker bu dosyayı içeri bağlar.
+# Değişiklikten sonra: docker compose restart web worker
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      # appsettings.json'daki bağlantı cümlesiyle aynı olmalı.
+      POSTGRES_DB: marketingops
+      POSTGRES_USER: marketingops
+      POSTGRES_PASSWORD: marketingops
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marketingops -d marketingops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: src/MarketingOps.Web/Dockerfile
+    environment:
+      # Development: migration'lar ve örnek veri başlangıçta uygulanır, Hangfire paneli /jobs'ta açılır.
+      ASPNETCORE_ENVIRONMENT: Development
+    volumes:
+      - ./src/MarketingOps.Web/appsettings.json:/app/appsettings.json:ro
+      - dpkeys:/app/keys
+      - ./knowledge:/knowledge:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/MarketingOps.Worker/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+    volumes:
+      - ./src/MarketingOps.Web/appsettings.json:/app/appsettings.json:ro
+      - dpkeys:/app/keys
+      - ./knowledge:/knowledge:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # Migration'ları web uygular; işçi tablolar hazır olana kadar tekrar dener.
+      web:
+        condition: service_started
+
+volumes:
+  pgdata:
+  dpkeys:

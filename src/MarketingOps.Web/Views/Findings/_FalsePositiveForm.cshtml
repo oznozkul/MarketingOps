@@ -1,0 +1,19 @@
+@model MarketingOps.Web.ViewModels.Findings.FalsePositiveForm
+@{
+    var error = ViewData.ModelState.FirstError("Reason");
+}
+<form class="space-y-4" hx-post="@Url.SiteAction("MarkFalsePositive", "Findings", new { id = ViewContext.RouteData.Values["id"] })" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <p class="text-sm text-fg-muted">Kural bu sayfa tipi için susturulur; sonraki taramalar bulgunun durumunu değiştirmez. İşlem daha sonra geri alınabilir.</p>
+    <form-errors />
+    <div>
+        <label class="label" for="fp-reason">Gerekçe <span class="text-critical" aria-hidden="true">*</span></label>
+        <textarea id="fp-reason" name="Reason" rows="3" class="textarea" required
+                  aria-invalid="@(error is null ? null : "true")" aria-describedby="fp-reason-hint@(error is null ? "" : " Reason-error")">@Model.Reason</textarea>
+        <p id="fp-reason-hint" class="hint">Ekip bu gerekçeyi kuralın geçmişinde görür.</p>
+        <field-error for="Reason" />
+    </div>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" x-on:click="$dispatch('close-modal')">Vazgeç</button>
+        <partial name="_SubmitButton" model="@("İşaretle")" />
+    </div>
+</form>

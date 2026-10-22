@@ -1,0 +1,67 @@
+@model MarketingOps.Web.ViewModels.PageTypes.PageTypeEditorViewModel
+@{
+    var isNew = Model.PageTypeId is null;
+    var previewUrl = Url.SiteAction("Preview", "PageTypes", new { pageTypeId = Model.PageTypeId });
+}
+<div class="flex flex-col gap-6">
+    <div>
+        <a class="link text-sm" href="@Url.SiteAction("Index", "PageTypes")">← Sayfa tipleri</a>
+        <h1 class="page-title mt-2">@(isNew ? "Yeni sayfa tipi" : Model.Form.Name)</h1>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="card card-body">
+            <partial name="_PageTypeForm" model="Model" />
+        </div>
+
+        <aside class="card flex flex-col" aria-labelledby="preview-heading">
+            <div class="card-header">
+                <h2 id="preview-heading" class="card-title">Canlı önizleme</h2>
+                <span class="htmx-indicator text-xs text-fg-muted" id="preview-indicator">Güncelleniyor…</span>
+            </div>
+            <div class="card-body space-y-4">
+                <div>
+                    <label class="label" for="sample-urls">Örnek URL'ler</label>
+                    <textarea id="sample-urls" name="SampleUrls" rows="6" class="textarea font-mono text-xs" spellcheck="false" aria-describedby="sample-urls-hint">@Model.Form.SampleUrls</textarea>
+                    <p id="sample-urls-hint" class="hint">Satır başına bir URL. İlk taramadan sonra örnekler taranan gerçek sayfalardan gelecek.</p>
+                </div>
+                <div id="preview-results" aria-live="polite"
+                     hx-post="@previewUrl"
+                     hx-trigger="load, input changed delay:400ms from:#page-type-form, change from:#page-type-form, input changed delay:400ms from:#sample-urls"
+                     hx-include="#page-type-form, #sample-urls"
+                     hx-indicator="#preview-indicator">
+                    <skeleton rows="4" label="Önizleme hazırlanıyor" />
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@if (!isNew)
+{
+    <div x-data x-cloak>
+        <div class="mt-6 card border-critical-line">
+            <div class="card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold text-fg">Sayfa tipini sil</h2>
+                    <p class="text-sm text-fg-muted">Bu tipe uyan sayfalar sonraki taramada başka bir tipe ya da "Eşleşmeyen" grubuna düşer.</p>
+                </div>
+                <button type="button" class="btn btn-danger" x-on:click="$dispatch('open-modal', 'delete-page-type')"><icon name="circle-x" />Sil</button>
+            </div>
+        </div>
+    </div>
+    <div x-data="{ open: false }" x-cloak x-on:open-modal.window="if ($event.detail === 'delete-page-type') open = true" x-on:keydown.escape.window="open = false">
+        <div x-show="open" class="fixed inset-0 z-modal flex items-end justify-center p-4 sm:items-center" role="alertdialog" aria-modal="true" aria-labelledby="delete-pt-title" aria-describedby="delete-pt-desc">
+            <div x-show="open" x-transition.opacity class="absolute inset-0 bg-fg/40" x-on:click="open = false"></div>
+            <form x-show="open" x-trap.noscroll="open" x-transition class="relative w-full max-w-md rounded border border-line-strong bg-surface p-5 shadow-overlay"
+                  hx-post="@Url.SiteAction("Delete", "PageTypes", new { pageTypeId = Model.PageTypeId })" hx-disabled-elt="find button[type=submit]">
+                <h2 id="delete-pt-title" class="text-base font-semibold text-fg">"@Model.Form.Name" silinsin mi?</h2>
+                <p id="delete-pt-desc" class="mt-1 text-sm text-fg-muted">Bu işlem geri alınamaz. Siteye hiçbir şey yapılmaz.</p>
+                <div class="mt-5 flex justify-end gap-2">
+                    <button type="button" class="btn btn-ghost" x-on:click="open = false">Vazgeç</button>
+                    <button type="submit" class="btn btn-danger"><icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />Sil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}

@@ -1,0 +1,64 @@
+@model MarketingOps.Web.ViewModels.PaginationViewModel
+<nav class="flex flex-col gap-3 border-t border-line px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Sayfalama">
+    <div class="flex items-center gap-3 text-fg-muted">
+        <span class="tabular">
+            @if (Model.Total == 0)
+            {
+                <text>Kayıt yok</text>
+            }
+            else
+            {
+                <text>@Format.Number(Model.FirstIndex)–@Format.Number(Model.LastIndex) / @Format.Number(Model.Total) @Model.ItemLabel</text>
+            }
+        </span>
+        <label class="flex items-center gap-2">
+            <span class="sr-only sm:not-sr-only sm:text-xs">Sayfa başına</span>
+            <select name="pageSize" class="select w-auto py-0 pr-8 text-xs"
+                    hx-get="@Model.PageSizeUrl" hx-target="@Model.Target" hx-push-url="true" hx-trigger="change">
+                @foreach (var size in MarketingOps.Web.ViewComponents.PaginationViewComponent.Sizes)
+                {
+                    <option value="@size" selected="@(size == Model.PageSize)">@size</option>
+                }
+            </select>
+        </label>
+    </div>
+    <ul class="flex items-center gap-1">
+        <li>
+            @if (Model.PreviousUrl is null)
+            {
+                <span class="icon-btn opacity-40" aria-disabled="true"><icon name="chevron-left" label="Önceki sayfa" /></span>
+            }
+            else
+            {
+                <a class="icon-btn" href="@Model.PreviousUrl" hx-get="@Model.PreviousUrl" hx-target="@Model.Target" hx-push-url="true" rel="prev"><icon name="chevron-left" label="Önceki sayfa" /></a>
+            }
+        </li>
+        @foreach (var p in Model.Pages)
+        {
+            <li>
+                @if (p.Number is null)
+                {
+                    <span class="px-1 text-fg-subtle" aria-hidden="true">…</span>
+                }
+                else if (p.Current)
+                {
+                    <span class="icon-btn tabular border border-fg font-medium text-fg" aria-current="page">@p.Number</span>
+                }
+                else
+                {
+                    <a class="icon-btn tabular" href="@p.Url" hx-get="@p.Url" hx-target="@Model.Target" hx-push-url="true" aria-label="Sayfa @p.Number">@p.Number</a>
+                }
+            </li>
+        }
+        <li>
+            @if (Model.NextUrl is null)
+            {
+                <span class="icon-btn opacity-40" aria-disabled="true"><icon name="chevron-right" label="Sonraki sayfa" /></span>
+            }
+            else
+            {
+                <a class="icon-btn" href="@Model.NextUrl" hx-get="@Model.NextUrl" hx-target="@Model.Target" hx-push-url="true" rel="next"><icon name="chevron-right" label="Sonraki sayfa" /></a>
+            }
+        </li>
+    </ul>
+</nav>

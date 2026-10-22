@@ -1,0 +1,75 @@
+@model MarketingOps.Web.ViewModels.Crawls.CrawlDetailViewModel
+@using MarketingOps.Domain.Findings
+@{
+    var crawl = Model.Detail.Crawl;
+    (FindingEventType Type, string Label, Tone Tone)[] groups =
+        [(FindingEventType.Opened, "Yeni açılan", Tone.Critical), (FindingEventType.Reopened, "Tekrar açılan", Tone.Warn), (FindingEventType.Resolved, "Çözülen", Tone.Ok)];
+}
+@* Taramanın kural değerlendirmesi sonucu: bu taramada açılan, tekrar açılan ve çözülen bulgular. *@
+<section class="card overflow-hidden" aria-labelledby="changes-title">
+    <div class="card-header">
+        <h2 id="changes-title" class="card-title">Bulgu değişimleri</h2>
+        @if (crawl.EvaluatedAt is not null)
+        {
+            <partial name="_FindingChangeCounts" model="crawl" />
+        }
+    </div>
+    @if (crawl.EvaluatedAt is null)
+    {
+        var finished = crawl.Status is MarketingOps.Domain.Crawls.CrawlStatus.Completed or MarketingOps.Domain.Crawls.CrawlStatus.PartiallyCompleted;
+        <div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-fg-muted">
+                @(crawl.IsActive ? "Tarama bitince kurallar çalışır ve değişimler burada görünür."
+                    : finished ? "Bu tarama henüz kurallarla değerlendirilmedi. Değerlendirme kayıtlı sayfa verisini kullanır; site yeniden taranmaz."
+                    : "Başarısız ya da iptal edilen taramalar kurallarla değerlendirilmez.")
+            </p>
+            @if (finished)
+            {
+                <form hx-post="@Url.SiteAction("Evaluate", "Crawls", new { crawlId = crawl.Id })" hx-disabled-elt="find button" class="shrink-0">
+                    <button type="submit" class="btn btn-secondary btn-sm">
+                        <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />Kuralları çalıştır
+                    </button>
+                </form>
+            }
+        </div>
+    }
+    else if (Model.FindingChanges.Count == 0)
+    {
+        <empty-state variant="positive" compact="true" title="Bu taramada bulgu değişmedi" description="Açık bulgular olduğu gibi devam ediyor." />
+    }
+    else
+    {
+        @if (crawl.Status == MarketingOps.Domain.Crawls.CrawlStatus.PartiallyCompleted)
+        {
+            <p class="border-b border-line px-4 py-2 text-xs text-fg-muted">Kısmi taramada sayfaların bir kısmı görülmediği için hiçbir bulgu çözülmüş sayılmaz.</p>
+        }
+        <div class="grid divide-y divide-line md:grid-cols-3 md:divide-x md:divide-y-0">
+            @foreach (var (type, label, tone) in groups)
+            {
+                var items = Model.FindingChanges.Where(c => c.Change == type).ToList();
+                <div class="min-w-0">
+                    <h3 class="flex items-center justify-between gap-2 px-4 pb-1 pt-3 text-xs font-semibold text-fg-muted">
+                        <span>@label</span><span class="badge @ToneClasses.Badge(items.Count > 0 ? tone : Tone.Neutral) tabular">@items.Count</span>
+                    </h3>
+                    @if (items.Count == 0)
+                    {
+                        <p class="px-4 pb-3 text-xs text-fg-subtle">Yok</p>
+                    }
+                    else
+                    {
+                        <ul class="pb-2">
+                            @foreach (var c in items)
+                            {
+                                <li>
+                                    <a class="flex items-start gap-2 px-4 py-1.5 text-sm hover:bg-surface-2" href="@Url.SiteAction("Detail", "Findings", new { id = c.FindingId })">
+                                        <severity-badge value="@c.Severity" /><span class="min-w-0 text-fg">@c.Title</span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        </div>
+    }
+</section>

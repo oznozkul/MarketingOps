@@ -1,0 +1,101 @@
+@model MarketingOps.Web.ViewModels.PageTypes.PageTypeListViewModel
+@using MarketingOps.Domain.Sites
+@{
+    var site = Model.Site;
+    var stats = Model.Stats;
+}
+<div class="flex flex-col gap-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="eyebrow">Ayarlar · @site.Domain</p>
+            <h1 class="page-title mt-1">Sayfa Tipleri</h1>
+            <p class="mt-1 max-w-prose text-sm text-fg-muted">URL deseni ve/veya schema tipiyle tanımlanan sayfa grupları. Kurallar sayfa tiplerine bağlanır; aynı kural + aynı sayfa tipi tek bulgu olarak toplanır.</p>
+        </div>
+        <a class="btn btn-primary" href="@Url.SiteAction("New", "PageTypes")"><icon name="plus" />Sayfa tipi ekle</a>
+    </div>
+
+    <section class="card overflow-hidden">
+        @if (site.PageTypes.Count == 0)
+        {
+            <empty-state icon="layers" title="Henüz sayfa tipi yok" description="Sayfa tipi olmadan tüm sayfalar &quot;Eşleşmeyen&quot; grubuna düşer ve bulgular gruplanamaz.">
+                <a class="btn btn-primary btn-sm" href="@Url.SiteAction("New", "PageTypes")"><icon name="plus" />İlk sayfa tipini ekle</a>
+            </empty-state>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table-base min-w-[760px]">
+                    <thead>
+                        <tr>
+                            <th scope="col">Sayfa tipi</th>
+                            <th scope="col">Eşleşme koşulları</th>
+                            <th scope="col" class="num">Eşleşen sayfa</th>
+                            <th scope="col" class="num" title="Sitede açık kurallar; yanlış alarmla bu tipte susturulanlar hariç">Aktif kural</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in site.PageTypes)
+                        {
+                            var href = Url.SiteAction("Edit", "PageTypes", new { pageTypeId = p.Id });
+                            <tr class="row-link" onclick="if(!event.target.closest('a'))this.querySelector('a').click()">
+                                <td class="whitespace-nowrap"><a class="font-medium text-fg hover:underline" href="@href">@p.Name</a></td>
+                                <td>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        @for (var i = 0; i < p.Conditions.Count; i++)
+                                        {
+                                            var c = p.Conditions[i];
+                                            if (i > 0)
+                                            {
+                                                <span class="font-mono text-2xs text-fg-subtle">@(p.Mode == MatchMode.All ? "VE" : "VEYA")</span>
+                                            }
+                                            <span class="inline-flex items-center gap-1 rounded-sm border border-line-strong px-1.5 py-px font-mono text-xs">
+                                                <span class="text-fg-muted">@(c.Type switch { MatchConditionType.UrlGlob => "url", MatchConditionType.UrlRegex => "regex", _ => "@type" })</span>
+                                                <span class="text-fg">@c.Value</span>
+                                            </span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="num">
+                                    @if (stats.CrawlId is { } crawlId)
+                                    {
+                                        <a class="link" href="@(Url.SiteAction("Detail", "Crawls", new { crawlId, pageTypeId = p.Id }) + "#sayfalar")">@Format.Number(stats.Counts.GetValueOrDefault(p.Id))</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-fg-subtle">—<span class="sr-only">henüz tarama yok</span></span>
+                                    }
+                                </td>
+                                <td class="num">
+                                    @{ var muted = stats.MutedRuleCounts.GetValueOrDefault(p.Id); }
+                                    <a class="link" href="@Url.SiteAction("Index", "Rules")">@Format.Number(stats.ActiveRuleCount(p.Id))</a>
+                                    @if (muted > 0)
+                                    {
+                                        <span class="block text-2xs text-fg-muted">@muted susturuldu</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <td class="whitespace-nowrap text-fg-muted">Eşleşmeyen sayfalar</td>
+                            <td class="text-xs text-fg-muted">Hiçbir tipe uymayan sayfalar bu gruba düşer.</td>
+                            <td class="num">
+                                @if (stats.CrawlId is { } lastCrawlId)
+                                {
+                                    <a class="link" href="@(Url.SiteAction("Detail", "Crawls", new { crawlId = lastCrawlId, unmatched = true }) + "#sayfalar")">@Format.Number(stats.UnmatchedCount)</a>
+                                }
+                                else
+                                {
+                                    <span class="text-fg-subtle">—<span class="sr-only">henüz tarama yok</span></span>
+                                }
+                            </td>
+                            <td class="num">@Format.Number(stats.EnabledRuleCount)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">
+                @(stats.CrawlNumber is { } n ? $"Eşleşen sayfa sayıları tarama #{n} verisidir; sayfa tipini değiştirirseniz sonraki taramada güncellenir. " : "Eşleşen sayfa sayıları ilk taramadan sonra dolar. ")Aktif kural: sitede açık kurallardan, yanlış alarmla o sayfa tipinde susturulanlar çıkarılarak hesaplanır.
+            </p>
+        }
+    </section>
+</div>

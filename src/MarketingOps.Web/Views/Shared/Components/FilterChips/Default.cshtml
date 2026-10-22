@@ -1,0 +1,19 @@
+@model MarketingOps.Web.ViewModels.FilterChipsViewModel
+@if (Model.Chips.Count > 0)
+{
+    <div class="flex flex-wrap items-center gap-2" aria-label="Aktif filtreler">
+        @foreach (var chip in Model.Chips)
+        {
+            <a href="@chip.RemoveUrl"
+               hx-get="@chip.RemoveUrl" hx-target="@Model.Target" hx-push-url="true"
+               class="group inline-flex min-h-[32px] items-center gap-1.5 rounded-sm border border-line-strong bg-surface pl-2.5 pr-1.5 text-xs text-fg transition-colors duration-150 hover:border-fg-subtle hover:bg-surface-2"
+               aria-label="Filtreyi kaldır: @chip.Group @chip.Label">
+                <span class="text-fg-muted">@chip.Group:</span>
+                <span class="font-medium">@chip.Label</span>
+                <icon name="x" class="h-3.5 w-3.5 text-fg-muted group-hover:text-fg" />
+            </a>
+        }
+        <a href="@Model.ClearUrl" hx-get="@Model.ClearUrl" hx-target="@Model.Target" hx-push-url="true"
+           class="link inline-flex min-h-[32px] items-center px-1 text-xs font-medium">Tümünü temizle</a>
+    </div>
+}

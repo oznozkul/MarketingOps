@@ -1,0 +1,24 @@
+@model MarketingOps.Web.ViewModels.Sites.DeleteSiteForm
+@{
+    var domain = (string)ViewData["Domain"]!;
+    var error = ViewData.ModelState.FirstError("ConfirmDomain");
+}
+<form id="delete-site-form" class="space-y-4" hx-post="@Url.SiteAction("Delete", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <p class="text-sm text-fg-muted">
+        <span class="font-medium text-fg">@domain</span> ve sayfa tipleri MarketingOps'tan kalıcı olarak silinir. Sitenin kendisine hiçbir şey yapılmaz.
+    </p>
+    <form-errors />
+    <div>
+        <label class="label" for="confirm-domain">Onaylamak için <span class="font-mono">@domain</span> yazın</label>
+        <input id="confirm-domain" name="ConfirmDomain" value="@Model.ConfirmDomain" class="input font-mono" autocomplete="off" spellcheck="false"
+               aria-invalid="@(error is null ? null : "true")" aria-describedby="@(error is null ? null : "ConfirmDomain-error")" />
+        <field-error for="ConfirmDomain" />
+    </div>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" x-on:click="$dispatch('close-modal')">Vazgeç</button>
+        <button type="submit" class="btn btn-danger">
+            <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />
+            Siteyi sil
+        </button>
+    </div>
+</form>

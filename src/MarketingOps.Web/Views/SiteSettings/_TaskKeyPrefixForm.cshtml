@@ -1,0 +1,15 @@
+@model MarketingOps.Web.ViewModels.Sites.TaskKeyPrefixForm
+@{
+    var error = ViewData.ModelState.FirstError("Prefix");
+}
+<form id="task-key-form" class="flex flex-col gap-3 sm:flex-row sm:items-start" hx-post="@Url.SiteAction("UpdateTaskKeyPrefix", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <div class="flex-1">
+        <label class="label" for="task-key-prefix">Görev öneki</label>
+        <input id="task-key-prefix" name="Prefix" value="@Model.Prefix" class="input w-40 font-mono uppercase" maxlength="10" autocomplete="off" spellcheck="false"
+               aria-invalid="@(error is null ? null : "true")" aria-describedby="task-key-hint@(error is null ? "" : " Prefix-error")" />
+        <p id="task-key-hint" class="hint">Görev anahtarları bu önekle başlar (ör. <span class="font-mono">@(string.IsNullOrEmpty(Model.Prefix) ? "LB" : Model.Prefix.ToUpperInvariant())-142</span>). Mevcut görevlerin anahtarı değişmez.</p>
+        <field-error for="Prefix" />
+        <form-errors />
+    </div>
+    <div class="sm:pt-6"><partial name="_SubmitButton" model="@("Kaydet")" /></div>
+</form>

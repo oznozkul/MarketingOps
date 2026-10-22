@@ -1,0 +1,15 @@
+@model MarketingOps.Web.ViewModels.SortHeaderViewModel
+<th scope="col" class="@Model.CssClass" x-show="@Model.Show" aria-sort="@(Model.AriaSort ?? "none")">
+    <a href="@Model.Url" hx-get="@Model.Url" hx-target="@Model.Target" hx-push-url="true"
+       class="-mx-1 inline-flex items-center gap-1 rounded px-1 py-1 hover:text-fg @(Model.Active ? "text-fg" : "")">
+        @Model.Label
+        @if (Model.Active)
+        {
+            <icon name="@(Model.Descending ? "arrow-down" : "arrow-up")" class="h-3.5 w-3.5" />
+        }
+        else
+        {
+            <icon name="arrow-up-down" class="h-3.5 w-3.5 opacity-40" />
+        }
+    </a>
+</th>

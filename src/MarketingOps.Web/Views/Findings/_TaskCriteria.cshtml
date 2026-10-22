@@ -1,0 +1,51 @@
+@model MarketingOps.Application.Tasks.Queries.GetTaskById.TaskDetailResponse
+@using MarketingOps.Domain.WorkTasks
+@{
+    var met = Model.Criteria.Count(c => c.IsMet);
+}
+<section id="kriterler" class="card scroll-mt-20" aria-labelledby="criteria-title">
+    <div class="card-header">
+        <h2 id="criteria-title" class="card-title">Kabul kriterleri</h2>
+        <span class="tabular text-xs text-fg-muted">@met / @Model.Criteria.Count sağlandı</span>
+    </div>
+    <ul class="divide-y divide-line">
+        @foreach (var c in Model.Criteria)
+        {
+            var automatic = c.VerificationType == VerificationType.Automatic;
+            <li class="flex items-start gap-3 px-4 py-3">
+                @if (automatic)
+                {
+                    <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border @(c.IsMet ? "border-ok-solid bg-ok-soft text-ok" : "border-line-strong text-fg-subtle")"
+                          title="Sistem işaretler">
+                        @if (c.IsMet) { <icon name="check" class="h-3.5 w-3.5" /> } else { <icon name="scan-line" class="h-3.5 w-3.5" /> }
+                    </span>
+                }
+                else
+                {
+                    <form hx-post="@Url.SiteAction("Criterion", "Tasks", new { id = Model.Id, criterionId = c.Id })" hx-trigger="change" class="mt-0.5">
+                        <input type="hidden" name="confirmed" value="@(c.IsMet ? "false" : "true")" />
+                        <input type="checkbox" class="checkbox h-5 w-5" id="crit-@c.Id" checked="@c.IsMet" disabled="@(Model.Status == WorkTaskStatus.Closed)" />
+                    </form>
+                }
+                <div class="min-w-0 flex-1">
+                    @if (automatic)
+                    {
+                        <p class="text-sm @(c.IsMet ? "text-fg" : "text-fg")">@c.Text</p>
+                    }
+                    else
+                    {
+                        <label for="crit-@c.Id" class="cursor-pointer text-sm text-fg">@c.Text</label>
+                    }
+                    <p class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-fg-muted">
+                        <span class="badge @ToneClasses.Badge(Tone.Neutral)">@DisplayText.Of(c.VerificationType)</span>
+                        @if (c.IsMet && c.MetAt is { } at)
+                        {
+                            <span>Sağlandı <time datetime="@Format.Iso(at)">@Format.DateTime(at)</time>@(c.MetBy is null ? " · sistem" : $" · {c.MetBy}")</span>
+                        }
+                    </p>
+                </div>
+            </li>
+        }
+    </ul>
+    <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">Tüm kriterler sağlanınca görev kendiliğinden kapanır. Bulgu yeniden görülürse görev Yapılacak'a döner.</p>
+</section>

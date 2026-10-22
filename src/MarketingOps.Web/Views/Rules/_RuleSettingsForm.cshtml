@@ -1,0 +1,97 @@
+@model MarketingOps.Web.ViewModels.Rules.RuleDetailViewModel
+@using MarketingOps.Domain.Findings
+@{
+    var d = Model.Detail;
+    var form = Model.Form;
+    var r = d.Rule;
+    var severities = Enum.GetValues<Severity>();
+    var impactUrl = Url.SiteAction("Impact", "Rules", new { code = r.Code });
+}
+<form id="rule-settings" class="card" hx-post="@Url.SiteAction("Update", "Rules", new { code = r.Code })" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" hx-disinherit="hx-disabled-elt" novalidate>
+    <div class="card-header"><h2 class="card-title">Site ayarları</h2></div>
+    <div class="card-body space-y-6">
+        <form-errors />
+
+        <label class="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" name="IsEnabled" value="true" class="checkbox mt-0.5" checked="@form.IsEnabled" />
+            <input type="hidden" name="IsEnabled" value="false" />
+            <span>
+                <span class="block text-sm font-medium text-fg">Kural açık</span>
+                <span class="block text-xs text-fg-muted">Kapalı kural yeni bulgu açmaz; açtığı bulgular olduğu gibi kalır.</span>
+            </span>
+        </label>
+
+        <div>
+            <label class="label" for="severity-override">Site geneli önem</label>
+            <select id="severity-override" name="SeverityOverride" class="select sm:w-64">
+                <option value="" selected="@(form.SeverityOverride is null)">Varsayılan (@DisplayText.Of(r.DefaultSeverity))</option>
+                @foreach (var s in severities)
+                {
+                    <option value="@s" selected="@(form.SeverityOverride == s)">@DisplayText.Of(s)</option>
+                }
+            </select>
+        </div>
+
+        @if (d.Thresholds.Count > 0)
+        {
+            <fieldset class="space-y-3">
+                <legend class="label">Eşikler</legend>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    @foreach (var t in d.Thresholds)
+                    {
+                        var field = $"Thresholds[{t.Key}]";
+                        var id = FieldIds.Id(field);
+                        var error = ViewData.ModelState.FirstError(field);
+                        <div>
+                            <label class="label" for="@id">@t.Label</label>
+                            <div class="flex items-center gap-2">
+                                <input id="@id" name="@field" type="number" inputmode="numeric" step="1" min="@t.Min.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" max="@t.Max.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)"
+                                       value="@form.Thresholds.GetValueOrDefault(t.Key)" class="input tabular w-32" data-threshold
+                                       aria-invalid="@(error is null ? null : "true")" aria-describedby="@id-hint@(error is null ? "" : " " + FieldIds.ErrorId(field))" />
+                                <span class="text-sm text-fg-muted">@t.Unit</span>
+                            </div>
+                            <p id="@id-hint" class="hint">Varsayılan @Format.Number((double)t.Default, 0) · @Format.Number((double)t.Min, 0)–@Format.Number((double)t.Max, 0) arası</p>
+                            <field-error for="@field" />
+                        </div>
+                    }
+                </div>
+                @* Eşik değiştikçe son taramada yeniden çalıştırılır; hiçbir şey kaydedilmez. *@
+                <div id="threshold-impact" aria-live="polite"
+                     hx-get="@impactUrl" hx-include="[data-threshold]" hx-trigger="input delay:400ms from:[data-threshold]" hx-target="this" hx-swap="innerHTML">
+                    <p class="text-xs text-fg-muted">Bir eşiği değiştirdiğinizde bu değişikliğin son taramada kaç bulguyu etkileyeceği burada gösterilir.</p>
+                </div>
+            </fieldset>
+        }
+
+        @if (d.PageTypes.Count > 0)
+        {
+            <fieldset>
+                <legend class="label">Sayfa tipine göre önem</legend>
+                <p class="hint mb-2">Boş bırakılan tip site geneli önemi kullanır.</p>
+                <div class="divide-y divide-line rounded-sm border border-line">
+                    @foreach (var p in d.PageTypes)
+                    {
+                        var id = $"pt-{p.Id}";
+                        var current = form.PageTypeSeverities.GetValueOrDefault(p.Id);
+                        <div class="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                            <label class="text-sm text-fg" for="@id">
+                                @p.Name
+                                @if (p.IsMuted) { <span class="ml-1 text-xs text-fg-muted">(susturuldu)</span> }
+                            </label>
+                            <select id="@id" name="PageTypeSeverities[@p.Id]" class="select sm:w-56">
+                                <option value="" selected="@(current is null)">Site geneli</option>
+                                @foreach (var s in severities)
+                                {
+                                    <option value="@s" selected="@(current == s)">@DisplayText.Of(s)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+            </fieldset>
+        }
+    </div>
+    <div class="flex justify-end border-t border-line px-4 py-3">
+        <partial name="_SubmitButton" model="@("Kaydet")" />
+    </div>
+</form>

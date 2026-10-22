@@ -1,0 +1,97 @@
+@model MarketingOps.Web.ViewModels.Rules.RuleDetailViewModel
+@using MarketingOps.Domain.Findings
+@using MarketingOps.Domain.Rules
+@{
+    var d = Model.Detail;
+    var r = d.Rule;
+    var reference = RuleReference.Of(d.ReferenceKey);
+}
+<div class="flex flex-col gap-6">
+    <div>
+        <a class="link text-sm" href="@Url.SiteAction("Index", "Rules")">← Kurallar</a>
+        <h1 class="page-title mt-2">@r.Name</h1>
+        <div class="mt-2 flex flex-wrap items-center gap-2">
+            <span class="font-mono text-xs text-fg-muted">@r.Code</span>
+            <category-badge value="@r.Category" />
+            <span class="badge @ToneClasses.Badge(r.IsEnabled ? Tone.Neutral : Tone.Warn)">@(r.IsEnabled ? "Açık" : "Kapalı")</span>
+            <span class="text-xs text-fg-muted">@(r.Scope == RuleScope.Site ? "Site geneli karşılaştırma" : "Her sayfa ayrı değerlendirilir")</span>
+        </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="flex min-w-0 flex-col gap-6">
+            <section class="card card-body space-y-3" aria-labelledby="what-title">
+                <h2 id="what-title" class="eyebrow">Neyi, neden kontrol eder</h2>
+                <p class="max-w-prose text-sm text-fg">@r.Description</p>
+                <p class="max-w-prose text-sm text-fg-muted">@d.Impact</p>
+                <p class="text-sm">
+                    <span class="text-fg-muted">Kaynak: </span>
+                    @if (reference.Url is not null)
+                    {
+                        <a class="link inline-flex items-center gap-1" href="@reference.Url" target="_blank" rel="noopener noreferrer">@reference.Label<icon name="external-link" class="h-3.5 w-3.5" /><span class="sr-only"> (yeni sekmede açılır)</span></a>
+                    }
+                    else
+                    {
+                        <span class="text-fg">@reference.Label</span>
+                    }
+                </p>
+            </section>
+
+            <partial name="_RuleSettingsForm" model="Model" />
+        </div>
+
+        <aside class="flex flex-col gap-6">
+            <section class="card overflow-hidden" aria-labelledby="rule-findings-title">
+                <div class="card-header">
+                    <h2 id="rule-findings-title" class="card-title">Bu kuralın bulguları</h2>
+                    <span class="tabular text-xs text-fg-muted">@r.ActiveFindingCount açık</span>
+                </div>
+                @if (d.Findings.Count == 0)
+                {
+                    <empty-state variant="positive" compact="true" title="Bu kural henüz bulgu açmadı" />
+                }
+                else
+                {
+                    <ul class="divide-y divide-line">
+                        @foreach (var f in d.Findings)
+                        {
+                            <li>
+                                <a class="flex flex-col gap-1 px-4 py-2.5 text-sm hover:bg-surface-2" href="@Url.SiteAction("Detail", "Findings", new { id = f.Id })">
+                                    <span class="text-fg">@f.Title</span>
+                                    <span class="flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+                                        <severity-badge value="@f.Severity" /><status-badge value="@f.Status" />@(f.PageTypeName ?? "Eşleşmeyen sayfalar")
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="card overflow-hidden" aria-labelledby="muted-title">
+                <div class="card-header"><h2 id="muted-title" class="card-title">Susturulduğu sayfa tipleri</h2></div>
+                @if (d.Muted.Count == 0)
+                {
+                    <p class="px-4 py-3 text-sm text-fg-muted">Bu kural hiçbir sayfa tipinde yanlış alarm olarak işaretlenmedi.</p>
+                }
+                else
+                {
+                    <ul class="divide-y divide-line">
+                        @foreach (var m in d.Muted)
+                        {
+                            <li class="space-y-1 px-4 py-2.5 text-sm">
+                                <a class="font-medium text-fg hover:underline" href="@Url.SiteAction("Detail", "Findings", new { id = m.FindingId })">@(m.PageTypeName ?? "Eşleşmeyen sayfalar")</a>
+                                @if (m.Reason is not null) { <p class="text-fg-muted">“@m.Reason”</p> }
+                                <p class="text-xs text-fg-muted">
+                                    @(m.Actor ?? "Bilinmiyor")
+                                    @if (m.At is { } at) { <span> · <time datetime="@Format.Iso(at)">@Format.DateTime(at)</time></span> }
+                                </p>
+                            </li>
+                        }
+                    </ul>
+                    <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">Susturmayı geri almak için bulguyu açın.</p>
+                }
+            </section>
+        </aside>
+    </div>
+</div>

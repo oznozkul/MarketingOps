@@ -1,0 +1,25 @@
+@model MarketingOps.Web.ViewModels.Findings.BulkFindingsForm
+@{
+    var error = ViewData.ModelState.FirstError("Until");
+    var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow.Add(Format.DisplayOffset)).AddDays(1);
+}
+<form class="space-y-4" hx-post="@Url.SiteAction("Bulk", "Findings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <input type="hidden" name="Action" value="Snooze" />
+    <template x-for="id in selected" :key="id"><input type="hidden" name="Ids" :value="id" /></template>
+    <p class="text-sm text-fg-muted">
+        <span class="tabular font-medium text-fg" x-text="selected.length"></span> bulgu seçilen tarihe kadar ertelenir.
+        Tarih gelince bir sonraki tarama durumlarını yeniden belirler. Çözülmüş ya da yanlış alarm olarak işaretli bulgular atlanır.
+    </p>
+    <form-errors />
+    <field-error for="FindingIds" />
+    <div>
+        <label class="label" for="bulk-until">Şu tarihe kadar ertele</label>
+        <input id="bulk-until" name="Until" type="date" class="input" value="@Model.Until?.ToString("yyyy-MM-dd")" min="@tomorrow.ToString("yyyy-MM-dd")"
+               aria-invalid="@(error is null ? null : "true")" aria-describedby="@(error is null ? null : "Until-error")" />
+        <field-error for="Until" />
+    </div>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" x-on:click="$dispatch('close-modal')">Vazgeç</button>
+        <partial name="_SubmitButton" model="@("Ertele")" />
+    </div>
+</form>

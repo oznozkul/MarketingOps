@@ -1,0 +1,244 @@
+@model MarketingOps.Web.ViewModels.Sites.SiteSettingsViewModel
+@using MarketingOps.Domain.Connectors
+@using MarketingOps.Web.ViewModels.Sites
+@{
+    var site = Model.Site;
+    (string Key, string Label)[] tabs = [("genel", "Genel"), ("baglantilar", "Bağlantılar"), ("kimlikler", "Beklenen kimlikler"), ("sahiplik", "Sahiplik")];
+    (ConnectorType Type, string Description)[] connectors =
+    [
+        (ConnectorType.SearchConsole, "Arama performansı, index durumu ve site sahipliği doğrulaması."),
+        (ConnectorType.Ga4, "E-ticaret event sayıları ve purchase değerleri."),
+        (ConnectorType.Gtm, "Container ve etiket yapılandırması."),
+        (ConnectorType.GoogleAds, "Dönüşüm etiketleri ve dönüşüm kimlikleri."),
+        (ConnectorType.Meta, "Pixel ve Conversions API event'leri."),
+        (ConnectorType.MerchantCenter, "Ürün feed'i ve ürün durumu."),
+        (ConnectorType.OrderSource, "Günlük sipariş sayısı ve tutarı: SQL Server, PostgreSQL, Shopify, WooCommerce, ikas veya özel API.")
+    ];
+    var tracker = Model.TaskTrackerForm;
+    var trackerConnected = tracker.HasToken;
+}
+
+<div class="flex flex-col gap-8">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <p class="eyebrow">Ayarlar</p>
+            <h1 class="page-title mt-1">Siteler</h1>
+        </div>
+        <button type="button" class="btn btn-primary" x-data x-on:click="$dispatch('open-modal', 'new-site')"><icon name="plus" />Site ekle</button>
+    </div>
+
+    @* ---------- Organizasyondaki siteler ---------- *@
+    <section class="card overflow-hidden" aria-labelledby="sites-heading">
+        <div class="card-header"><h2 id="sites-heading" class="card-title">Organizasyondaki siteler</h2><span class="tabular text-xs text-fg-muted">@Model.Sites.Count site</span></div>
+        <div class="table-wrap">
+            <table class="table-base min-w-[640px]">
+                <thead>
+                    <tr>
+                        <th scope="col">Site</th>
+                        <th scope="col">Sahiplik</th>
+                        <th scope="col" class="num">Sayfa tipi</th>
+                        <th scope="col"><span class="sr-only">İşlem</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Sites)
+                    {
+                        var current = s.Id == site.Id;
+                        <tr class="@(current ? "bg-surface-2" : "")">
+                            <td>
+                                <div class="font-medium text-fg">@s.Name</div>
+                                <div class="font-mono text-2xs text-fg-muted">@s.Domain</div>
+                            </td>
+                            <td>
+                                @if (s.IsOwnershipVerified)
+                                {
+                                    <span class="badge @ToneClasses.Badge(Tone.Ok)"><icon name="shield-check" />Doğrulandı</span>
+                                }
+                                else
+                                {
+                                    <span class="badge @ToneClasses.Badge(Tone.Warn)"><icon name="hourglass" />Doğrulanmadı</span>
+                                }
+                            </td>
+                            <td class="num">@Format.Number(s.PageTypeCount)</td>
+                            <td class="text-right">
+                                @if (current)
+                                {
+                                    <span class="text-xs text-fg-muted">Aşağıda düzenleniyor</span>
+                                }
+                                else
+                                {
+                                    <a class="link text-xs" href="@Url.Action("Index", "SiteSettings", new { siteId = s.Id })">Ayarları aç</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    @* ---------- Seçili sitenin ayarları ---------- *@
+    <section aria-labelledby="site-heading"
+             x-data="{ tab: (['genel','baglantilar','kimlikler','sahiplik'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'genel') }"
+             x-init="if (location.hash === '#yeni-site') $dispatch('open-modal', 'new-site')">
+        <div class="mb-4">
+            <h2 id="site-heading" class="section-title">@site.Name ayarları</h2>
+            <p class="font-mono text-xs text-fg-muted">@site.Domain</p>
+        </div>
+
+        <div role="tablist" aria-label="Site ayarları" class="flex gap-1 overflow-x-auto border-b border-line"
+             x-on:keydown.arrow-right.prevent="$focus.wrap().next(); $focus.focused().click()"
+             x-on:keydown.arrow-left.prevent="$focus.wrap().previous(); $focus.focused().click()">
+            @foreach (var (key, label) in tabs)
+            {
+                <button type="button" role="tab" id="tab-@key" aria-controls="panel-@key"
+                        :aria-selected="tab === '@key'" :tabindex="tab === '@key' ? 0 : -1"
+                        x-on:click="tab = '@key'; history.replaceState(null, '', '#@key')"
+                        class="relative -mb-px min-h-[44px] whitespace-nowrap border-b-2 px-3 text-sm transition-colors duration-150"
+                        :class="tab === '@key' ? 'border-fg font-medium text-fg' : 'border-transparent text-fg-muted hover:text-fg'">
+                    @label
+                </button>
+            }
+        </div>
+
+        @* Genel *@
+        <div role="tabpanel" id="panel-genel" aria-labelledby="tab-genel" x-show="tab === 'genel'" class="space-y-6 pt-6">
+            <div class="card card-body space-y-4">
+                <h3 class="eyebrow">Site</h3>
+                <partial name="_SiteNameForm" model="Model.NameForm" />
+                <div>
+                    <p class="label">Domain</p>
+                    <p class="font-mono text-sm text-fg">@site.Domain</p>
+                    <p class="hint">Domain değiştirilemez; farklı bir domain için yeni site ekleyin.</p>
+                </div>
+            </div>
+            <div class="card card-body space-y-4">
+                <h3 class="eyebrow">Görevler</h3>
+                <partial name="_TaskKeyPrefixForm" model="Model.TaskKeyForm" />
+            </div>
+            <div class="card card-body space-y-4">
+                <h3 class="eyebrow">Tarama</h3>
+                <partial name="_CrawlSettingsForm" model="Model.CrawlForm" />
+            </div>
+            <div class="card border-critical-line">
+                <div class="card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-fg">Siteyi sil</h3>
+                        <p class="text-sm text-fg-muted">Site ve sayfa tipleri MarketingOps'tan kaldırılır. Bu işlem geri alınamaz.</p>
+                    </div>
+                    <button type="button" class="btn btn-danger" x-on:click="$dispatch('open-modal', 'delete-site')"><icon name="circle-x" />Siteyi sil</button>
+                </div>
+            </div>
+        </div>
+
+        @* Bağlantılar *@
+        <div role="tabpanel" id="panel-baglantilar" aria-labelledby="tab-baglantilar" x-show="tab === 'baglantilar'" x-cloak class="space-y-4 pt-6">
+            <p class="max-w-prose text-sm text-fg-muted">Tüm bağlantılar yalnızca okuma izniyle kurulur. MarketingOps siteye veya reklam hesaplarına hiçbir şey yazmaz.</p>
+            <div class="grid gap-4 md:grid-cols-2">
+                @* Görev sistemi (Jira) *@
+                <div class="card card-body flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-fg">Görev sistemi (Jira Cloud)</h3>
+                        <status-badge value="@(trackerConnected ? ConnectorStatus.Connected : ConnectorStatus.NotConnected)" />
+                    </div>
+                    <p class="flex-1 text-sm text-fg-muted">
+                        @if (trackerConnected)
+                        {
+                            <span>Görevler <span class="font-mono text-fg">@tracker.ProjectKey</span> projesine <span class="font-mono">@tracker.IssueType</span> olarak aktarılır. <span class="font-mono text-xs">@tracker.BaseUrl</span></span>
+                        }
+                        else
+                        {
+                            <span>Görevlerin aktarılacağı Jira projesi. Bulgu ve görev detayından tek tek, bulgu listesinden toplu aktarılır.</span>
+                        }
+                    </p>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                        @if (trackerConnected)
+                        {
+                            <form hx-post="@Url.SiteAction("RemoveTaskTracker", "SiteSettings")" hx-confirm="Jira bağlantısı ve kayıtlı API anahtarı silinsin mi? Aktarılmış görevlerin Jira bağlantıları kalır." class="contents">
+                                <button type="submit" class="btn btn-ghost btn-sm">Bağlantıyı kaldır</button>
+                            </form>
+                        }
+                        <button type="button" class="btn btn-secondary btn-sm" x-data x-on:click="$dispatch('open-modal', 'task-tracker')">@(trackerConnected ? "Düzenle" : "Bağla")</button>
+                    </div>
+                </div>
+
+                @* AI önerileri: sağlayıcı sunucu yapılandırmasından gelir. *@
+                <div class="card card-body flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-fg">AI önerileri</h3>
+                        <status-badge value="@(Model.Ai is null ? ConnectorStatus.NotConnected : ConnectorStatus.Connected)" />
+                    </div>
+                    @if (Model.Ai is { } ai)
+                    {
+                        <p class="flex-1 text-sm text-fg-muted">Görev önerileri <span class="text-fg">@ai.Provider</span> · <span class="font-mono text-xs text-fg">@ai.Model</span> ile zenginleştirilir. Sayılar ve örnek sayfalar her zaman taramadan gelir.</p>
+                        @if (ai.SendsDataExternally)
+                        {
+                            <p class="flex items-start gap-1.5 text-xs text-warn"><icon name="circle-alert" class="mt-px h-3.5 w-3.5 shrink-0" />Bulgu içeriği (URL'ler ve örnek değerler) sağlayıcının sunucularına gönderilir.</p>
+                        }
+                        else
+                        {
+                            <p class="flex items-start gap-1.5 text-xs text-fg-muted"><icon name="lock" class="mt-px h-3.5 w-3.5 shrink-0" />Model yerelde çalışıyor; veri dışarı çıkmaz.</p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="flex-1 text-sm text-fg-muted">Kapalı. Görevler kural şablonundan önerilerle eksiksiz oluşur. Açmak için sunucu ayarında <span class="font-mono text-xs">Ai:Provider</span> değerini Anthropic, DeepSeek ya da Ollama yapın.</p>
+                    }
+                </div>
+
+                @foreach (var (type, description) in connectors)
+                {
+                    <div class="card card-body flex flex-col gap-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-fg">@DisplayText.Of(type)</h3>
+                            <status-badge value="@ConnectorStatus.NotConnected" />
+                        </div>
+                        <p class="flex-1 text-sm text-fg-muted">@description</p>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="badge @ToneClasses.Badge(Tone.Neutral)"><icon name="lock" />Salt okunur</span>
+                            <button type="button" class="btn btn-secondary btn-sm" disabled title="Bağlantı kurulumu henüz hazır değil">Bağla</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Beklenen kimlikler *@
+        <div role="tabpanel" id="panel-kimlikler" aria-labelledby="tab-kimlikler" x-show="tab === 'kimlikler'" x-cloak class="pt-6">
+            <div class="card card-body"><partial name="_TrackingIdsForm" model="Model.TrackingForm" /></div>
+        </div>
+
+        @* Sahiplik *@
+        <div role="tabpanel" id="panel-sahiplik" aria-labelledby="tab-sahiplik" x-show="tab === 'sahiplik'" x-cloak class="pt-6">
+            <div class="card card-body space-y-4">
+                <div class="flex items-center gap-3">
+                    @if (site.IsOwnershipVerified)
+                    {
+                        <span class="badge @ToneClasses.Badge(Tone.Ok)"><icon name="shield-check" />Doğrulandı</span>
+                    }
+                    else
+                    {
+                        <span class="badge @ToneClasses.Badge(Tone.Warn)"><icon name="hourglass" />Doğrulanmadı</span>
+                    }
+                    <span class="font-mono text-sm text-fg">@site.Domain</span>
+                </div>
+                <p class="max-w-prose text-sm text-fg-muted">Site sahipliği, Search Console'daki doğrulanmış mülkle kanıtlanır. Search Console bağlandığında mülk bu domain ile eşleşirse site otomatik olarak doğrulanır.</p>
+                @if (!site.IsOwnershipVerified)
+                {
+                    <div role="note" class="flex items-start gap-2 border-l-2 border-warn-solid bg-warn-soft px-3 py-2 text-sm text-warn">
+                        <icon name="circle-alert" class="mt-0.5 h-4 w-4 shrink-0" />
+                        <p>Sahipliği doğrulanmamış sitede zamanlanmış (otomatik) tarama çalışmaz. Taramalar ekranından elle tarama başlatılabilir.</p>
+                    </div>
+                }
+                <button type="button" class="btn btn-secondary" disabled title="Bağlantı kurulumu henüz hazır değil">Search Console ile doğrula</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<partial name="_Modal" model="@(new ModalViewModel("new-site", "Site ekle", "_CreateSiteForm", new CreateSiteForm()))" />
+<partial name="_Modal" model="@(new ModalViewModel("task-tracker", "Jira bağlantısı", "_TaskTrackerForm", Model.TaskTrackerForm))" />
+@{
+    ViewData["Domain"] = site.Domain;
+}
+<partial name="_Modal" model="@(new ModalViewModel("delete-site", "Siteyi sil", "_DeleteSiteForm", new DeleteSiteForm()))" view-data="ViewData" />

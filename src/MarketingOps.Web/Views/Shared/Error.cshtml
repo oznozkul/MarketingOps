@@ -1,0 +1,16 @@
+@model int
+@{
+    var notFound = Model == 404;
+}
+<div class="card mx-auto mt-10 max-w-xl">
+    @if (notFound)
+    {
+        <empty-state icon="search" title="Sayfa bulunamadı" description="Aradığınız sayfa ya da kayıt yok veya bu siteye ait değil.">
+            <a href="/" class="btn btn-primary">Genel bakışa dön</a>
+        </empty-state>
+    }
+    else
+    {
+        <error-state title="Bir hata oluştu" description="İsteğiniz işlenirken beklenmeyen bir hata oluştu. Sorun sürerse ekibe haber verin." retry-url="/" />
+    }
+</div>

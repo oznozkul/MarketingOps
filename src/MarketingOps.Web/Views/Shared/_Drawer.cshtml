@@ -1,0 +1,16 @@
+@* Sağdan açılan genel amaçlı panel. hx-target="#drawer-body" olan istekler bunu açar (bkz. app.js). *@
+<div x-data x-cloak x-show="$store.drawer.open" class="fixed inset-0 z-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title"
+     @@keydown.escape.window="$store.drawer.close()">
+    <div x-show="$store.drawer.open" x-transition.opacity class="absolute inset-0 bg-fg/40" @@click="$store.drawer.close()"></div>
+    <section x-show="$store.drawer.open" x-trap.noscroll="$store.drawer.open"
+             x-transition:enter="transition duration-200 ease-out" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition duration-150 ease-in" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+             class="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col border-l border-line bg-surface shadow-overlay">
+        <header class="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
+            <h2 id="drawer-title" class="text-base font-semibold text-fg" x-text="$store.drawer.title"></h2>
+            <button type="button" class="icon-btn -mr-2" @@click="$store.drawer.close()"><icon name="x" label="Paneli kapat" /></button>
+        </header>
+        <div id="drawer-body" class="flex-1 overflow-y-auto px-5 py-4"></div>
+    </section>
+</div>
+<template id="drawer-skeleton"><skeleton rows="6" label="Panel yükleniyor" /></template>

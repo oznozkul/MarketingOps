@@ -1,0 +1,202 @@
+/* MarketingOps tasarım sistemi. Kaynak: design-system/MASTER.md
+   Stil: Swiss Modernism 2.0 + Data-Dense Dashboard (ui-ux-pro-max). Düz yüzeyler, ince çizgiler, tek vurgu rengi. */
+
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-latin-400.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-sans-latin-ext-400.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-sans-latin-500.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-sans-latin-ext-500.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-sans-latin-600.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-sans-latin-ext-600.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-mono-latin-400.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-mono-latin-ext-400.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-mono-latin-500.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-mono-latin-ext-500.woff2") format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* "R G B" kanalları; Tailwind opaklık değiştiricileri bu sayede çalışır.
+     Kontrast oranları design-system/MASTER.md içinde ölçülmüştür (hepsi ≥ 4.5:1). */
+  :root, .light {
+    color-scheme: light;
+    --canvas: 244 244 241;
+    --surface: 255 255 255;
+    --surface-2: 241 241 238;
+    --surface-3: 228 228 224;
+    --line: 225 225 220;
+    --line-strong: 196 196 189;
+    --fg: 20 22 25;
+    --fg-muted: 84 88 94;
+    --fg-subtle: 100 104 110;
+
+    /* Birincil eylem mürekkep rengidir; mavi yalnızca bağlantı ve odak içindir. */
+    --primary: 20 22 25;
+    --primary-hover: 52 56 62;
+    --primary-fg: 255 255 255;
+    --primary-soft: 236 236 232;
+    --primary-text: 3 105 161;
+    --focus: 3 105 161;
+
+    --critical-fg: 180 35 24;  --critical-bg: 254 243 242; --critical-line: 250 206 202; --critical-solid: 217 45 32;
+    --high-fg: 176 70 9;       --high-bg: 255 245 235;     --high-line: 249 212 175;     --high-solid: 230 106 16;
+    --medium-fg: 23 80 172;    --medium-bg: 240 245 253;   --medium-line: 196 214 243;   --medium-solid: 46 108 210;
+    --low-fg: 84 88 94;        --low-bg: 241 241 238;      --low-line: 207 207 201;      --low-solid: 128 132 138;
+    --ok-fg: 6 118 71;         --ok-bg: 236 253 243;       --ok-line: 171 239 198;       --ok-solid: 18 150 92;
+    --warn-fg: 138 86 6;       --warn-bg: 254 249 235;     --warn-line: 245 222 160;     --warn-solid: 202 138 4;
+
+    --chart-1: 20 22 25;
+    --chart-2: 3 105 161;
+    --chart-3: 128 122 114;
+    --chart-4: 84 88 94;
+    --chart-grid: 228 228 224;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --canvas: 15 16 18;
+    --surface: 22 24 27;
+    --surface-2: 30 32 36;
+    --surface-3: 42 45 50;
+    --line: 44 47 52;
+    --line-strong: 68 72 79;
+    --fg: 234 234 230;
+    --fg-muted: 168 172 178;
+    --fg-subtle: 140 144 151;
+
+    /* Koyu temada birincil buton tersine döner: açık zemin, koyu metin. */
+    --primary: 234 234 230;
+    --primary-hover: 205 205 200;
+    --primary-fg: 15 16 18;
+    --primary-soft: 36 39 43;
+    --primary-text: 86 182 236;
+    --focus: 86 182 236;
+
+    --critical-fg: 249 160 152; --critical-bg: 56 20 18;   --critical-line: 120 38 32;  --critical-solid: 240 68 56;
+    --high-fg: 249 178 122;     --high-bg: 54 30 12;       --high-line: 120 62 20;      --high-solid: 240 128 48;
+    --medium-fg: 150 189 245;   --medium-bg: 22 35 62;     --medium-line: 40 70 130;    --medium-solid: 82 140 230;
+    --low-fg: 196 199 204;      --low-bg: 34 36 40;        --low-line: 70 74 80;        --low-solid: 150 154 160;
+    --ok-fg: 120 220 165;       --ok-bg: 12 42 28;         --ok-line: 24 100 62;        --ok-solid: 34 180 110;
+    --warn-fg: 240 200 110;     --warn-bg: 48 36 10;       --warn-line: 110 80 20;      --warn-solid: 220 160 30;
+
+    --chart-1: 234 234 230;
+    --chart-2: 86 182 236;
+    --chart-3: 160 152 142;
+    --chart-4: 140 144 151;
+    --chart-grid: 44 47 52;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-canvas text-fg font-sans antialiased; font-feature-settings: "tnum" 0; }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus));
+    outline-offset: 2px;
+  }
+
+  [x-cloak] { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* Bölüm etiketi: Swiss tipografisinin küçük, aralıklı, büyük harfli etiketi. */
+  /* Büyük harf dönüşümü yok: tr-TR'de "Tracking" → "TRACKİNG" olur. */
+  .eyebrow { @apply font-mono text-[11px] font-medium tracking-[0.02em] text-fg-muted; }
+
+  /* Butonlar: dokunmatik ekranda 44px, ince imleçte 36px. Gölge ve gradient yok. */
+  .btn {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent px-3.5 text-sm font-medium transition-colors duration-150 cursor-pointer select-none disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50;
+  }
+  @media (pointer: fine) {
+    .btn { min-height: 34px; }
+    .btn-sm { min-height: 28px; }
+    .icon-btn { min-height: 34px; min-width: 34px; }
+  }
+  .btn-sm { @apply px-2.5 text-xs; }
+  .btn-primary { @apply bg-primary text-primary-fg hover:bg-primary-hover; }
+  .btn-secondary { @apply border-line-strong bg-surface text-fg hover:border-fg-subtle hover:bg-surface-2; }
+  .btn-ghost { @apply text-fg-muted hover:bg-surface-2 hover:text-fg; }
+  .btn-danger { @apply border-critical-line bg-surface text-critical hover:border-critical-solid; }
+  .icon-btn {
+    @apply inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-sm text-fg-muted transition-colors duration-150 hover:bg-surface-2 hover:text-fg cursor-pointer;
+  }
+
+  .link { @apply text-primary-text underline decoration-1 underline-offset-[3px] decoration-primary-text/40 hover:decoration-primary-text cursor-pointer; }
+
+  .label { @apply mb-1 block text-sm font-medium text-fg; }
+  .hint { @apply mt-1 text-xs text-fg-muted; }
+  .input, .select, .textarea {
+    @apply block w-full rounded-sm border border-line-strong bg-surface px-3 text-sm text-fg placeholder:text-fg-subtle transition-colors duration-150 hover:border-fg-subtle focus:border-focus focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 disabled:bg-surface-2 disabled:text-fg-muted aria-[invalid=true]:border-critical-solid;
+  }
+  .input, .select { @apply min-h-[44px]; }
+  @media (pointer: fine) { .input, .select { min-height: 34px; } }
+  .textarea { @apply py-2; }
+  .checkbox { @apply h-4 w-4 cursor-pointer rounded-none border-line-strong accent-[rgb(var(--primary))]; }
+
+  /* Panel: düz yüzey + 1px çizgi. Başlıklar ince bir çizgiyle ayrılır. */
+  .card { @apply rounded border border-line bg-surface; }
+  .card-header { @apply flex min-h-[44px] items-center justify-between gap-3 border-b border-line px-4 py-2; }
+  .card-title { @apply text-sm font-semibold text-fg; }
+  .card-body { @apply p-4; }
+
+  .badge { @apply inline-flex items-center gap-1 whitespace-nowrap rounded-sm border px-1.5 py-px text-xs font-medium leading-[18px]; }
+  .badge svg { @apply h-3.5 w-3.5 shrink-0; }
+
+  .table-wrap { @apply overflow-x-auto; }
+  .table-base { @apply w-full border-collapse text-left text-sm; }
+  .table-base thead th { @apply sticky top-0 z-sticky whitespace-nowrap border-b border-line-strong bg-surface px-3 py-2 font-mono text-[11px] font-medium tracking-[0.02em] text-fg-muted; }
+  .table-base tbody td { @apply border-b border-line px-3 py-2 align-middle; }
+  .table-base tbody tr:last-child td { @apply border-b-0; }
+  .table-base tbody tr.row-link { @apply cursor-pointer transition-colors duration-150 hover:bg-surface-2; }
+  .table-base td.num, .table-base th.num { @apply text-right tabular; }
+
+  .skeleton { @apply animate-pulse rounded-sm bg-surface-3; }
+
+  .kbd { @apply rounded-sm border border-line-strong bg-surface-2 px-1 font-mono text-2xs text-fg-muted; }
+  .code-block { @apply overflow-x-auto rounded-sm border border-line bg-surface-2 p-3 font-mono text-xs leading-5 text-fg; }
+
+  .page-title { @apply text-[22px] font-semibold leading-tight tracking-[-0.01em] text-fg; }
+  .section-title { @apply text-[15px] font-semibold text-fg; }
+
+  /* Menü: seçili öğe hap değil, solda 2px mürekkep çizgisi. */
+  .nav-item {
+    @apply relative flex min-h-[44px] items-center gap-3 px-3 text-sm text-fg-muted transition-colors duration-150 hover:bg-surface-2 hover:text-fg;
+  }
+  @media (pointer: fine) { .nav-item { min-height: 34px; } }
+  .nav-item[aria-current="page"] { @apply bg-surface-2 font-medium text-fg; }
+  .nav-item[aria-current="page"]::before { content: ""; @apply absolute inset-y-1 left-0 w-0.5 bg-fg; }
+  .nav-item svg { @apply h-4 w-4 shrink-0; }
+
+  .menu { @apply absolute z-overlay mt-1 min-w-[14rem] overflow-hidden rounded-sm border border-line-strong bg-surface py-1 shadow-overlay; }
+  .menu-item { @apply flex min-h-[44px] w-full items-center gap-2 px-3 text-left text-sm text-fg hover:bg-surface-2 focus-visible:bg-surface-2 cursor-pointer; }
+  @media (pointer: fine) { .menu-item { min-height: 34px; } }
+
+  /* Kare ikon kutusu (boş/hata durumları). */
+  .icon-box { @apply mb-3 flex h-10 w-10 items-center justify-center rounded-sm border; }
+
+  /* htmx: istek sürerken görünen göstergeler */
+  .htmx-indicator { opacity: 0; transition: opacity 150ms ease-in; }
+  .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+  .htmx-request.htmx-dim, .htmx-request .htmx-dim { opacity: .55; transition: opacity 150ms; }
+  /* Buton içi gösterge boşken yer kaplamasın; yalnızca istek sürerken görünür. */
+  .btn .htmx-indicator { display: none; }
+  .htmx-request .btn .htmx-indicator, .htmx-request.btn .htmx-indicator { display: inline-block; opacity: 1; }
+
+  #global-indicator { @apply pointer-events-none fixed inset-x-0 top-0 z-toast h-0.5 overflow-hidden; }
+  #global-indicator::after {
+    content: ""; @apply absolute inset-y-0 w-1/3 bg-primary-text;
+    animation: indeterminate 1.1s ease-in-out infinite;
+  }
+  @keyframes indeterminate { from { left: -33%; } to { left: 100%; } }
+}

@@ -1,0 +1,52 @@
+@model ShellViewModel
+@{
+    var siteId = Model.Site.Id;
+    (string Controller, string Label, string Icon)[] main =
+    [
+        ("Overview", "Genel Bakış", "layout-dashboard"),
+        ("Findings", "Bulgular", "scan-search"),
+        ("Tasks", "Görevler", "clipboard-list"),
+        ("Tracking", "Tracking Denetimi", "activity"),
+        ("Performance", "Performans", "gauge"),
+        ("Crawls", "Taramalar", "history"),
+    ];
+    (string Controller, string Label, string Icon)[] settings =
+    [
+        ("SiteSettings", "Siteler", "globe"),
+        ("PageTypes", "Sayfa Tipleri", "layers"),
+        ("Rules", "Kurallar", "sliders-horizontal"),
+        ("NotificationSettings", "Bildirimler", "bell"),
+    ];
+}
+<div class="flex h-14 shrink-0 items-center border-b border-line px-4">
+    <span class="flex items-baseline gap-2"><span class="border border-fg px-1 font-mono text-[11px] font-medium leading-4 text-fg">MO</span><span class="text-sm font-semibold tracking-[-0.01em] text-fg">MarketingOps</span></span>
+</div>
+<nav class="flex-1 overflow-y-auto py-4" aria-label="Ekranlar">
+    <ul>
+        @foreach (var item in main)
+        {
+            <li>
+                <a class="nav-item" href="@Url.Action("Index", item.Controller, new { siteId })" aria-current="@(Model.ActiveSection == item.Controller ? "page" : null)">
+                    <icon name="@item.Icon" />@item.Label
+                </a>
+            </li>
+        }
+    </ul>
+    <p class="eyebrow mb-1 mt-6 px-3" id="nav-settings">Ayarlar</p>
+    <ul aria-labelledby="nav-settings">
+        @foreach (var item in settings)
+        {
+            <li>
+                <a class="nav-item" href="@Url.Action("Index", item.Controller, new { siteId })" aria-current="@(Model.ActiveSection == item.Controller ? "page" : null)">
+                    <icon name="@item.Icon" />@item.Label
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
+<div class="border-t border-line p-4">
+    <p class="flex items-start gap-2 text-xs text-fg-muted">
+        <icon name="lock" class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span><span class="font-medium text-fg">Salt okunur.</span> Sitenize ve reklam hesaplarınıza hiçbir değişiklik yazılmaz.</span>
+    </p>
+</div>

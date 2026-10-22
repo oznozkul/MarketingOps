@@ -1,0 +1,49 @@
+@model MarketingOps.Web.ViewModels.Findings.FindingDetailViewModel
+@{
+    var d = Model.Detail;
+    var occurrences = d.Occurrences;
+    var baseUrl = Url.SiteAction("Detail", "Findings", new { id = d.Item.Id });
+}
+<div id="occurrences-region" class="space-y-3" hx-target="#occurrences-region" hx-select="#occurrences-region" hx-swap="outerHTML" hx-push-url="true">
+    <form role="search" hx-get="@baseUrl" hx-trigger="input changed delay:400ms from:#occ-q, search from:#occ-q" x-data x-on:submit.prevent>
+        <label class="sr-only" for="occ-q">URL ya da mevcut değerde ara</label>
+        <div class="relative sm:max-w-sm">
+            <icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+            <input id="occ-q" name="q" type="search" value="@Model.OccurrenceSearch" class="input pl-9" placeholder="URL ya da mevcut değer" autocomplete="off" />
+        </div>
+    </form>
+    <div class="card overflow-hidden">
+        @if (occurrences.TotalCount == 0)
+        {
+            <empty-state icon="filter" compact="true" title="@(Model.OccurrenceSearch is null ? "Kayıtlı sayfa yok" : "Aramayla eşleşen sayfa yok")" />
+        }
+        else
+        {
+            <div class="table-wrap htmx-dim">
+                <table class="table-base min-w-[640px]">
+                    <thead><tr><th scope="col">URL</th><th scope="col">Mevcut değer</th></tr></thead>
+                    <tbody>
+                        @foreach (var o in occurrences.Items)
+                        {
+                            <tr class="align-top">
+                                <td class="max-w-md">
+                                    <a class="inline-flex items-start gap-1 break-all font-mono text-xs text-fg hover:underline" href="@o.Url" target="_blank" rel="noopener noreferrer">@o.Url<icon name="external-link" class="mt-0.5 h-3 w-3 shrink-0 text-fg-muted" /><span class="sr-only"> (yeni sekmede açılır)</span></a>
+                                </td>
+                                <td class="max-w-sm text-xs">
+                                    @if (o.CurrentValue is not null) { <span class="block break-words text-fg">@o.CurrentValue</span> }
+                                    @if (o.Detail is not null) { <span class="mt-0.5 line-clamp-3 break-all text-fg-muted" title="@o.Detail">@o.Detail</span> }
+                                    @if (o.CurrentValue is null && o.Detail is null) { <span class="text-fg-subtle">—</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <vc:pagination page="occurrences.Page" page-size="occurrences.PageSize" total="occurrences.TotalCount" target="#occurrences-region" item-label="sayfa" />
+        }
+        @if (d.Item.AffectedCount > d.StoredOccurrenceCount)
+        {
+            <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">Toplam @Format.Number(d.Item.AffectedCount) sayfadan ilk @Format.Number(d.StoredOccurrenceCount) tanesi saklanır.</p>
+        }
+    </div>
+</div>

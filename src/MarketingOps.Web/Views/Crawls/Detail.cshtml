@@ -1,0 +1,168 @@
+@model MarketingOps.Web.ViewModels.Crawls.CrawlDetailViewModel
+@using MarketingOps.Domain.Crawls
+@{
+    var d = Model.Detail;
+    var crawl = d.Crawl;
+    var ran = d.Stages.ToDictionary(s => s.Stage);
+}
+<div class="flex flex-col gap-6">
+    <div>
+        <a class="link text-sm" href="@Url.SiteAction("Index", "Crawls")">← Taramalar</a>
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+            <h1 class="page-title">Tarama <span class="font-mono">#@crawl.Number</span></h1>
+            <status-badge value="@crawl.Status" />
+            <span class="text-sm text-fg-muted">@DisplayText.Of(crawl.TriggeredBy)</span>
+        </div>
+        <p class="mt-1 text-sm text-fg-muted">
+            @if (crawl.StartedAt is { } started)
+            {
+                <span>Başlangıç <time datetime="@Format.Iso(started)">@Format.DateTime(started)</time></span>
+            }
+            else
+            {
+                <span>Kuyruğa eklendi <time datetime="@Format.Iso(crawl.QueuedAt)">@Format.DateTime(crawl.QueuedAt)</time></span>
+            }
+            @if (crawl.FinishedAt is { } finished)
+            {
+                <span> · Bitiş <time datetime="@Format.Iso(finished)">@Format.DateTime(finished)</time> · @Format.Duration(crawl.Duration)</span>
+            }
+        </p>
+    </div>
+
+    @if (crawl.IsActive)
+    {
+        <partial name="_CrawlLiveCard" model="crawl" />
+    }
+
+    @if (d.ErrorMessage is not null)
+    {
+        <div role="alert" class="flex items-start gap-2 border-l-2 border-critical-solid bg-critical-soft px-3 py-2 text-sm text-critical">
+            <icon name="circle-x" class="mt-0.5 h-4 w-4 shrink-0" /><p>@d.ErrorMessage</p>
+        </div>
+    }
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <stat-card label="Keşfedilen" value="@Format.Number(crawl.PagesDiscovered)" hint="Kuyruğa alınan sayfa" />
+        <stat-card label="Taranan" value="@Format.Number(crawl.PagesCrawled)" hint="Yanıtı 4xx/5xx olmayan" />
+        <stat-card label="Hata" value="@Format.Number(crawl.PagesFailed)" hint="4xx/5xx ya da yanıt yok" />
+        <stat-card label="Atlanan" value="@Format.Number(d.SkippedCount)" hint="robots.txt, hariç path, sayfa limiti" />
+    </div>
+
+    <partial name="_FindingChanges" model="Model" />
+
+    <div class="grid gap-6 xl:grid-cols-2">
+        <section class="card" aria-labelledby="stages-title">
+            <div class="card-header"><h2 id="stages-title" class="card-title">Aşamalar</h2></div>
+            <ol class="divide-y divide-line">
+                @foreach (var stage in Enum.GetValues<CrawlStage>())
+                {
+                    var timing = ran.GetValueOrDefault(stage);
+                    <li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                        <span class="flex items-center gap-2 @(timing is null ? "text-fg-subtle" : "text-fg")">
+                            @if (timing is null) { <icon name="circle-dashed" class="h-4 w-4" /> }
+                            else if (timing.FinishedAt is null) { <icon name="loader-circle" class="h-4 w-4 animate-spin motion-reduce:animate-none" /> }
+                            else { <icon name="check" class="h-4 w-4" /> }
+                            @DisplayText.Of(stage)
+                        </span>
+                        <span class="tabular text-xs text-fg-muted">
+                            @(timing is null ? "Bu taramada çalışmadı" : timing.FinishedAt is null ? "Sürüyor" : Format.Duration(timing.Duration))
+                        </span>
+                    </li>
+                }
+            </ol>
+        </section>
+
+        <section class="card" aria-labelledby="types-title">
+            <div class="card-header"><h2 id="types-title" class="card-title">Sayfa tiplerine dağılım</h2></div>
+            @if (d.PageTypes.Count == 0)
+            {
+                <empty-state icon="layers" compact="true" title="Henüz sayfa yok" description="Taranan sayfalar burada sayfa tiplerine göre listelenir." />
+            }
+            else
+            {
+                <ul class="divide-y divide-line">
+                    @foreach (var t in d.PageTypes)
+                    {
+                        var href = t.PageTypeId is null
+                            ? Url.SiteAction("Detail", "Crawls", new { crawlId = crawl.Id, unmatched = true }) + "#sayfalar"
+                            : Url.SiteAction("Detail", "Crawls", new { crawlId = crawl.Id, pageTypeId = t.PageTypeId }) + "#sayfalar";
+                        <li>
+                            <a class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-surface-2" href="@href">
+                                <span class="@(t.PageTypeId is null ? "text-fg-muted" : "text-fg")">@(t.Name ?? "Eşleşmeyen sayfalar")</span>
+                                <span class="tabular font-mono">@Format.Number(t.Count)</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-2">
+        <section class="card overflow-hidden" aria-labelledby="failed-title">
+            <div class="card-header"><h2 id="failed-title" class="card-title">Hata alan URL'ler</h2><span class="tabular text-xs text-fg-muted">@Format.Number(d.FailedCount)</span></div>
+            @if (d.FailedPages.Count == 0)
+            {
+                <empty-state variant="positive" compact="true" title="Hata alan sayfa yok" />
+            }
+            else
+            {
+                <div class="table-wrap max-h-80 overflow-y-auto">
+                    <table class="table-base">
+                        <thead><tr><th scope="col">URL</th><th scope="col">Durum</th></tr></thead>
+                        <tbody>
+                            @foreach (var f in d.FailedPages)
+                            {
+                                <tr>
+                                    <td class="max-w-md break-all font-mono text-xs"><a class="hover:underline" href="@f.Url" target="_blank" rel="noopener noreferrer">@f.Url</a></td>
+                                    <td class="whitespace-nowrap text-xs">
+                                        @if (f.StatusCode is { } code) { <span class="badge @ToneClasses.Badge(Tone.Critical)">@code</span> }
+                                        else { <span class="text-critical">@f.FetchError</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (d.FailedCount > d.FailedPages.Count)
+                {
+                    <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">İlk @d.FailedPages.Count gösteriliyor. Tamamı için aşağıdaki sayfa gezgininde durum filtresini kullanın.</p>
+                }
+            }
+        </section>
+
+        <section class="card overflow-hidden" aria-labelledby="skipped-title">
+            <div class="card-header"><h2 id="skipped-title" class="card-title">Atlanan URL'ler</h2><span class="tabular text-xs text-fg-muted">@Format.Number(d.SkippedCount)</span></div>
+            @if (d.SkippedUrls.Count == 0)
+            {
+                <empty-state icon="inbox" compact="true" title="Atlanan URL yok" />
+            }
+            else
+            {
+                <div class="table-wrap max-h-80 overflow-y-auto">
+                    <table class="table-base">
+                        <thead><tr><th scope="col">URL</th><th scope="col">Neden</th></tr></thead>
+                        <tbody>
+                            @foreach (var s in d.SkippedUrls)
+                            {
+                                <tr>
+                                    <td class="max-w-md break-all font-mono text-xs">@s.Url</td>
+                                    <td class="whitespace-nowrap text-xs text-fg-muted">@DisplayText.Of(s.Reason)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (d.SkippedCount > d.SkippedUrls.Count)
+                {
+                    <p class="border-t border-line px-4 py-2 text-xs text-fg-muted">İlk @d.SkippedUrls.Count gösteriliyor.</p>
+                }
+            }
+        </section>
+    </div>
+
+    <section id="sayfalar" class="scroll-mt-20 space-y-3" aria-labelledby="pages-title">
+        <h2 id="pages-title" class="section-title">Taranan sayfalar</h2>
+        <partial name="_PagesTable" model="Model" />
+    </section>
+</div>

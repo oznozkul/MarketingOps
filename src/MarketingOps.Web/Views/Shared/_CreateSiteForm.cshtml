@@ -1,0 +1,32 @@
+@model MarketingOps.Web.ViewModels.Sites.CreateSiteForm
+@{
+    var nameError = ViewData.ModelState.FirstError("Name");
+    var domainError = ViewData.ModelState.FirstError("Domain");
+}
+<form id="create-site-form" class="space-y-4" hx-post="/sites/new" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <form-errors />
+    <div>
+        <label class="label" for="new-site-domain">Domain</label>
+        <input id="new-site-domain" name="Domain" value="@Model.Domain" class="input font-mono" placeholder="ornek.com" autocomplete="off" spellcheck="false"
+               aria-invalid="@(domainError is null ? null : "true")" aria-describedby="@(domainError is null ? "new-site-domain-hint" : "Domain-error")" />
+        <field-error for="Domain" />
+        @if (domainError is null)
+        {
+            <p id="new-site-domain-hint" class="hint">Şema ve "www." yazmanıza gerek yok; https://www.ornek.com/ girilirse ornek.com olarak kaydedilir.</p>
+        }
+    </div>
+    <div>
+        <label class="label" for="new-site-name">Görünen ad</label>
+        <input id="new-site-name" name="Name" value="@Model.Name" class="input" placeholder="Örnek Mağaza"
+               aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "Name-error")" />
+        <field-error for="Name" />
+    </div>
+    <p class="flex items-start gap-2 text-xs text-fg-muted">
+        <icon name="lock" class="mt-px h-3.5 w-3.5 shrink-0" />
+        Site eklemek siteye hiçbir şey yazmaz. Taramadan önce sahiplik Search Console ile doğrulanır.
+    </p>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" x-on:click="$dispatch('close-modal')">Vazgeç</button>
+        <partial name="_SubmitButton" model="@("Site ekle")" />
+    </div>
+</form>

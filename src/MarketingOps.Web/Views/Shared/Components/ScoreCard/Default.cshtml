@@ -1,0 +1,46 @@
+@model ScoreCardViewModel
+<section class="card flex flex-col gap-3 p-4" aria-label="@Model.Title">
+    <div class="flex items-start justify-between gap-2">
+        <h3 class="eyebrow">@Model.Title</h3>
+        @if (Model.Value is not null)
+        {
+            var band = Model.Band;
+            <span class="badge @ToneClasses.Badge(band.Tone)">@band.Label</span>
+        }
+    </div>
+
+    @if (Model.Value is null)
+    {
+        <div class="flex flex-1 flex-col justify-center gap-1 py-1">
+            <p class="text-sm font-medium text-fg">Veri yok</p>
+            <p class="text-xs text-fg-muted">
+                @Model.MissingConnector bağlı değil ·
+                <a class="link font-medium" href="@Model.ConnectUrl">Bağla</a>
+            </p>
+        </div>
+    }
+    else
+    {
+        var band = Model.Band;
+        <div class="flex items-baseline gap-2">
+            <span class="tabular font-mono text-[32px] font-medium leading-none tracking-[-0.02em] text-fg">@Model.Value</span>
+            <span class="text-sm text-fg-muted">/ 100</span>
+        </div>
+        <div class="h-1 w-full bg-surface-3" role="presentation">
+            <div class="h-full @ToneClasses.Solid(band.Tone)" style="width:@(Model.Value)%"></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            @Html.Raw(StatCardTagHelper.DeltaHtml(Model.Delta, "up", "dünden"))
+            @if (Model.BreakdownUrl is not null)
+            {
+                <button type="button"
+                        class="link -my-2 inline-flex min-h-[44px] items-center text-xs font-medium lg:min-h-0"
+                        hx-get="@Model.BreakdownUrl"
+                        hx-target="#drawer-body"
+                        data-drawer-title="@Model.Title: nasıl hesaplandı?">
+                    Bu skor nasıl hesaplandı?
+                </button>
+            }
+        </div>
+    }
+</section>

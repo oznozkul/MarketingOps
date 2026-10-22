@@ -1,0 +1,272 @@
+@model MarketingOps.Web.ViewModels.Findings.FindingDetailViewModel
+@using MarketingOps.Domain.Findings
+@using MarketingOps.Domain.WorkTasks
+@using MarketingOps.Web.ViewModels.Findings
+@{
+    var d = Model.Detail;
+    var f = d.Item;
+    var task = Model.Task;
+    var reference = RuleReference.Of(d.ReferenceKey);
+    var canSnooze = f.Status is not (FindingStatus.Resolved or FindingStatus.FalsePositive);
+    // Bulgu ve görev geçmişi tek zaman çizelgesinde gösterilir.
+    var timeline = d.History.Select(h => (h.At, Text: h.Description, h.Actor))
+        .Concat(task?.History.Select(h => (h.At, Text: h.Description, h.Actor)) ?? [])
+        .OrderByDescending(e => e.At)
+        .ToList();
+}
+<div class="flex flex-col gap-6">
+    <div>
+        <a class="link text-sm" href="@Url.SiteAction("Index", task is null ? "Findings" : "Tasks")">← @(task is null ? "Bulgular" : "Görevler")</a>
+        <div class="mt-2 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="min-w-0">
+                <h1 class="page-title">
+                    @if (task is not null) { <span class="mr-2 font-mono text-fg-muted">@task.Key</span> }
+                    @f.Title
+                </h1>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <severity-badge value="@f.Severity" />
+                    <category-badge value="@f.Category" />
+                    <status-badge value="@f.Status" />
+                    @if (task is not null)
+                    {
+                        <span class="badge @ToneClasses.Badge(Tone.Neutral)"><icon name="user" />@DisplayText.Of(task.Team)</span>
+                        <span class="text-xs text-fg-muted">Görev:</span>
+                        <status-badge value="@task.Status" />
+                    }
+                    @if (f.IsNewInLastCrawl)
+                    {
+                        <span class="badge @ToneClasses.Badge(Tone.Neutral)">Son taramada yeni</span>
+                    }
+                </div>
+            </div>
+            @* Salt okunur ilke: yalnızca bulgu/görev durumu ve dış görev kaydı değişir; sitede hiçbir şey yapılmaz. *@
+            <div class="flex shrink-0 flex-wrap gap-2">
+                @if (task is null)
+                {
+                    <form hx-post="@Url.SiteAction("Create", "Tasks", new { findingId = f.Id })" hx-disabled-elt="find button" class="contents">
+                        <button type="submit" class="btn btn-primary"><icon name="clipboard-list" />Görev oluştur</button>
+                    </form>
+                }
+                else if (task.HasTaskTracker)
+                {
+                    <form hx-post="@Url.SiteAction("Export", "Tasks", new { id = task.Id })" hx-disabled-elt="find button" class="contents">
+                        <button type="submit" class="btn btn-secondary">
+                            <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />
+                            <icon name="external-link" />@(task.ExternalTrackerKey is null ? "Jira'ya aktar" : "Jira kaydını güncelle")
+                        </button>
+                    </form>
+                }
+                @if (task?.ExternalUrl is { } externalUrl)
+                {
+                    <a class="btn btn-secondary" href="@externalUrl" target="_blank" rel="noopener noreferrer"><icon name="external-link" />Jira'da aç<span class="sr-only"> (yeni sekmede açılır)</span></a>
+                }
+                @if (canSnooze)
+                {
+                    <button type="button" class="btn btn-secondary" x-data x-on:click="$dispatch('open-modal', 'snooze')"><icon name="clock" />Ertele</button>
+                }
+                @if (f.Status == FindingStatus.FalsePositive)
+                {
+                    <form hx-post="@Url.SiteAction("RevertFalsePositive", "Findings", new { id = f.Id })" hx-disabled-elt="find button" class="contents">
+                        <button type="submit" class="btn btn-secondary"><icon name="rotate-ccw" />Yanlış alarmı geri al</button>
+                    </form>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-secondary" x-data x-on:click="$dispatch('open-modal', 'false-positive')"><icon name="bell-off" />Yanlış alarm olarak işaretle</button>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (f.Status == FindingStatus.FalsePositive && d.FalsePositiveReason is not null)
+    {
+        <div role="note" class="flex items-start gap-2 border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm text-fg">
+            <icon name="bell-off" class="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+            <p>Bu kural bu sayfa tipi için susturuldu. Gerekçe: @d.FalsePositiveReason</p>
+        </div>
+    }
+    else if (f.Status == FindingStatus.Snoozed && d.SnoozedUntil is { } until)
+    {
+        <div role="note" class="flex items-start gap-2 border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm text-fg">
+            <icon name="clock" class="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+            <p><time datetime="@Format.Iso(until)">@until.ToOffset(Format.DisplayOffset).ToString("d MMMM yyyy", Format.Tr)</time> tarihine kadar ertelendi.</p>
+        </div>
+    }
+
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="flex min-w-0 flex-col gap-6">
+            <section class="card card-body space-y-2" aria-labelledby="problem-title">
+                <h2 id="problem-title" class="eyebrow">Problem</h2>
+                <p class="max-w-prose text-sm text-fg">@(task?.Problem ?? d.Problem)</p>
+                <p class="max-w-prose text-sm text-fg-muted">@d.RuleDescription</p>
+            </section>
+
+            <section class="card card-body space-y-2" aria-labelledby="impact-title">
+                <h2 id="impact-title" class="eyebrow">Etki</h2>
+                <p class="max-w-prose whitespace-pre-line text-sm text-fg">@(task?.Impact ?? d.Impact)</p>
+                <p class="text-xs text-fg-muted">Search Console ve sipariş verisi bağlandığında bu sayfalara ait ölçümler burada gösterilir; şu an genel açıklamadır.</p>
+            </section>
+
+            @if (task is not null)
+            {
+                <partial name="_TaskSuggestion" model="Model" />
+            }
+
+            <section class="card card-body space-y-2" aria-labelledby="reference-title">
+                <h2 id="reference-title" class="eyebrow">Kaynak</h2>
+                @if (reference.Url is not null)
+                {
+                    <a class="link inline-flex items-center gap-1 text-sm" href="@reference.Url" target="_blank" rel="noopener noreferrer">@reference.Label<icon name="external-link" class="h-3.5 w-3.5" /><span class="sr-only"> (yeni sekmede açılır)</span></a>
+                }
+                else
+                {
+                    <p class="text-sm text-fg">@reference.Label</p>
+                }
+            </section>
+
+            <section id="sayfalar" class="scroll-mt-20 space-y-3" aria-labelledby="occurrences-title">
+                <div class="flex flex-wrap items-end justify-between gap-2">
+                    <h2 id="occurrences-title" class="section-title">Etkilenen sayfalar</h2>
+                    <a class="btn btn-ghost btn-sm" href="@Url.SiteAction("ExportOccurrences", "Findings", new { id = f.Id })" download><icon name="download" />CSV indir</a>
+                </div>
+                <partial name="_OccurrencesTable" model="Model" />
+            </section>
+
+            @if (task is not null)
+            {
+                <partial name="_TaskCriteria" model="task" />
+            }
+        </div>
+
+        <aside class="flex flex-col gap-6">
+            <section class="card" aria-labelledby="details-title">
+                <div class="card-header"><h2 id="details-title" class="card-title">Ayrıntılar</h2></div>
+                <dl class="divide-y divide-line text-sm">
+                    @if (task is not null)
+                    {
+                        <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+                            <dt class="text-fg-muted"><label for="task-status">Görev durumu</label></dt>
+                            <dd>
+                                @if (task.Status == WorkTaskStatus.Closed)
+                                {
+                                    <status-badge value="@task.Status" />
+                                }
+                                else
+                                {
+                                    <form hx-post="@Url.SiteAction("Status", "Tasks", new { id = task.Id })" hx-trigger="change">
+                                        <select id="task-status" name="status" class="select h-9 w-48 text-sm">
+                                            @foreach (var s in new[] { WorkTaskStatus.Todo, WorkTaskStatus.InProgress, WorkTaskStatus.AwaitingVerification })
+                                            {
+                                                <option value="@s" selected="@(task.Status == s)">@DisplayText.Of(s)</option>
+                                            }
+                                        </select>
+                                    </form>
+                                }
+                            </dd>
+                        </div>
+                        <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+                            <dt class="text-fg-muted"><label for="task-team">Ekip</label></dt>
+                            <dd>
+                                <form hx-post="@Url.SiteAction("Team", "Tasks", new { id = task.Id })" hx-trigger="change">
+                                    <select id="task-team" name="team" class="select h-9 w-48 text-sm">
+                                        @foreach (var t in Enum.GetValues<Team>())
+                                        {
+                                            <option value="@t" selected="@(task.Team == t)">@DisplayText.Of(t)</option>
+                                        }
+                                    </select>
+                                </form>
+                            </dd>
+                        </div>
+                        <div class="flex justify-between gap-3 px-4 py-2.5">
+                            <dt class="text-fg-muted">Dış görev</dt>
+                            <dd class="text-right">
+                                @if (task.ExternalUrl is { } jiraUrl)
+                                {
+                                    <a class="link font-mono text-xs" href="@jiraUrl" target="_blank" rel="noopener noreferrer">@task.ExternalTrackerKey</a>
+                                }
+                                else if (task.HasTaskTracker)
+                                {
+                                    <span class="text-fg-muted">Aktarılmadı</span>
+                                }
+                                else
+                                {
+                                    <a class="link text-xs" href="@(Url.SiteAction("Index", "SiteSettings") + "#baglantilar")">Jira bağlı değil</a>
+                                }
+                            </dd>
+                        </div>
+                    }
+                    <div class="flex justify-between gap-3 px-4 py-2.5"><dt class="text-fg-muted">Sayfa tipi</dt><dd class="text-right text-fg">@(f.PageTypeName ?? "Eşleşmeyen sayfalar")</dd></div>
+                    <div class="flex justify-between gap-3 px-4 py-2.5">
+                        <dt class="text-fg-muted">Kural</dt>
+                        <dd class="min-w-0 text-right"><a class="link break-all font-mono text-xs" href="@Url.SiteAction("Detail", "Rules", new { code = f.RuleCode })">@f.RuleCode</a><span class="block text-xs text-fg-muted">@d.RuleName</span></dd>
+                    </div>
+                    <div class="flex justify-between gap-3 px-4 py-2.5"><dt class="text-fg-muted">Etkilenen sayfa</dt><dd class="tabular text-fg">@Format.Number(f.AffectedCount)</dd></div>
+                    <div class="flex justify-between gap-3 px-4 py-2.5"><dt class="text-fg-muted">İlk tespit</dt><dd class="text-fg"><time datetime="@Format.Iso(f.FirstSeenAt)">@Format.DateTime(f.FirstSeenAt)</time></dd></div>
+                    <div class="flex justify-between gap-3 px-4 py-2.5"><dt class="text-fg-muted">Son görülme</dt><dd class="text-fg"><time datetime="@Format.Iso(f.LastSeenAt)">@Format.DateTime(f.LastSeenAt)</time></dd></div>
+                    @if (d.ResolvedAt is { } resolvedAt && f.Status == FindingStatus.Resolved)
+                    {
+                        <div class="flex justify-between gap-3 px-4 py-2.5"><dt class="text-fg-muted">Çözüldü</dt><dd class="text-fg"><time datetime="@Format.Iso(resolvedAt)">@Format.DateTime(resolvedAt)</time></dd></div>
+                    }
+                    <div class="flex items-center justify-between gap-3 px-4 py-2.5">
+                        <dt class="text-fg-muted">Parmak izi</dt>
+                        <dd class="flex items-center gap-1">
+                            <span class="font-mono text-xs text-fg" title="@d.Fingerprint">@d.Fingerprint[..12]…</span>
+                            <button type="button" class="icon-btn" data-copy="@d.Fingerprint" data-copy-message="Parmak izi kopyalandı."><icon name="copy" label="Parmak izini kopyala" /></button>
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="card" aria-labelledby="history-title">
+                <div class="card-header"><h2 id="history-title" class="card-title">Geçmiş</h2></div>
+                <ol class="max-h-[32rem] overflow-y-auto px-4 py-3">
+                    @if (f.Status is FindingStatus.Open or FindingStatus.Reopened && task is not null && task.Status != WorkTaskStatus.Closed)
+                    {
+                        <li class="relative border-l border-dashed border-line-strong pb-4 pl-4">
+                            <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 border border-dashed border-line-strong bg-surface" aria-hidden="true"></span>
+                            <p class="text-sm text-fg-muted">Sonraki doğrulama: bir sonraki taramada otomatik kriterler kontrol edilir.</p>
+                        </li>
+                    }
+                    @foreach (var e in timeline)
+                    {
+                        <li class="relative border-l border-line pb-4 pl-4 last:pb-0">
+                            <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 border border-line-strong bg-surface" aria-hidden="true"></span>
+                            <p class="text-sm text-fg">@e.Text</p>
+                            <p class="mt-0.5 text-xs text-fg-muted">
+                                <time datetime="@Format.Iso(e.At)">@Format.DateTime(e.At)</time>
+                                @if (e.Actor is not null) { <span> · @e.Actor</span> }
+                            </p>
+                        </li>
+                    }
+                </ol>
+            </section>
+
+            @if (task is not null)
+            {
+                <section class="card" aria-labelledby="comments-title">
+                    <div class="card-header"><h2 id="comments-title" class="card-title">Yorumlar</h2><span class="tabular text-xs text-fg-muted">@task.Comments.Count</span></div>
+                    <div class="space-y-4 px-4 py-3">
+                        @foreach (var c in task.Comments)
+                        {
+                            <div class="text-sm">
+                                <p class="text-xs text-fg-muted"><span class="font-medium text-fg">@c.Author</span> · <time datetime="@Format.Iso(c.At)">@Format.DateTime(c.At)</time></p>
+                                <p class="mt-1 whitespace-pre-line text-fg">@c.Text</p>
+                            </div>
+                        }
+                        @{ ViewData["TaskId"] = task.Id; }
+                        <partial name="_TaskCommentForm" model="new MarketingOps.Web.ViewModels.Tasks.TaskCommentForm()" view-data="ViewData" />
+                    </div>
+                </section>
+            }
+        </aside>
+    </div>
+</div>
+
+@if (canSnooze)
+{
+    <partial name="_Modal" model="@(new ModalViewModel("snooze", "Bulguyu ertele", "_SnoozeForm", new SnoozeForm()))" />
+}
+@if (f.Status != FindingStatus.FalsePositive)
+{
+    <partial name="_Modal" model="@(new ModalViewModel("false-positive", "Yanlış alarm olarak işaretle", "_FalsePositiveForm", new FalsePositiveForm()))" />
+}

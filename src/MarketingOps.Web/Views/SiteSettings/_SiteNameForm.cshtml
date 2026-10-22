@@ -1,0 +1,14 @@
+@model MarketingOps.Web.ViewModels.Sites.SiteNameForm
+@{
+    var nameError = ViewData.ModelState.FirstError("Name");
+}
+<form id="site-name-form" class="flex flex-col gap-3 sm:flex-row sm:items-start" hx-post="@Url.SiteAction("Rename", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <div class="flex-1">
+        <label class="label" for="site-name">Görünen ad</label>
+        <input id="site-name" name="Name" value="@Model.Name" class="input"
+               aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "Name-error")" />
+        <field-error for="Name" />
+        <form-errors />
+    </div>
+    <div class="sm:pt-6"><partial name="_SubmitButton" model="@("Kaydet")" /></div>
+</form>

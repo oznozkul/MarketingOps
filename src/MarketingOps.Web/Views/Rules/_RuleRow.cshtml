@@ -1,0 +1,54 @@
+@model MarketingOps.Application.Rules.Queries.GetRules.RuleListItemResponse
+@using MarketingOps.Domain.Rules
+@{
+    var r = Model;
+    var href = Url.SiteAction("Detail", "Rules", new { code = r.Code });
+}
+<tr id="rule-@r.Code.Replace('.', '-')" class="row-link @(r.IsEnabled ? "" : "text-fg-muted")" onclick="if(!event.target.closest('a,button,form'))this.querySelector('a').click()">
+    <td class="max-w-lg">
+        <a class="font-medium hover:underline @(r.IsEnabled ? "text-fg" : "text-fg-muted")" href="@href">@r.Name</a>
+        <span class="mt-0.5 block font-mono text-2xs text-fg-muted">@r.Code</span>
+        <span class="mt-0.5 block text-xs text-fg-muted">@r.Description</span>
+    </td>
+    <td class="whitespace-nowrap">
+        <severity-badge value="@r.Severity" />
+        @if (r.Severity != r.DefaultSeverity)
+        {
+            <span class="mt-1 block text-2xs text-fg-muted">Varsayılan: @DisplayText.Of(r.DefaultSeverity)</span>
+        }
+        @if (r.PageTypeOverrideCount > 0)
+        {
+            <span class="mt-1 block text-2xs text-fg-muted">@r.PageTypeOverrideCount sayfa tipinde farklı</span>
+        }
+    </td>
+    <td class="whitespace-nowrap text-xs">
+        <span class="text-fg">@(r.Scope == RuleScope.Site ? "Site geneli karşılaştırma" : "Her sayfa ayrı")</span>
+        <span class="block text-fg-muted">Tüm sayfa tipleri</span>
+        @if (r.MutedPageTypeCount > 0)
+        {
+            <span class="block text-fg-muted">@r.MutedPageTypeCount sayfa tipinde susturuldu</span>
+        }
+    </td>
+    <td class="num">
+        @if (r.ActiveFindingCount > 0)
+        {
+            <a class="link" href="@Url.SiteAction("Index", "Findings", new { rule = r.Code })">@Format.Number(r.ActiveFindingCount)</a>
+        }
+        else
+        {
+            <span class="text-fg-subtle">0</span>
+        }
+    </td>
+    <td>
+        <form hx-post="@Url.SiteAction("SetEnabled", "Rules", new { code = r.Code })" hx-target="closest tr" hx-swap="outerHTML" hx-disabled-elt="find button">
+            <input type="hidden" name="isEnabled" value="@(r.IsEnabled ? "false" : "true")" />
+            <button type="submit" role="switch" aria-checked="@(r.IsEnabled ? "true" : "false")" aria-label="@r.Name kuralı"
+                    class="group inline-flex min-h-[44px] items-center gap-2 text-xs">
+                <span class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-sm border transition-colors duration-150 @(r.IsEnabled ? "border-primary bg-primary" : "border-line-strong bg-surface-2")">
+                    <span class="inline-block h-[18px] w-[18px] rounded-sm transition-transform duration-150 @(r.IsEnabled ? "translate-x-[22px] bg-primary-fg" : "translate-x-0.5 bg-fg-subtle")"></span>
+                </span>
+                <span class="@(r.IsEnabled ? "text-fg" : "text-fg-muted")">@(r.IsEnabled ? "Açık" : "Kapalı")</span>
+            </button>
+        </form>
+    </td>
+</tr>

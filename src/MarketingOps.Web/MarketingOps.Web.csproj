@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarketingOps.Application\MarketingOps.Application.csproj" />
+    <ProjectReference Include="..\MarketingOps.Infrastructure\MarketingOps.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MarketingOps.IntegrationTests" />
+  </ItemGroup>
+
+  <!-- .NET 10 SDK'nın paylaşılan derleyici sunucusu, .cshtml dosyaları hızlı art arda değiştiğinde Razor kaynak
+       üretecinin eski içeriğini yeni konumlarla birleştirip anlamsız hatalar üretebiliyor ('scor' adı yok vb.).
+       Ayrı süreçte derlemek birkaç saniye yavaştır ama sonuç her zaman günceldir. -->
+  <PropertyGroup>
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+
+  <!-- Tailwind CSS standalone CLI: Node gerekmez. Binary yoksa tools/tailwind altına indirilir. -->
+  <PropertyGroup>
+    <TailwindDir>$(MSBuildThisFileDirectory)../../tools/tailwind/</TailwindDir>
+    <TailwindExe Condition="'$(OS)' == 'Windows_NT'">$(TailwindDir)tailwindcss.exe</TailwindExe>
+    <TailwindExe Condition="'$(OS)' != 'Windows_NT'">$(TailwindDir)tailwindcss</TailwindExe>
+    <TailwindInput>Styles/app.css</TailwindInput>
+    <TailwindOutput>wwwroot/css/app.css</TailwindOutput>
+    <TailwindArgs Condition="'$(Configuration)' == 'Release'">--minify</TailwindArgs>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TailwindSource Include="Styles/**/*.css;tailwind.config.js;Views/**/*.cshtml;TagHelpers/**/*.cs;ViewComponents/**/*.cs;Infrastructure/**/*.cs;wwwroot/js/**/*.js" />
+    <Watch Include="Styles/**/*.css;tailwind.config.js" />
+  </ItemGroup>
+
+  <Target Name="EnsureTailwind" Condition="!Exists('$(TailwindExe)')">
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(TailwindDir)get-tailwind.ps1&quot;" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="sh &quot;$(TailwindDir)get-tailwind.sh&quot;" />
+  </Target>
+
+  <!-- Damga dosyası yapılandırma başına tutulur; Debug'dan sonra Release build'i CSS'i minify ederek yeniden üretir. -->
+  <Target Name="BuildTailwind" BeforeTargets="BeforeBuild" DependsOnTargets="EnsureTailwind" Inputs="@(TailwindSource)" Outputs="$(IntermediateOutputPath)tailwind.stamp">
+    <Exec Command="&quot;$(TailwindExe)&quot; -c tailwind.config.js -i $(TailwindInput) -o $(TailwindOutput) $(TailwindArgs)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Touch Files="$(IntermediateOutputPath)tailwind.stamp" AlwaysCreate="true" />
+    <ItemGroup>
+      <Content Include="$(TailwindOutput)" Exclude="@(Content)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

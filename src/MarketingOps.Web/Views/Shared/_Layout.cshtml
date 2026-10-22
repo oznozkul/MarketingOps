@@ -1,0 +1,87 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var shell = ViewData.Shell();
+    var title = ViewData["Title"] as string;
+    var token = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(title is null ? "" : title + " · ")@(shell is null ? "" : shell.Site.Name + " · ")MarketingOps</title>
+    <meta name="request-verification-token" content="@token" />
+    <meta name="htmx-config" content='{"includeIndicatorStyles":false,"scrollIntoViewOnBoost":false,"historyCacheSize":0}' />
+    @* Tema, ilk boyamadan önce uygulanır (yanıp sönme olmasın diye). *@
+    <script>
+        (function () {
+            var m = 'system';
+            try { m = localStorage.getItem('mo-theme') || 'system'; } catch (e) { }
+            if (m === 'dark' || (m === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches))
+                document.documentElement.classList.add('dark');
+        })();
+    </script>
+    <link rel="preload" href="/fonts/ibm-plex-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="icon" href="~/favicon.ico" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body class="min-h-screen" hx-indicator="#global-indicator" data-site-id="@shell?.Site.Id">
+    <a href="#main" class="sr-only z-toast rounded-sm bg-primary px-4 py-2 text-primary-fg focus:not-sr-only focus:fixed focus:left-4 focus:top-4">İçeriğe geç</a>
+    <div id="global-indicator" class="htmx-indicator" aria-hidden="true"></div>
+
+    @if (shell is null)
+    {
+        <header class="border-b border-line bg-surface">
+            <div class="mx-auto flex h-14 max-w-content items-center px-4 lg:px-8">
+                <a href="/" class="flex items-center"><span class="flex items-baseline gap-2"><span class="border border-fg px-1 font-mono text-[11px] font-medium leading-4 text-fg">MO</span><span class="text-sm font-semibold tracking-[-0.01em] text-fg">MarketingOps</span></span></a>
+            </div>
+        </header>
+        <main id="main" class="mx-auto max-w-content px-4 py-6 lg:px-8">@RenderBody()</main>
+    }
+    else
+    {
+        <div x-data="{ nav: false }" @@keydown.escape.window="nav = false" class="min-h-screen">
+            @* Masaüstü yan menü *@
+            <aside class="fixed inset-y-0 left-0 z-overlay hidden w-60 flex-col border-r border-line bg-surface lg:flex" aria-label="Ana menü">
+                <partial name="_Sidebar" model="shell" />
+            </aside>
+
+            @* Mobil / tablet çekmece menü *@
+            <div x-cloak x-show="nav" class="fixed inset-0 z-drawer lg:hidden" role="dialog" aria-modal="true" aria-label="Ana menü">
+                <div x-show="nav" x-transition.opacity class="absolute inset-0 bg-fg/40" @@click="nav = false"></div>
+                <aside x-show="nav" x-trap.noscroll="nav"
+                       x-transition:enter="transition duration-200 ease-out" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
+                       x-transition:leave="transition duration-150 ease-in" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
+                       class="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-line bg-surface shadow-overlay">
+                    <button type="button" class="icon-btn absolute right-2 top-2" @@click="nav = false"><icon name="x" label="Menüyü kapat" /></button>
+                    <partial name="_Sidebar" model="shell" />
+                </aside>
+            </div>
+
+            <div class="flex min-h-screen min-w-0 flex-col lg:pl-60">
+                <partial name="_Topbar" model="shell" />
+                <main id="main" tabindex="-1" class="mx-auto w-full max-w-content flex-1 px-4 py-6 focus:outline-none lg:px-8">
+                    @RenderBody()
+                </main>
+            </div>
+        </div>
+    }
+
+    <partial name="_Drawer" />
+    <partial name="_Toasts" />
+    @if (TempData[FlashMessage.Key] is string flash)
+    {
+        <script type="application/json" id="flash-message">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(flash))</script>
+    }
+
+    <script src="~/lib/htmx/htmx.min.js" asp-append-version="true"></script>
+    <script src="~/lib/chartjs/chart.umd.min.js" asp-append-version="true"></script>
+    <script src="~/lib/signalr/signalr.min.js" asp-append-version="true"></script>
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/js/charts.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+    <script defer src="~/lib/alpinejs/alpine-focus.min.js" asp-append-version="true"></script>
+    <script defer src="~/lib/alpinejs/alpine.min.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.idea/
+tests/
+design-system/
+tools/tailwind/tailwindcss
+tools/tailwind/tailwindcss.exe
+src/MarketingOps.Web/wwwroot/css/app.css
+*.md

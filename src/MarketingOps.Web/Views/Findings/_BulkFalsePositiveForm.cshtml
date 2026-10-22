@@ -1,0 +1,25 @@
+@model MarketingOps.Web.ViewModels.Findings.BulkFindingsForm
+@{
+    var error = ViewData.ModelState.FirstError("Reason");
+}
+<form class="space-y-4" hx-post="@Url.SiteAction("Bulk", "Findings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <input type="hidden" name="Action" value="MarkFalsePositive" />
+    <template x-for="id in selected" :key="id"><input type="hidden" name="Ids" :value="id" /></template>
+    <p class="text-sm text-fg-muted">
+        Seçili <span class="tabular font-medium text-fg" x-text="selected.length"></span> bulgunun kuralı, ilgili sayfa tipi için susturulur.
+        Sonraki taramalar bu bulguların durumunu değiştirmez. İşlem bulgu detayından geri alınabilir.
+    </p>
+    <form-errors />
+    <field-error for="FindingIds" />
+    <div>
+        <label class="label" for="bulk-reason">Gerekçe <span class="text-critical" aria-hidden="true">*</span></label>
+        <textarea id="bulk-reason" name="Reason" rows="3" class="textarea" required
+                  aria-invalid="@(error is null ? null : "true")" aria-describedby="bulk-reason-hint@(error is null ? "" : " Reason-error")">@Model.Reason</textarea>
+        <p id="bulk-reason-hint" class="hint">Ekip bu gerekçeyi kuralın geçmişinde görür.</p>
+        <field-error for="Reason" />
+    </div>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" x-on:click="$dispatch('close-modal')">Vazgeç</button>
+        <partial name="_SubmitButton" model="@("İşaretle")" />
+    </div>
+</form>

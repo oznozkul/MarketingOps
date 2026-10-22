@@ -1,0 +1,103 @@
+@model MarketingOps.Web.ViewModels.Findings.FindingDetailViewModel
+@using MarketingOps.Domain.WorkTasks
+@{
+    var task = Model.Task!;
+    var s = task.Suggestion;
+    var steps = s.Kind == SuggestionKind.Steps
+        ? s.Content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(l => System.Text.RegularExpressions.Regex.Replace(l, @"^\d+[\.\)]\s*", "")).ToList()
+        : [];
+    var hasSuggested = s.Examples.Any(e => e.Suggested is not null);
+}
+<section id="gorev" class="card scroll-mt-20" aria-labelledby="suggestion-title">
+    <div class="card-header flex-wrap gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <h2 id="suggestion-title" class="card-title">Önerilen çözüm</h2>
+            <span class="badge @ToneClasses.Badge(Tone.Neutral)">@DisplayText.Of(s.Kind)</span>
+        </div>
+        @if (task.AiModel is not null && task.Status != WorkTaskStatus.Closed)
+        {
+            <form hx-post="@Url.SiteAction("RegenerateSuggestion", "Tasks", new { id = task.Id })" hx-disabled-elt="find button">
+                <button type="submit" class="btn btn-ghost btn-sm"><icon name="sparkles" />@(s.Model is null ? "AI ile zenginleştir" : "AI ile yeniden üret")</button>
+            </form>
+        }
+    </div>
+    <div class="card-body space-y-4">
+        <p class="flex items-center gap-1.5 text-xs text-fg-muted">
+            @if (s.Model is not null)
+            {
+                <icon name="sparkles" class="h-3.5 w-3.5" /><span>AI tarafından üretildi (@s.Model) · uygulamayı ekip yapar</span>
+            }
+            else
+            {
+                <icon name="file-code" class="h-3.5 w-3.5" /><span>Kural şablonundan · uygulamayı ekip yapar</span>
+            }
+        </p>
+        <p class="max-w-prose text-sm text-fg">@s.Summary</p>
+
+        @if (s.Kind == SuggestionKind.Code)
+        {
+            <div class="relative">
+                <pre id="suggestion-code" class="max-h-96 overflow-auto rounded-sm border border-line bg-surface-2 p-3 pr-12 font-mono text-xs leading-relaxed text-fg"><code>@s.Content</code></pre>
+                <button type="button" class="icon-btn absolute right-1 top-1" data-copy-target="#suggestion-code" data-copy-message="Kod kopyalandı."><icon name="copy" label="Kodu kopyala" /></button>
+            </div>
+        }
+        else if (s.Kind == SuggestionKind.Steps)
+        {
+            <ol class="list-decimal space-y-1.5 pl-5 text-sm text-fg marker:text-fg-muted">
+                @foreach (var step in steps)
+                {
+                    <li>@step</li>
+                }
+            </ol>
+        }
+        else
+        {
+            <div class="whitespace-pre-line rounded-sm border border-line bg-surface-2 p-3 font-mono text-xs leading-relaxed text-fg">@s.Content</div>
+        }
+
+        @if (s.Examples.Count > 0)
+        {
+            <div class="overflow-hidden rounded-sm border border-line">
+                <div class="table-wrap">
+                    <table class="table-base min-w-[640px]">
+                        <caption class="sr-only">Örnek sayfalar</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Sayfa</th>
+                                <th scope="col">Mevcut</th>
+                                @if (hasSuggested) { <th scope="col">Önerilen</th> }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in s.Examples)
+                            {
+                                <tr class="align-top">
+                                    <td class="max-w-xs"><a class="break-all font-mono text-xs text-fg hover:underline" href="@e.Url" target="_blank" rel="noopener noreferrer">@e.Url</a></td>
+                                    <td class="max-w-xs text-xs text-fg-muted"><span class="line-clamp-3 break-words" title="@e.Current">@(e.Current ?? "—")</span></td>
+                                    @if (hasSuggested) { <td class="max-w-xs text-xs text-fg">@(e.Suggested ?? "—")</td> }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="border-t border-line px-3 py-2 text-xs text-fg-muted">
+                    İlk @s.Examples.Count örnek. Tamamı için <a class="link" href="@Url.SiteAction("ExportOccurrences", "Findings", new { id = task.FindingId })" download>CSV indirin</a>.
+                </p>
+            </div>
+        }
+
+        @* Geri bildirim: öneri sürümüne (modele) bağlanır; kalite ölçümü için. *@
+        <div class="flex flex-wrap items-center gap-3 border-t border-line pt-3 text-sm" x-data="{ note: false, helpful: true }">
+            <span class="text-fg-muted">Öneri faydalı mı?</span>
+            <button type="button" class="btn btn-ghost btn-sm" x-on:click="helpful = true; note = true" :aria-pressed="note && helpful"><icon name="thumbs-up" />Evet <span class="tabular text-fg-muted">@task.HelpfulCount</span></button>
+            <button type="button" class="btn btn-ghost btn-sm" x-on:click="helpful = false; note = true" :aria-pressed="note && !helpful"><icon name="thumbs-down" />Hayır <span class="tabular text-fg-muted">@task.NotHelpfulCount</span></button>
+            <form x-cloak x-show="note" class="flex w-full flex-col gap-2 sm:flex-row" hx-post="@Url.SiteAction("Feedback", "Tasks", new { id = task.Id })" hx-disabled-elt="find button">
+                <input type="hidden" name="IsHelpful" :value="helpful" />
+                <label class="sr-only" for="feedback-note">Not (isteğe bağlı)</label>
+                <input id="feedback-note" name="Note" class="input flex-1 text-sm" maxlength="1000" :placeholder="helpful ? 'Neyi beğendiniz? (isteğe bağlı)' : 'Ne eksik ya da yanlış? (isteğe bağlı)'" />
+                <button type="submit" class="btn btn-secondary btn-sm">Gönder</button>
+            </form>
+        </div>
+    </div>
+</section>

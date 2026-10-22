@@ -1,0 +1,26 @@
+@model MarketingOps.Web.ViewModels.Rules.ThresholdImpactViewModel
+@if (Model.Error is not null)
+{
+    <p class="flex items-center gap-1 text-xs text-critical"><icon name="circle-alert" class="h-3.5 w-3.5" />@Model.Error</p>
+}
+else if (Model.Impact is { CrawlNumber: null })
+{
+    <p class="text-xs text-fg-muted">Değerlendirilmiş tarama olmadığı için etki hesaplanamıyor.</p>
+}
+else if (Model.Impact is { } i)
+{
+    <div class="border-l-2 @(i.AffectedFindings > 0 ? "border-primary bg-primary-soft" : "border-line-strong bg-surface-2") px-3 py-2 text-sm">
+        @if (!Model.Changed)
+        {
+            <p class="text-fg">Eşikler kayıtlı değerlerle aynı. Tarama #@i.CrawlNumber: @Format.Number(i.CurrentFindings) bulgu, @Format.Number(i.CurrentPages) sayfa.</p>
+        }
+        else
+        {
+            <p class="font-medium text-fg">Bu değişiklik tarama #@i.CrawlNumber verisinde @Format.Number(i.AffectedFindings) bulguyu etkiler.</p>
+            <p class="mt-1 text-xs text-fg-muted">
+                Bulgu: @Format.Number(i.CurrentFindings) → @Format.Number(i.NewFindings) · Etkilenen sayfa: @Format.Number(i.CurrentPages) → @Format.Number(i.NewPages).
+                Kaydedilirse sonraki taramada uygulanır.
+            </p>
+        }
+    </div>
+}

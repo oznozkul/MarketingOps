@@ -1,0 +1,19 @@
+@model MarketingOps.Web.ViewModels.Findings.SnoozeForm
+@{
+    var error = ViewData.ModelState.FirstError("Until");
+    var tomorrow = DateOnly.FromDateTime(DateTime.UtcNow.Add(Format.DisplayOffset)).AddDays(1);
+}
+<form class="space-y-4" hx-post="@Url.SiteAction("Snooze", "Findings", new { id = ViewContext.RouteData.Values["id"] })" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <p class="text-sm text-fg-muted">Bulgu bu tarihe kadar "Ertelendi" durumunda kalır. Tarih gelince bir sonraki tarama durumu yeniden belirler.</p>
+    <form-errors />
+    <div>
+        <label class="label" for="snooze-until">Şu tarihe kadar ertele</label>
+        <input id="snooze-until" name="Until" type="date" class="input" value="@Model.Until?.ToString("yyyy-MM-dd")" min="@tomorrow.ToString("yyyy-MM-dd")"
+               aria-invalid="@(error is null ? null : "true")" aria-describedby="@(error is null ? null : "Until-error")" />
+        <field-error for="Until" />
+    </div>
+    <div class="flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost" x-on:click="$dispatch('close-modal')">Vazgeç</button>
+        <partial name="_SubmitButton" model="@("Ertele")" />
+    </div>
+</form>

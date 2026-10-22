@@ -1,0 +1,48 @@
+@model MarketingOps.Application.Common.Models.PagedResponse<MarketingOps.Application.Crawls.Queries.CrawlListItemResponse>
+<div id="crawls-table" class="card overflow-hidden">
+    <div class="table-wrap htmx-dim">
+        <table class="table-base min-w-[860px]">
+            <thead>
+                <tr>
+                    <th scope="col">Tarama</th>
+                    <th scope="col">Başlangıç</th>
+                    <th scope="col" class="num">Süre</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col">Tetikleyen</th>
+                    <th scope="col" class="num">Taranan sayfa</th>
+                    <th scope="col" class="num">Hata</th>
+                    <th scope="col" class="num">Bulgu değişimi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Items)
+                {
+                    <tr class="row-link" onclick="if(!event.target.closest('a'))this.querySelector('a').click()">
+                        <td><a class="font-mono font-medium text-fg hover:underline" href="@Url.SiteAction("Detail", "Crawls", new { crawlId = c.Id })">#@c.Number</a></td>
+                        <td class="whitespace-nowrap text-fg-muted">
+                            @if (c.StartedAt is { } started)
+                            {
+                                <time datetime="@Format.Iso(started)">@Format.DateTime(started)</time>
+                            }
+                            else
+                            {
+                                <span>Bekliyor</span>
+                            }
+                        </td>
+                        <td class="num text-fg-muted">@Format.Duration(c.Duration)</td>
+                        <td><status-badge value="@c.Status" /></td>
+                        <td class="text-fg-muted">@DisplayText.Of(c.TriggeredBy)</td>
+                        <td class="num">@Format.Number(c.PagesCrawled)</td>
+                        <td class="num @(c.PagesFailed > 0 ? "text-critical" : "text-fg-muted")">@Format.Number(c.PagesFailed)</td>
+                        <td class="num whitespace-nowrap">
+                            <partial name="_FindingChangeCounts" model="c" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div hx-target="#crawls-table" hx-select="#crawls-table" hx-swap="outerHTML">
+        <vc:pagination page="Model.Page" page-size="Model.PageSize" total="Model.TotalCount" target="#crawls-table" item-label="tarama" />
+    </div>
+</div>

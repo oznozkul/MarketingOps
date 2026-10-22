@@ -1,0 +1,54 @@
+@model IReadOnlyList<MarketingOps.Application.Rules.Queries.GetRules.RuleListItemResponse>
+@using MarketingOps.Domain.Findings
+@{
+    var groups = Model.ToLookup(r => r.Category);
+}
+<div class="flex flex-col gap-6">
+    <div>
+        <p class="eyebrow">Ayarlar</p>
+        <h1 class="page-title mt-1">Kurallar</h1>
+        <p class="mt-1 max-w-prose text-sm text-fg-muted">Her taramadan sonra açık kurallar çalışır. Kapatılan kural yeni bulgu açmaz ve açtığı bulguları çözülmüş saymaz. Eşik ve önem ayarları kural detayından yapılır; değişiklikler sonraki taramada uygulanır.</p>
+    </div>
+
+    <p class="text-sm text-fg-muted">
+        <span class="tabular font-semibold text-fg">@Model.Count(r => r.IsEnabled)</span> / @Model.Count kural açık
+    </p>
+
+    @foreach (var category in Enum.GetValues<FindingCategory>())
+    {
+        var rules = groups[category].ToList();
+        var headingId = $"rules-{category.ToString().ToLowerInvariant()}";
+        <section class="card overflow-hidden" aria-labelledby="@headingId">
+            <div class="card-header">
+                <h2 id="@headingId" class="card-title">@DisplayText.Of(category)</h2>
+                <span class="tabular text-xs text-fg-muted">@rules.Count kural</span>
+            </div>
+            @if (rules.Count == 0)
+            {
+                <p class="px-4 py-3 text-sm text-fg-muted">Bu kategoride henüz kural yok. Tracking kontrolleri etiket denetimiyle birlikte eklenecek.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table-base min-w-[860px]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Kural</th>
+                                <th scope="col">Önem</th>
+                                <th scope="col">Uygulandığı yer</th>
+                                <th scope="col" class="num">Açık bulgu</th>
+                                <th scope="col" class="w-28">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var rule in rules)
+                            {
+                                <partial name="_RuleRow" model="rule" />
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+</div>

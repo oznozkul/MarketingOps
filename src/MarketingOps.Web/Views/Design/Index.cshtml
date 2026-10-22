@@ -1,0 +1,456 @@
+@model MarketingOps.Web.ViewModels.Design.DesignViewModel
+@using System.Text.Json
+@{
+    var sections = new[] { ("renkler", "Renkler"), ("tipografi", "Tipografi"), ("olcu", "Boşluk ve köşe"), ("butonlar", "Butonlar"), ("form", "Form"), ("rozetler", "Rozetler"), ("kartlar", "Kartlar"), ("tablo", "Tablo"), ("durumlar", "Durumlar"), ("etkilesim", "Drawer, modal, toast"), ("grafikler", "Grafikler"), ("ikonlar", "İkonlar") };
+    string[] neutralTokens = ["canvas", "surface", "surface-2", "surface-3", "line", "line-strong", "fg", "fg-muted", "fg-subtle", "primary", "primary-soft", "primary-text", "focus"];
+    (Tone Tone, string Name, string Use)[] tones =
+    [
+        (Tone.Critical, "critical", "Kritik önem, hata"),
+        (Tone.High, "high", "Yüksek önem, regresyon"),
+        (Tone.Medium, "medium", "Orta önem"),
+        (Tone.Low, "low", "Düşük önem, nötr"),
+        (Tone.Ok, "ok", "Yalnızca doğru / çözüldü"),
+        (Tone.Warn, "warn", "Bekleyen, kısmi"),
+    ];
+    var ordersJson = JsonSerializer.Serialize(Model.Orders.Select(o => new { label = Format.ShortDate(o.Date), orders = o.Orders, purchases = o.Purchases, diff = Math.Round(o.DifferencePercent, 1) }));
+    var trendJson = JsonSerializer.Serialize(new
+    {
+        points = Model.Trend.Select(p => new { label = Format.ShortDate(p.Date), tracking = p.Tracking, seo = p.Seo, performance = p.Performance }),
+        events = Model.Events.Select(e => new { label = Format.ShortDate(e.Date), text = e.Label, kind = e.Kind })
+    });
+    var chips = new List<ChipViewModel>
+    {
+        new("Önem", "Kritik", "#"),
+        new("Durum", "Açık", "#"),
+        new("Sayfa tipi", "Ürün", "#"),
+    };
+}
+
+<div class="flex flex-col gap-8 lg:flex-row">
+    <nav class="lg:sticky lg:top-20 lg:h-fit lg:w-44 lg:shrink-0" aria-label="Bölümler">
+        <ul class="flex gap-1 overflow-x-auto pb-1 text-sm lg:flex-col lg:overflow-visible">
+            @foreach (var (id, label) in sections)
+            {
+                <li><a class="block whitespace-nowrap rounded px-2 py-1.5 text-fg-muted hover:bg-surface-2 hover:text-fg" href="#@id">@label</a></li>
+            }
+        </ul>
+    </nav>
+
+    <div class="min-w-0 flex-1 space-y-12">
+        <header>
+            <p class="eyebrow">Yalnızca geliştirme ortamı · ui-ux-pro-max</p>
+            <h1 class="page-title mt-1">Tasarım sistemi</h1>
+            <p class="mt-2 max-w-2xl text-sm text-fg-muted">
+                Swiss Modernism 2.0 + Data-Dense Dashboard. Düz yüzeyler, 1px çizgiler, neredeyse keskin köşeler, tek vurgu rengi. Metin için IBM Plex Sans, sayı ve kodlar için IBM Plex Mono.
+                Renk hiçbir zaman tek başına anlam taşımaz; her durum ikon ve metinle birlikte gösterilir. Yeşil yalnızca "doğru / çözüldü" içindir.
+            </p>
+        </header>
+
+        @* ---------- Renkler ---------- *@
+        <section id="renkler" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Renk token'ları</h2>
+            <p class="text-sm text-fg-muted">Token'lar <code class="kbd">Styles/app.css</code> içinde <code class="kbd">:root</code> (açık) ve <code class="kbd">.dark</code> altında tanımlanır, Tailwind'e <code class="kbd">tailwind.config.js</code> ile bağlanır.</p>
+            <div class="grid gap-4 xl:grid-cols-2">
+                @foreach (var theme in new[] { "light", "dark" })
+                {
+                    <div class="@theme rounded border border-line bg-canvas p-4 text-fg">
+                        <p class="eyebrow mb-3">@(theme == "light" ? "Açık tema" : "Koyu tema")</p>
+                        <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                            @foreach (var token in neutralTokens)
+                            {
+                                <div>
+                                    <div class="h-10 rounded border border-line" style="background: rgb(var(--@token))"></div>
+                                    <p class="mt-1 truncate font-mono text-2xs text-fg-muted">--@token</p>
+                                </div>
+                            }
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            @foreach (var t in tones)
+                            {
+                                <div class="flex items-center gap-3">
+                                    <span class="h-5 w-5 shrink-0 rounded-sm @ToneClasses.Solid(t.Tone)" aria-hidden="true"></span>
+                                    <span class="badge @ToneClasses.Badge(t.Tone)">@t.Name</span>
+                                    <span class="text-xs text-fg-muted">@t.Use</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @* ---------- Tipografi ---------- *@
+        <section id="tipografi" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Tipografi</h2>
+            <div class="card divide-y divide-line">
+                <div class="flex flex-col gap-1 p-4 sm:flex-row sm:items-baseline sm:gap-6"><span class="w-40 shrink-0 font-mono text-2xs text-fg-muted">page-title · 22/600</span><p class="page-title">Bulgular</p></div>
+                <div class="flex flex-col gap-1 p-4 sm:flex-row sm:items-baseline sm:gap-6"><span class="w-40 shrink-0 font-mono text-2xs text-fg-muted">section-title · 15/600</span><p class="section-title">Öncelikli sorunlar</p></div>
+                <div class="flex flex-col gap-1 p-4 sm:flex-row sm:items-baseline sm:gap-6"><span class="w-40 shrink-0 font-mono text-2xs text-fg-muted">text-sm · 14/400</span><p class="max-w-prose text-sm">Ürün sayfalarından 340 tanesi title etiketini en az bir başka sayfayla paylaşıyor. Arama motoru bu sayfaları birbirinden ayıramıyor.</p></div>
+                <div class="flex flex-col gap-1 p-4 sm:flex-row sm:items-baseline sm:gap-6"><span class="w-40 shrink-0 font-mono text-2xs text-fg-muted">text-xs muted · 12/400</span><p class="text-xs text-fg-muted">Son görülme 21 Eki 02:41 · Tarama #140</p></div>
+                <div class="flex flex-col gap-1 p-4 sm:flex-row sm:items-baseline sm:gap-6"><span class="w-40 shrink-0 font-mono text-2xs text-fg-muted">tabular · rakamlar</span><p class="tabular text-2xl font-semibold">1.206 · %38 · 21 Eki · @Format.Signed(-4)</p></div>
+                <div class="flex flex-col gap-1 p-4 sm:flex-row sm:items-baseline sm:gap-6"><span class="w-40 shrink-0 font-mono text-2xs text-fg-muted">font-mono · kod</span><p class="font-mono text-sm">seo.title.duplicate · G-LB7Q2K9X1M</p></div>
+            </div>
+        </section>
+
+        @* ---------- Boşluk, köşe, gölge ---------- *@
+        <section id="olcu" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Boşluk, köşe ve yükselti</h2>
+            <div class="grid gap-4 md:grid-cols-3">
+                <div class="card card-body space-y-2">
+                    <p class="eyebrow">Boşluk (4px ölçek)</p>
+                    @foreach (var (cls, px) in new[] { ("w-1", 4), ("w-2", 8), ("w-3", 12), ("w-4", 16), ("w-6", 24), ("w-8", 32) })
+                    {
+                        <div class="flex items-center gap-3"><span class="h-3 rounded-sm bg-primary @cls"></span><span class="font-mono text-2xs text-fg-muted">@px px</span></div>
+                    }
+                </div>
+                <div class="card card-body space-y-3">
+                    <p class="eyebrow">Köşe</p>
+                    <div class="flex gap-3">
+                        @foreach (var (cls, label) in new[] { ("rounded-none", "0"), ("rounded-sm", "sm · 2"), ("rounded", "md · 3"), ("rounded-lg", "lg · 4") })
+                        {
+                            <div class="text-center"><div class="h-12 w-12 border border-line-strong bg-surface-2 @cls"></div><p class="mt-1 font-mono text-2xs text-fg-muted">@label</p></div>
+                        }
+                    </div>
+                </div>
+                <div class="card card-body space-y-3">
+                    <p class="eyebrow">Yükselti ve katman</p>
+                    <div class="flex gap-3">
+                        <div class="flex h-12 flex-1 items-center justify-center rounded border border-line bg-surface font-mono text-2xs text-fg-muted">panel · gölge yok</div>
+                        <div class="flex h-12 flex-1 items-center justify-center rounded-sm border border-line-strong bg-surface font-mono text-2xs text-fg-muted shadow-overlay">menü · drawer</div>
+                    </div>
+                    <p class="font-mono text-2xs text-fg-muted">z: sticky 20 · overlay 30 · drawer 40 · modal 50 · toast 60</p>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- Butonlar ---------- *@
+        <section id="butonlar" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Butonlar</h2>
+            <p class="text-sm text-fg-muted">Dokunmatik ekranda en az 44px, ince imleçte 36px. "Uygula", "Düzelt", "Yayınla" gibi siteyi değiştiriyormuş izlenimi veren etiketler kullanılmaz.</p>
+            <div class="card card-body space-y-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" class="btn btn-primary"><icon name="plus" />Görev oluştur</button>
+                    <button type="button" class="btn btn-secondary"><icon name="download" />CSV indir</button>
+                    <button type="button" class="btn btn-secondary"><icon name="copy" />Kodu kopyala</button>
+                    <button type="button" class="btn btn-ghost"><icon name="clock" />Ertele</button>
+                    <button type="button" class="btn btn-danger"><icon name="bell-off" />Yanlış alarm olarak işaretle</button>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" class="btn btn-primary btn-sm">Küçük</button>
+                    <button type="button" class="btn btn-secondary btn-sm"><icon name="external-link" />Jira'da aç</button>
+                    <button type="button" class="btn btn-primary" disabled>Devre dışı</button>
+                    <button type="button" class="btn btn-primary" aria-disabled="true"><icon name="loader-circle" class="h-4 w-4 animate-spin motion-reduce:animate-none" />Kuyruğa ekleniyor…</button>
+                    <button type="button" class="icon-btn"><icon name="refresh-cw" label="Yenile" /></button>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- Form ---------- *@
+        <section id="form" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Form elemanları</h2>
+            <div class="card card-body grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="label" for="d-search">Arama</label>
+                    <div class="relative">
+                        <icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+                        <input id="d-search" type="search" class="input pl-9" placeholder="Bulgu, kural kodu ya da #numara" />
+                    </div>
+                </div>
+                <div>
+                    <label class="label" for="d-select">Sayfa tipi</label>
+                    <select id="d-select" class="select"><option>Tümü</option><option>Ürün</option><option>Lastik ölçü</option></select>
+                </div>
+                <div>
+                    <label class="label" for="d-date">Ertele</label>
+                    <input id="d-date" type="date" class="input" />
+                    <p class="hint">Bulgu bu tarihe kadar listelerde gizlenir.</p>
+                </div>
+                <div>
+                    <label class="label" for="d-invalid">Yanlış alarm gerekçesi <span class="text-critical">*</span></label>
+                    <input id="d-invalid" class="input" aria-invalid="true" aria-describedby="d-invalid-err" />
+                    <p id="d-invalid-err" class="mt-1 flex items-center gap-1 text-xs text-critical"><icon name="circle-alert" class="h-3.5 w-3.5" />Gerekçe zorunludur.</p>
+                </div>
+                <fieldset class="space-y-2">
+                    <legend class="label">Önem</legend>
+                    @foreach (var s in Enum.GetValues<Severity>())
+                    {
+                        <label class="flex min-h-[32px] cursor-pointer items-center gap-2 text-sm"><input type="checkbox" class="checkbox" checked="@(s == Severity.Critical)" /><severity-badge value="@s" /></label>
+                    }
+                </fieldset>
+                <div x-data="{ on: true }" class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="label mb-0" id="d-toggle-label">Son taramada yeni</p>
+                        <p class="hint">Yalnızca son taramada ilk kez görülen veya tekrar açılan bulgular.</p>
+                    </div>
+                    <button type="button" role="switch" :aria-checked="on" aria-labelledby="d-toggle-label" @@click="on = !on"
+                            class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-sm border transition-colors duration-150"
+                            :class="on ? 'border-primary bg-primary' : 'border-line-strong bg-surface-2'">
+                        <span class="inline-block h-[18px] w-[18px] rounded-sm transition-transform duration-150" :class="on ? 'translate-x-[22px] bg-primary-fg' : 'translate-x-0.5 bg-fg-subtle'"></span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- Rozetler ---------- *@
+        <section id="rozetler" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Rozetler</h2>
+            <div class="card divide-y divide-line">
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Önem</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<Severity>())
+                        {
+                            <severity-badge value="@v" />
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Bulgu durumu</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<FindingStatus>())
+                        {
+                            <status-badge value="@v" />
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Kategori</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<FindingCategory>())
+                        {
+                            <category-badge value="@v" />
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Görev durumu</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<WorkTaskStatus>())
+                        {
+                            <status-badge value="@v" />
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Tarama durumu</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<CrawlStatus>())
+                        {
+                            <status-badge value="@v" />
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Connector</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<ConnectorStatus>())
+                        {
+                            <status-badge value="@v" />
+                        }
+                        <span class="badge @ToneClasses.Badge(Tone.Neutral)"><icon name="lock" />Salt okunur</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
+                    <span class="w-40 shrink-0 text-xs text-fg-muted">Tag denetimi</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var v in Enum.GetValues<TagAuditStatus>())
+                        {
+                            <status-badge value="@v" />
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center"><span class="w-40 shrink-0 text-xs text-fg-muted">Öneri türü</span><div class="flex flex-wrap gap-2"><span class="badge @ToneClasses.Badge(Tone.Primary)"><icon name="sparkles" />AI tarafından üretildi</span><span class="badge @ToneClasses.Badge(Tone.Neutral)"><icon name="check" />Kesin bulgu</span><span class="badge @ToneClasses.Badge(Tone.Warn)"><icon name="circle-help" />Kontrol önerisi</span></div></div>
+            </div>
+        </section>
+
+        @* ---------- Kartlar ---------- *@
+        <section id="kartlar" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Skor ve sayı kartları</h2>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                @foreach (var score in Model.Scores)
+                {
+                    <vc:score-card model="score" />
+                }
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <stat-card label="Açık görevler" value="24" delta="-3" delta-good="down" delta-label="geçen haftaya göre">
+                    <div class="mt-2 flex h-1 overflow-hidden" role="img" aria-label="2 kritik, 7 yüksek, 11 orta, 4 düşük">
+                        <span class="bg-critical-solid" style="width:8%"></span><span class="bg-high-solid" style="width:29%"></span><span class="bg-medium-solid" style="width:46%"></span><span class="bg-low-solid" style="width:17%"></span>
+                    </div>
+                    <p class="mt-1 text-xs text-fg-muted">2 kritik · 7 yüksek · 11 orta · 4 düşük</p>
+                </stat-card>
+                <stat-card label="Bu hafta kapanan görevler" value="9" delta="4" delta-label="geçen haftaya göre" />
+                <stat-card label="Taranan sayfa" value="@Format.Number(12395)" hint="Tarama #140 · 42 dk" />
+                <stat-card label="Fark (sipariş / purchase)" value="@Format.Percent(-18.4, 1)" hint="Eşik %5 · son 3 gün" href="#grafikler" />
+            </div>
+        </section>
+
+        @* ---------- Tablo ---------- *@
+        <section id="tablo" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Tablo, sıralama, sayfalama ve filtre chip'leri</h2>
+            <p class="text-sm text-fg-muted">Sıralama ve sayfalama sunucu tarafında yapılır, query string'de tutulur; htmx yalnızca tablo bölgesini yeniler ve URL'yi günceller.</p>
+            <vc:filter-chips chips="chips" clear-url="#" target="#design-table" />
+            <div id="design-table" class="card overflow-hidden" hx-select="#design-table" hx-swap="outerHTML">
+                <div class="table-wrap htmx-dim">
+                    <table class="table-base min-w-[860px]">
+                        <thead>
+                            <tr>
+                                <vc:sort-header label="Önem" key="severity" current-sort="@Model.Sort" descending="Model.Descending" target="#design-table" />
+                                <vc:sort-header label="Bulgu" key="title" current-sort="@Model.Sort" descending="Model.Descending" target="#design-table" />
+                                <th scope="col">Sayfa tipi</th>
+                                <vc:sort-header label="Etkilenen" key="affectedPages" current-sort="@Model.Sort" descending="Model.Descending" target="#design-table" css-class="num" />
+                                <vc:sort-header label="Son görülme" key="lastSeen" current-sort="@Model.Sort" descending="Model.Descending" target="#design-table" />
+                                <th scope="col">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in Model.Rows)
+                            {
+                                <tr class="row-link" onclick="if(!event.target.closest('a'))this.querySelector('a').click()">
+                                    <td><severity-badge value="@f.Severity" /></td>
+                                    <td class="max-w-md">
+                                        <a class="font-medium text-fg hover:underline" href="#tablo">@f.Title</a>
+                                        <div class="font-mono text-2xs text-fg-muted">@f.RuleCode</div>
+                                    </td>
+                                    <td class="text-fg-muted">@f.PageTypeName</td>
+                                    <td class="num">@Format.Number(f.AffectedPageCount)</td>
+                                    <td class="whitespace-nowrap text-fg-muted"><time datetime="@Format.Iso(f.LastSeenAt)">@Format.ShortDate(f.LastSeenAt)</time></td>
+                                    <td><status-badge value="@f.Status" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <vc:pagination page="Model.Page" page-size="Model.PageSize" total="Model.Total" target="#design-table" item-label="bulgu" />
+            </div>
+        </section>
+
+        @* ---------- Durumlar ---------- *@
+        <section id="durumlar" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Yükleniyor, boş ve hata durumları</h2>
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="card"><div class="card-header"><span class="card-title">Tablo iskeleti</span></div><skeleton variant="table" rows="4" /></div>
+                <div class="card"><div class="card-header"><span class="card-title">Grafik iskeleti</span></div><div class="p-4"><skeleton variant="chart" /></div></div>
+            </div>
+            <skeleton variant="cards" rows="4" />
+            <div class="grid gap-4 lg:grid-cols-3">
+                <div class="card">
+                    <empty-state icon="filter" title="Bu filtrelerle eşleşen bulgu yok" description="Filtreleri gevşetin ya da temizleyin." compact="true">
+                        <button type="button" class="btn btn-secondary btn-sm">Filtreleri temizle</button>
+                    </empty-state>
+                </div>
+                <div class="card"><empty-state variant="positive" title="Açık bulgu yok" description="Son taramada bu sitede açık sorun bulunmadı." compact="true" /></div>
+                <div class="card"><error-state compact="true" retry-url="/_design#durumlar" /></div>
+            </div>
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="card card-body space-y-3">
+                    <p class="text-sm font-medium">htmx göstergesi ve gecikmeli yükleme</p>
+                    <button type="button" class="btn btn-secondary btn-sm" hx-get="/_design/slow" hx-target="#slow-target" hx-indicator="#slow-indicator">
+                        <icon name="refresh-cw" />Gecikmeli yükle
+                    </button>
+                    <div id="slow-target" class="relative min-h-[48px] rounded-md border border-dashed border-line p-3">
+                        <div id="slow-indicator" class="htmx-indicator absolute inset-0 bg-surface p-3"><skeleton rows="2" /></div>
+                        <p class="text-sm text-fg-muted">Butona basınca bu alan iskeletle yer değiştirir.</p>
+                    </div>
+                </div>
+                <div class="card card-body space-y-3">
+                    <p class="text-sm font-medium">Bölgesel hata (veri kaynağı)</p>
+                    <button type="button" class="btn btn-secondary btn-sm" hx-get="/_design/fail" hx-target="#fail-target"><icon name="circle-x" />Hatalı isteği dene</button>
+                    <div id="fail-target" class="min-h-[48px] rounded-md border border-dashed border-line p-3 text-sm text-fg-muted">Hata yalnızca bu bölgede gösterilir.</div>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- Etkileşimler ---------- *@
+        <section id="etkilesim" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Drawer, modal ve toast</h2>
+            <div class="card card-body flex flex-wrap gap-2" x-data="{ modal: false, reason: '', tried: false }">
+                <button type="button" class="btn btn-secondary"
+                        hx-get="/_design/score-breakdown" hx-target="#drawer-body"
+                        data-drawer-title="SEO Sağlığı: nasıl hesaplandı?">
+                    <icon name="columns-3" />Drawer aç (skor dökümü)
+                </button>
+                <button type="button" class="btn btn-secondary" @@click="modal = true; tried = false; reason = ''"><icon name="bell-off" />Modal aç (yanlış alarm)</button>
+                <form hx-post="/_design/toast" hx-swap="none" class="contents">
+                    <input type="hidden" name="kind" value="ok" />
+                    <button type="submit" class="btn btn-secondary"><icon name="circle-check" />Başarılı toast</button>
+                </form>
+                <form hx-post="/_design/toast" hx-swap="none" class="contents">
+                    <input type="hidden" name="kind" value="error" />
+                    <button type="submit" class="btn btn-secondary"><icon name="circle-x" />Hata toast'u</button>
+                </form>
+                <button type="button" class="btn btn-ghost" data-copy="0f3a9c1b7e2d4a5f" data-copy-message="Parmak izi kopyalandı."><icon name="copy" />Kopyala</button>
+
+                @* Modal deseni: Alpine + x-trap, Esc ve arka plan tıklamasıyla kapanır. *@
+                <div x-cloak x-show="modal" class="fixed inset-0 z-modal flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="d-modal-title" @@keydown.escape.window="modal = false">
+                    <div x-show="modal" x-transition.opacity class="absolute inset-0 bg-fg/40" @@click="modal = false"></div>
+                    <form x-show="modal" x-trap.noscroll="modal" x-transition class="relative w-full max-w-md rounded-lg border border-line bg-surface p-5 shadow-overlay"
+                          @@submit.prevent="tried = true; if (reason.trim().length >= 10) { modal = false; MOToast('Yanlış alarm olarak işaretlendi. Kural bu sayfa tipi için susturuldu.') }">
+                        <h3 id="d-modal-title" class="text-base font-semibold">Yanlış alarm olarak işaretle</h3>
+                        <p class="mt-1 text-sm text-fg-muted">Kural bu sayfa tipi için susturulur. İşlem daha sonra geri alınabilir.</p>
+                        <label class="label mt-4" for="d-reason">Gerekçe <span class="text-critical">*</span></label>
+                        <textarea id="d-reason" rows="3" class="textarea" x-model="reason" :aria-invalid="tried && reason.trim().length < 10" aria-describedby="d-reason-hint"></textarea>
+                        <p id="d-reason-hint" class="hint" :class="tried && reason.trim().length < 10 ? 'text-critical' : ''">En az 10 karakter. Ekip bu gerekçeyi kuralın geçmişinde görür.</p>
+                        <div class="mt-5 flex justify-end gap-2">
+                            <button type="button" class="btn btn-ghost" @@click="modal = false">Vazgeç</button>
+                            <button type="submit" class="btn btn-primary">İşaretle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- Grafikler ---------- *@
+        <section id="grafikler" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">Grafik teması</h2>
+            <p class="text-sm text-fg-muted">Seri renkleri <code class="kbd">--chart-1…4</code>; eşik aşımı her zaman kırmızı ve tooltip'te metinle belirtilir. Veriler view model'den JSON olarak gelir. Her grafiğin tablo alternatifi vardır.</p>
+            <div class="grid gap-4 xl:grid-cols-2">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Sipariş ve GA4 purchase · son 14 gün</h3></div>
+                    <div class="card-body">
+                        <div class="h-64"><canvas data-chart="order-comparison" data-source="#d-orders" data-threshold="5" role="img" aria-label="Veritabanı siparişleri ve GA4 purchase sayısının günlük karşılaştırması"></canvas></div>
+                        <script type="application/json" id="d-orders">@Html.Raw(ordersJson)</script>
+                        <details class="mt-3 text-sm">
+                            <summary class="cursor-pointer text-fg-muted hover:text-fg">Tablo olarak göster</summary>
+                            <div class="table-wrap mt-2"><table class="table-base">
+                                <thead><tr><th scope="col">Gün</th><th scope="col" class="num">Sipariş</th><th scope="col" class="num">Purchase</th><th scope="col" class="num">Fark</th></tr></thead>
+                                <tbody>
+                                    @foreach (var o in Model.Orders)
+                                    {
+                                        <tr><td>@Format.ShortDate(o.Date)</td><td class="num">@Format.Number(o.Orders)</td><td class="num">@Format.Number(o.Purchases)</td><td class="num @(Math.Abs(o.DifferencePercent) > 5 ? "font-medium text-critical" : "")">@Format.SignedPercent(o.DifferencePercent)</td></tr>
+                                    }
+                                </tbody>
+                            </table></div>
+                        </details>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">Skor trendi · 30 gün</h3></div>
+                    <div class="card-body">
+                        <div class="h-64"><canvas data-chart="score-trend" data-source="#d-trend" role="img" aria-label="Son 30 günün Tracking, SEO ve Performans skorları"></canvas></div>
+                        <script type="application/json" id="d-trend">@Html.Raw(trendJson)</script>
+                        <ul class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
+                            <li class="flex items-center gap-1.5"><span class="h-2 w-2 bg-fg-subtle" aria-hidden="true"></span>Deploy</li>
+                            <li class="flex items-center gap-1.5"><span class="h-2 w-2 rotate-45 bg-critical-solid" aria-hidden="true"></span>Kritik bulgu açıldı</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        @* ---------- İkonlar ---------- *@
+        <section id="ikonlar" class="scroll-mt-20 space-y-4">
+            <h2 class="section-title">İkonlar</h2>
+            <p class="text-sm text-fg-muted">Lucide (ISC). Kullanım: <code class="kbd">&lt;icon name="bell" /&gt;</code>; anlam taşıyorsa <code class="kbd">label="…"</code> verilir.</p>
+            <div class="card card-body grid grid-cols-3 gap-2 sm:grid-cols-6 lg:grid-cols-8">
+                @foreach (var name in Icons.Paths.Keys.OrderBy(k => k))
+                {
+                    <div class="flex flex-col items-center gap-1.5 rounded-md p-2 text-center hover:bg-surface-2">
+                        <icon name="@name" class="h-5 w-5" />
+                        <span class="w-full truncate font-mono text-2xs text-fg-muted">@name</span>
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+</div>

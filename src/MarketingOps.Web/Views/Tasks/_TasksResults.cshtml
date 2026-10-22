@@ -1,0 +1,110 @@
+@model MarketingOps.Web.ViewModels.Tasks.TasksIndexViewModel
+@using MarketingOps.Domain.WorkTasks
+@{
+    var q = Model.Query;
+}
+<div id="tasks-results" class="flex flex-col gap-3" hx-target="#tasks-results" hx-select="#tasks-results" hx-swap="outerHTML" hx-push-url="true">
+    <input type="hidden" form="tasks-filter" name="pageSize" value="@(q.PageSize == 25 ? "" : q.PageSize.ToString())" />
+    <div hx-target="#tasks-page" hx-select="#tasks-page" hx-swap="outerHTML">
+        <vc:filter-chips chips="Model.Chips" clear-url="@Context.Request.With(("status", null), ("team", null), ("severity", null), ("q", null), ("page", null))" target="#tasks-page" />
+    </div>
+
+    @if (q.Board)
+    {
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            @foreach (var column in Model.Columns)
+            {
+                var headingId = $"col-{column.Status}";
+                <section class="flex min-w-0 flex-col rounded-sm border border-line bg-surface-2" aria-labelledby="@headingId">
+                    <h2 id="@headingId" class="flex items-center justify-between gap-2 border-b border-line px-3 py-2 text-sm font-semibold text-fg">
+                        <status-badge value="@column.Status" />
+                        <span class="tabular text-xs font-normal text-fg-muted">@Format.Number(column.Tasks.TotalCount)</span>
+                    </h2>
+                    <ul class="flex flex-col gap-2 p-2">
+                        @if (column.Tasks.TotalCount == 0)
+                        {
+                            <li class="px-1 py-3 text-center text-xs text-fg-subtle">Görev yok</li>
+                        }
+                        @foreach (var t in column.Tasks.Items)
+                        {
+                            <li>
+                                <a href="@Url.SiteAction("Detail", "Tasks", new { id = t.Id })"
+                                   class="block rounded-sm border border-line bg-surface p-3 transition-colors duration-150 hover:border-fg-subtle">
+                                    <span class="flex items-center justify-between gap-2">
+                                        <span class="font-mono text-xs text-fg-muted">@t.Key</span>
+                                        <severity-badge value="@t.Severity" />
+                                    </span>
+                                    <span class="mt-1.5 block text-sm font-medium text-fg">@t.Title</span>
+                                    <span class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-fg-muted">
+                                        <span>@DisplayText.Of(t.Team) · @(t.PageTypeName ?? "Eşleşmeyen")</span>
+                                        <span class="tabular" title="Sağlanan kabul kriteri">@t.CriteriaMet/@t.CriteriaTotal</span>
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                        @if (column.Tasks.TotalCount > column.Tasks.Items.Count)
+                        {
+                            <li class="px-1 text-xs text-fg-muted">İlk @column.Tasks.Items.Count görev. Tamamı için tablo görünümünü kullanın.</li>
+                        }
+                    </ul>
+                </section>
+            }
+        </div>
+    }
+    else
+    {
+        var table = Model.Table!;
+        <div class="card overflow-hidden">
+            @if (table.TotalCount == 0)
+            {
+                @if (q.IsDefault)
+                {
+                    <empty-state icon="clipboard-list" title="Henüz görev yok" description="Görevler bulgular açıldığında otomatik oluşur. Mevcut bulgular için üstteki düğmeyle oluşturabilirsiniz." />
+                }
+                else
+                {
+                    <empty-state icon="filter" title="Bu filtrelerle eşleşen görev yok" description="Filtreleri gevşetin ya da temizleyin." />
+                }
+            }
+            else
+            {
+                <div class="table-wrap htmx-dim">
+                    <table class="table-base min-w-[960px]">
+                        <thead>
+                            <tr>
+                                <th scope="col">Görev</th>
+                                <th scope="col">Önem</th>
+                                <th scope="col">Ekip</th>
+                                <th scope="col">Durum</th>
+                                <th scope="col" class="num">Kriter</th>
+                                <th scope="col">Jira</th>
+                                <th scope="col">Güncellendi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in table.Items)
+                            {
+                                <tr class="row-link" onclick="if(!event.target.closest('a'))this.querySelector('a').click()">
+                                    <td class="max-w-md">
+                                        <a class="font-medium text-fg hover:underline" href="@Url.SiteAction("Detail", "Tasks", new { id = t.Id })"><span class="mr-1.5 font-mono text-xs text-fg-muted">@t.Key</span>@t.Title</a>
+                                        <span class="mt-0.5 block text-xs text-fg-muted">@(t.PageTypeName ?? "Eşleşmeyen sayfalar") · bulgu <status-badge value="@t.FindingStatus" /></span>
+                                    </td>
+                                    <td><severity-badge value="@t.Severity" /></td>
+                                    <td class="whitespace-nowrap text-fg-muted">@DisplayText.Of(t.Team)</td>
+                                    <td><status-badge value="@t.Status" /></td>
+                                    <td class="num tabular @(t.CriteriaMet == t.CriteriaTotal ? "text-ok" : "text-fg-muted")">@t.CriteriaMet/@t.CriteriaTotal</td>
+                                    <td class="whitespace-nowrap font-mono text-xs">
+                                        @if (t.ExternalUrl is not null) { <a class="link" href="@t.ExternalUrl" target="_blank" rel="noopener noreferrer">@t.ExternalTrackerKey</a> }
+                                        else { <span class="text-fg-subtle">—</span> }
+                                    </td>
+                                    <td class="whitespace-nowrap text-fg-muted"><time datetime="@Format.Iso(t.UpdatedAt)">@Format.ShortDate(t.UpdatedAt)</time></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <vc:pagination page="table.Page" page-size="table.PageSize" total="table.TotalCount" target="#tasks-results" item-label="görev" />
+            }
+        </div>
+    }
+</div>

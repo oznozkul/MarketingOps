@@ -1,0 +1,27 @@
+@model MarketingOps.Web.ViewModels.Sites.TrackingIdsForm
+@{
+    (string Name, string Label, string Placeholder, string? Value)[] fields =
+    [
+        ("Ga4MeasurementId", "GA4 Measurement ID", "G-XXXXXXXXXX", Model.Ga4MeasurementId),
+        ("GtmContainerId", "GTM Container ID", "GTM-XXXXXXX", Model.GtmContainerId),
+        ("MetaPixelId", "Meta Pixel ID", "15 haneli sayı", Model.MetaPixelId),
+        ("GoogleAdsConversionId", "Google Ads Conversion ID", "AW-XXXXXXXXX", Model.GoogleAdsConversionId)
+    ];
+}
+<form id="tracking-ids-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateTrackingIds", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <p class="max-w-prose text-sm text-fg-muted">Tracking denetimi, sayfalarda bulunan kimlikleri bunlarla karşılaştırarak "yanlış ID" tespiti yapar. Hepsi opsiyoneldir; boş bırakılan kimlik için bu kontrol yapılmaz.</p>
+    <form-errors />
+    <div class="grid gap-4 sm:grid-cols-2">
+        @foreach (var f in fields)
+        {
+            var error = ViewData.ModelState.FirstError(f.Name);
+            <div>
+                <label class="label" for="ids-@f.Name">@f.Label</label>
+                <input id="ids-@f.Name" name="@f.Name" value="@f.Value" class="input font-mono uppercase" placeholder="@f.Placeholder" autocomplete="off" spellcheck="false"
+                       aria-invalid="@(error is null ? null : "true")" aria-describedby="@(error is null ? null : f.Name + "-error")" />
+                <field-error for="@f.Name" />
+            </div>
+        }
+    </div>
+    <div class="flex justify-end"><partial name="_SubmitButton" model="@("Kimlikleri kaydet")" /></div>
+</form>

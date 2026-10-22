@@ -1,0 +1,50 @@
+@model MarketingOps.Web.ViewModels.Tasks.TasksIndexViewModel
+@{
+    var q = Model.Query;
+    var baseUrl = Url.SiteAction("Index", "Tasks");
+}
+<div id="tasks-page" class="flex flex-col gap-5">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <h1 class="page-title">Görevler</h1>
+            <p class="mt-1 max-w-prose text-sm text-fg-muted">Her bulgu için tek görev açılır. Görev, kabul kriterleri sağlanınca kapanır; otomatik kriterleri sonraki tarama doğrular.</p>
+        </div>
+        <div role="group" aria-label="Görünüm" class="inline-flex rounded-sm border border-line-strong p-0.5">
+            <a href="@Context.Request.With(("view", null), ("page", null))" aria-current="@(q.Board ? null : "page")"
+               class="inline-flex min-h-[36px] items-center gap-1.5 rounded-sm px-3 text-sm @(q.Board ? "text-fg-muted hover:text-fg" : "bg-fg text-canvas")"><icon name="list" />Tablo</a>
+            <a href="@Context.Request.With(("view", "board"), ("page", null), ("status", null))" aria-current="@(q.Board ? "page" : null)"
+               class="inline-flex min-h-[36px] items-center gap-1.5 rounded-sm px-3 text-sm @(q.Board ? "bg-fg text-canvas" : "text-fg-muted hover:text-fg")"><icon name="square-kanban" />Pano</a>
+        </div>
+    </div>
+
+    @if (Model.UntaskedFindingCount > 0)
+    {
+        <div role="note" class="flex flex-col gap-3 border-l-2 border-primary bg-primary-soft px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-fg"><span class="tabular font-semibold">@Format.Number(Model.UntaskedFindingCount)</span> açık bulgunun henüz görevi yok.</p>
+            <form hx-post="@Url.SiteAction("Create", "Tasks")" hx-disabled-elt="find button">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" /><icon name="clipboard-list" />Görevleri oluştur
+                </button>
+            </form>
+        </div>
+    }
+
+    <form id="tasks-filter" role="search" aria-label="Görev filtreleri" class="flex flex-col gap-2 lg:flex-row lg:items-center"
+          hx-get="@baseUrl" hx-target="#tasks-results" hx-select="#tasks-results" hx-swap="outerHTML" hx-push-url="true"
+          hx-trigger="change, input changed delay:400ms from:#tasks-q" x-data x-on:submit.prevent>
+        @if (q.Board) { <input type="hidden" name="view" value="board" /> }
+        <div class="relative lg:w-72">
+            <label class="sr-only" for="tasks-q">Görev ya da anahtar ara</label>
+            <icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+            <input id="tasks-q" name="q" type="search" value="@q.Q" class="input pl-9" placeholder="Görev ya da LB-12" autocomplete="off" />
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            @foreach (var menu in Model.Menus)
+            {
+                <partial name="_FilterMenu" model="menu" />
+            }
+        </div>
+    </form>
+
+    <partial name="_TasksResults" model="Model" />
+</div>

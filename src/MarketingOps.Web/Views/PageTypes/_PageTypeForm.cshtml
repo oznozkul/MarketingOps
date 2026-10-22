@@ -1,0 +1,97 @@
+@model MarketingOps.Web.ViewModels.PageTypes.PageTypeEditorViewModel
+@using System.Text.Json
+@using MarketingOps.Domain.Sites
+@{
+    var form = Model.Form;
+    var isNew = Model.PageTypeId is null;
+    var action = isNew ? Url.SiteAction("Create", "PageTypes") : Url.SiteAction("Update", "PageTypes", new { pageTypeId = Model.PageTypeId });
+    var nameError = ViewData.ModelState.FirstError("Name");
+    var rows = form.Conditions.Count > 0 ? form.Conditions.Select(c => new { type = c.Type.ToString(), value = c.Value ?? "" }).ToList() : [new { type = "UrlGlob", value = "" }];
+    // Satır hataları istemci tarafında çizilen satırların altında gösterilir.
+    var rowErrors = ViewData.ModelState
+        .Where(kv => kv.Key.StartsWith("Conditions[", StringComparison.Ordinal) && kv.Value!.Errors.Count > 0)
+        .ToDictionary(kv => kv.Key, kv => kv.Value!.Errors[0].ErrorMessage);
+    var conditionsError = ViewData.ModelState.TryGetValue("Conditions", out var ce) && ce.Errors.Count > 0 ? ce.Errors[0].ErrorMessage : null;
+    var json = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var types = Enum.GetValues<MatchConditionType>().Select(t => new { value = t.ToString(), label = DisplayText.Of(t) });
+}
+<form id="page-type-form" class="space-y-6" hx-post="@action" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" hx-disinherit="hx-disabled-elt" novalidate
+      x-data="{
+          rows: @JsonSerializer.Serialize(rows, json),
+          errors: @JsonSerializer.Serialize(rowErrors, json),
+          placeholders: { UrlGlob: '/urun/*', UrlRegex: '^/lastik/\\d{3}-\\d{2}-r\\d{2}', SchemaType: 'Product' },
+          changed() { this.$nextTick(() => htmx.trigger('#page-type-form', 'change')) },
+          add() { this.rows.push({ type: 'UrlGlob', value: '' }); this.changed(); this.$nextTick(() => document.getElementById('cond-value-' + (this.rows.length - 1))?.focus()) },
+          remove(i) { this.rows.splice(i, 1); this.errors = {}; this.changed() }
+      }">
+    <form-errors />
+
+    <div>
+        <label class="label" for="pt-name">Ad</label>
+        <input id="pt-name" name="Name" value="@form.Name" class="input max-w-md" placeholder="Ürün"
+               aria-invalid="@(nameError is null ? null : "true")" aria-describedby="@(nameError is null ? null : "Name-error")" />
+        <field-error for="Name" />
+    </div>
+
+    <fieldset>
+        <legend class="label">Koşullar nasıl birleşsin?</legend>
+        <div class="grid gap-2 sm:grid-cols-2">
+            @foreach (var mode in Enum.GetValues<MatchMode>())
+            {
+                var id = "pt-mode-" + mode;
+                <label for="@id" class="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-sm border border-line-strong p-3 has-[:checked]:border-fg has-[:checked]:bg-surface-2">
+                    <input id="@id" type="radio" name="Mode" value="@mode" checked="@(form.Mode == mode)" class="mt-0.5 accent-[rgb(var(--primary))]" />
+                    <span>
+                        <span class="block text-sm font-medium text-fg">@DisplayText.Of(mode)</span>
+                        <span class="block text-xs text-fg-muted">@(mode == MatchMode.All ? "Sayfa, tüm koşulları sağlarsa bu tiptir." : "Koşullardan biri yeterlidir.")</span>
+                    </span>
+                </label>
+            }
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend class="label">Eşleşme koşulları</legend>
+        @if (conditionsError is not null)
+        {
+            <p id="Conditions-error" class="mb-2 flex items-center gap-1 text-xs text-critical"><icon name="circle-alert" class="h-3.5 w-3.5" />@conditionsError</p>
+        }
+        <ol class="space-y-2">
+            <template x-for="(row, i) in rows" :key="i">
+                <li class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                    <label class="sr-only" :for="'cond-type-' + i" x-text="(i + 1) + '. koşul türü'"></label>
+                    <select class="select sm:w-44" :id="'cond-type-' + i" :name="'Conditions[' + i + '].Type'" x-model="row.type">
+                        @foreach (var t in types)
+                        {
+                            <option value="@t.value">@t.label</option>
+                        }
+                    </select>
+                    <div class="flex-1">
+                        <label class="sr-only" :for="'cond-value-' + i" x-text="(i + 1) + '. koşul değeri'"></label>
+                        <input class="input font-mono" :id="'cond-value-' + i" :name="'Conditions[' + i + '].Value'" x-model="row.value"
+                               :placeholder="placeholders[row.type]" spellcheck="false" autocomplete="off"
+                               :aria-invalid="errors['Conditions[' + i + '].Value'] ? 'true' : null"
+                               :aria-describedby="errors['Conditions[' + i + '].Value'] ? 'cond-error-' + i : null" />
+                        <p class="mt-1 flex items-center gap-1 text-xs text-critical" :id="'cond-error-' + i" x-show="errors['Conditions[' + i + '].Value']">
+                            <span x-text="errors['Conditions[' + i + '].Value']"></span>
+                        </p>
+                    </div>
+                    <button type="button" class="icon-btn self-end sm:self-start" x-on:click="remove(i)" x-show="rows.length > 1" :aria-label="(i + 1) + '. koşulu kaldır'">
+                        <icon name="x" />
+                    </button>
+                </li>
+            </template>
+        </ol>
+        <button type="button" class="btn btn-secondary btn-sm mt-3" x-on:click="add()" x-show="rows.length < @PageType.MaxConditions"><icon name="plus" />Koşul ekle</button>
+        <p class="hint mt-3">
+            <span class="font-medium text-fg-muted">URL deseni:</span> <code class="kbd">*</code> tek path parçası, <code class="kbd">**</code> alt klasörlerin tamamı (ör. <code class="kbd">/arac/**</code>).
+            <span class="font-medium text-fg-muted">URL regex:</span> path ve query üzerinde çalışır.
+            <span class="font-medium text-fg-muted">Schema @@type:</span> sayfadaki yapılandırılmış veri tipi (ör. Product).
+        </p>
+    </fieldset>
+
+    <div class="flex justify-end gap-2 border-t border-line pt-4">
+        <a class="btn btn-ghost" href="@Url.SiteAction("Index", "PageTypes")">Vazgeç</a>
+        <partial name="_SubmitButton" model="@(isNew ? "Sayfa tipini ekle" : "Kaydet")" />
+    </div>
+</form>

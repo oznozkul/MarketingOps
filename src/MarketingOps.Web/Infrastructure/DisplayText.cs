@@ -1,0 +1,170 @@
+using MarketingOps.Application.Crawls.Queries.GetPages;
+using MarketingOps.Domain.Connectors;
+using MarketingOps.Domain.Crawls;
+using MarketingOps.Domain.Findings;
+using MarketingOps.Domain.Sites;
+using MarketingOps.Domain.Tracking;
+using MarketingOps.Domain.WorkTasks;
+
+namespace MarketingOps.Web.Infrastructure;
+
+/// <summary>Enum değerlerinin arayüzdeki Türkçe karşılıkları. Tek kaynak burasıdır.</summary>
+public static class DisplayText
+{
+    public static string Of(Severity v) => v switch
+    {
+        Severity.Critical => "Kritik",
+        Severity.High => "Yüksek",
+        Severity.Medium => "Orta",
+        _ => "Düşük"
+    };
+
+    public static string Of(FindingStatus v) => v switch
+    {
+        FindingStatus.Open => "Açık",
+        FindingStatus.Reopened => "Tekrar açıldı",
+        FindingStatus.Resolved => "Çözüldü",
+        FindingStatus.FalsePositive => "Yanlış alarm",
+        _ => "Ertelendi"
+    };
+
+    public static string Of(FindingCategory v) => v switch
+    {
+        FindingCategory.Tracking => "Tracking",
+        FindingCategory.TechnicalSeo => "Teknik SEO",
+        FindingCategory.Content => "İçerik",
+        _ => "Performans"
+    };
+
+    public static string Of(WorkTaskStatus v) => v switch
+    {
+        WorkTaskStatus.Todo => "Yapılacak",
+        WorkTaskStatus.InProgress => "Devam ediyor",
+        WorkTaskStatus.AwaitingVerification => "Doğrulama bekliyor",
+        _ => "Kapandı"
+    };
+
+    public static string Of(CrawlStatus v) => v switch
+    {
+        CrawlStatus.Queued => "Kuyrukta",
+        CrawlStatus.Running => "Çalışıyor",
+        CrawlStatus.Completed => "Tamamlandı",
+        CrawlStatus.PartiallyCompleted => "Kısmen tamamlandı",
+        CrawlStatus.Failed => "Hata",
+        _ => "İptal edildi"
+    };
+
+    public static string Of(ConnectorStatus v) => v switch
+    {
+        ConnectorStatus.Connected => "Bağlı",
+        ConnectorStatus.NotConnected => "Bağlı değil",
+        ConnectorStatus.PendingApproval => "Onay bekleniyor",
+        ConnectorStatus.Expired => "Yetki süresi doldu",
+        _ => "Hata"
+    };
+
+    public static string Of(TagAuditStatus v) => v switch
+    {
+        TagAuditStatus.Ok => "Doğru",
+        TagAuditStatus.Missing => "Eksik",
+        TagAuditStatus.Duplicate => "İki kez yüklü",
+        TagAuditStatus.WrongId => "Yanlış ID",
+        _ => "Onay öncesi tetikleniyor"
+    };
+
+    public static string Of(CrawlSchedule v) => v switch
+    {
+        CrawlSchedule.Daily => "Günde bir",
+        CrawlSchedule.Every12Hours => "12 saatte bir",
+        _ => "Haftada bir"
+    };
+
+    public static string Of(CrawlTrigger v) => v == CrawlTrigger.Schedule ? "Zamanlanmış" : "Manuel";
+
+    public static string Of(CrawlStage v) => v switch
+    {
+        CrawlStage.Discovery => "Keşif",
+        CrawlStage.Download => "İndirme",
+        CrawlStage.Render => "Render",
+        CrawlStage.RuleEvaluation => "Kural değerlendirme",
+        _ => "Connector senkronu"
+    };
+
+    public static string Of(SkipReason v) => v switch
+    {
+        SkipReason.RobotsTxt => "robots.txt engelli",
+        SkipReason.ExcludedPath => "Hariç tutulan path",
+        SkipReason.MaxPagesReached => "Sayfa limiti doldu",
+        _ => "Dış alan adı"
+    };
+
+    public static string Of(PageStatusFilter v) => v switch
+    {
+        PageStatusFilter.Success => "2xx başarılı",
+        PageStatusFilter.Redirect => "3xx yönlendirme",
+        PageStatusFilter.ClientError => "4xx istemci hatası",
+        PageStatusFilter.ServerError => "5xx sunucu hatası",
+        _ => "Yanıt yok"
+    };
+
+    public static string Of(MatchMode v) => v == MatchMode.All ? "Tüm koşullar (VE)" : "Herhangi biri (VEYA)";
+
+    public static string Of(MatchConditionType v) => v switch
+    {
+        MatchConditionType.UrlGlob => "URL deseni",
+        MatchConditionType.UrlRegex => "URL regex",
+        _ => "Schema @type"
+    };
+
+    public static string Of(ConnectorType v) => v switch
+    {
+        ConnectorType.SearchConsole => "Search Console",
+        ConnectorType.Ga4 => "GA4",
+        ConnectorType.Gtm => "Google Tag Manager",
+        ConnectorType.GoogleAds => "Google Ads",
+        ConnectorType.Meta => "Meta Pixel / CAPI",
+        ConnectorType.MerchantCenter => "Merchant Center",
+        ConnectorType.OrderSource => "Sipariş kaynağı",
+        _ => "Görev hedefi"
+    };
+
+    public static string Of(Team v) => v switch
+    {
+        Team.Frontend => "Frontend",
+        Team.Backend => "Backend",
+        Team.Seo => "SEO",
+        _ => "İçerik"
+    };
+
+    public static string Of(SuggestionKind v) => v switch
+    {
+        SuggestionKind.Text => "Metin önerisi",
+        SuggestionKind.Code => "Kod önerisi",
+        _ => "Yapılandırma adımları"
+    };
+
+    public static string Of(VerificationType v) => v == VerificationType.Automatic ? "Otomatik · sonraki tarama" : "Ekip onayı";
+
+    public static string Of(Enum value) => value switch
+    {
+        Team v => Of(v),
+        SuggestionKind v => Of(v),
+        VerificationType v => Of(v),
+        Severity v => Of(v),
+        FindingStatus v => Of(v),
+        FindingCategory v => Of(v),
+        WorkTaskStatus v => Of(v),
+        CrawlStatus v => Of(v),
+        ConnectorStatus v => Of(v),
+        TagAuditStatus v => Of(v),
+        CrawlSchedule v => Of(v),
+        MatchMode v => Of(v),
+        MatchConditionType v => Of(v),
+        ConnectorType v => Of(v),
+        CrawlTrigger v => Of(v),
+        CrawlStage v => Of(v),
+        SkipReason v => Of(v),
+        PageStatusFilter v => Of(v),
+        _ => value.ToString()
+    };
+}

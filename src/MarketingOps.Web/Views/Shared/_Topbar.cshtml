@@ -1,0 +1,121 @@
+@model ShellViewModel
+@{
+    var siteId = Model.Site.Id;
+}
+<header class="sticky top-0 z-sticky border-b border-line bg-surface">
+    <div class="mx-auto flex h-14 max-w-content items-center gap-2 px-2 sm:px-4 lg:px-8">
+        <button type="button" class="icon-btn lg:hidden" @@click="nav = true" aria-label="Menüyü aç"><icon name="menu" /></button>
+
+        @* Site seçici *@
+        <div class="relative" x-data="{ open: false }" @@keydown.escape="open = false; $refs.btn.focus()" @@click.outside="open = false">
+            <button type="button" x-ref="btn" @@click="open = !open" :aria-expanded="open" aria-haspopup="true"
+                    class="flex min-h-[44px] items-center gap-2 rounded-md px-2 text-left hover:bg-surface-2 lg:min-h-[40px]">
+                <icon name="globe" class="h-4 w-4 text-fg-muted" />
+                <span class="flex flex-col leading-tight">
+                    <span class="text-sm font-semibold text-fg">@Model.Site.Name</span>
+                    <span class="hidden font-mono text-2xs text-fg-muted sm:block">@Model.Site.Domain</span>
+                </span>
+                <icon name="chevrons-up-down" class="h-4 w-4 text-fg-subtle" />
+                <span class="sr-only">Site değiştir</span>
+            </button>
+            <div x-cloak x-show="open" x-transition.opacity.duration.100ms class="menu left-0" role="menu" aria-label="Siteler">
+                <p class="eyebrow px-3 pb-1 pt-1.5">Siteler</p>
+                @foreach (var s in Model.Sites)
+                {
+                    <a href="@s.Url" role="menuitem" class="menu-item" aria-current="@(s.IsCurrent ? "true" : null)">
+                        <span class="flex flex-1 flex-col leading-tight">
+                            <span class="font-medium">@s.Site.Name</span>
+                            <span class="font-mono text-2xs text-fg-muted">@s.Site.Domain</span>
+                        </span>
+                        @if (s.IsCurrent)
+                        {
+                            <icon name="check" class="h-4 w-4 text-primary-text" label="Seçili" />
+                        }
+                    </a>
+                }
+                <div class="my-1 border-t border-line"></div>
+                <a href="@(Url.Action("Index", "SiteSettings", new { siteId }) + "#yeni-site")" role="menuitem" class="menu-item text-fg-muted"><icon name="plus" />Site ekle</a>
+            </div>
+        </div>
+
+        @* Son tarama bilgisi; tarama sürüyorsa canlı ilerleme *@
+        @{
+            var crawlStatus = Model.CrawlStatus;
+        }
+        <a href="@Url.Action("Index", "Crawls", new { siteId })" class="hidden min-h-[40px] items-center gap-2 rounded-sm px-2 text-xs text-fg-muted hover:bg-surface-2 hover:text-fg md:flex">
+            @if (crawlStatus.Active is { } active)
+            {
+                <span class="flex items-center gap-2" x-data="crawlLive(@CrawlLiveJson.For(active))"
+                      x-on:mo:crawl-progress.window="onProgress($event)" x-on:mo:crawl-finished.window="onFinished($event)">
+                    <icon name="loader-circle" class="h-3.5 w-3.5 animate-spin text-primary-text motion-reduce:animate-none" />
+                    <span>Tarama <span class="tabular">#@active.Number</span> · <span x-text="stageName">Başlıyor</span> · <span class="tabular" x-text="'%' + percent"></span></span>
+                </span>
+            }
+            else if (crawlStatus.LastFinished is { } last)
+            {
+                <icon name="history" class="h-3.5 w-3.5" />
+                <span>Son tarama <span class="tabular">#@last.Number</span> · <time datetime="@Format.Iso(last.FinishedAt!.Value)">@Format.ShortDate(last.FinishedAt!.Value) @last.FinishedAt.Value.ToOffset(Format.DisplayOffset).ToString("HH:mm")</time> · <span class="tabular">@Format.Number(last.PagesCrawled)</span> sayfa</span>
+            }
+            else
+            {
+                <icon name="clock" class="h-3.5 w-3.5" />
+                <span>İlk tarama bekleniyor</span>
+            }
+        </a>
+
+        <div class="ml-auto flex items-center gap-1">
+            @* Bildirimler *@
+            <div class="relative" x-data="{ open: false }" @@keydown.escape="open = false; $refs.btn.focus()" @@click.outside="open = false">
+                <button type="button" x-ref="btn" class="icon-btn relative" :aria-expanded="open" aria-haspopup="true"
+                        @@click="open = !open" aria-label="Bildirimler">
+                    <icon name="bell" />
+                </button>
+                <div x-cloak x-show="open" x-transition.opacity.duration.100ms class="menu right-0 w-[min(24rem,calc(100vw-1rem))] p-0">
+                    <div class="flex items-center justify-between border-b border-line px-4 py-2.5">
+                        <p class="text-sm font-semibold text-fg">Bildirimler</p>
+                        <a class="link text-xs" href="@Url.Action("Index", "NotificationSettings", new { siteId })">Ayarlar</a>
+                    </div>
+                    <div id="notification-panel" class="max-h-[60vh] overflow-y-auto">
+                        @* Bildirim merkezi Faz 7'de gelecek. *@
+                        <empty-state icon="bell-off" compact="true" title="Bildirim yok" description="Yeni kritik bulgu, regresyon veya bağlantı sorunu olduğunda burada görünür." />
+                    </div>
+                </div>
+            </div>
+
+            @* Tema *@
+            <div class="relative" x-data="{ open: false }" @@keydown.escape="open = false; $refs.btn.focus()" @@click.outside="open = false">
+                <button type="button" x-ref="btn" class="icon-btn" @@click="open = !open" :aria-expanded="open" aria-haspopup="true" :aria-label="'Tema: ' + $store.theme.label()">
+                    <span x-show="$store.theme.mode === 'light'"><icon name="sun" /></span>
+                    <span x-show="$store.theme.mode === 'dark'" x-cloak><icon name="moon" /></span>
+                    <span x-show="$store.theme.mode === 'system'" x-cloak><icon name="monitor" /></span>
+                </button>
+                <div x-cloak x-show="open" x-transition.opacity.duration.100ms class="menu right-0 min-w-[10rem]" role="menu" aria-label="Tema">
+                    @foreach (var (mode, label, icon) in new[] { ("light", "Açık", "sun"), ("dark", "Koyu", "moon"), ("system", "Sistem", "monitor") })
+                    {
+                        <button type="button" role="menuitemradio" class="menu-item" :aria-checked="$store.theme.mode === '@mode'" @@click="$store.theme.set('@mode'); open = false">
+                            <icon name="@icon" class="h-4 w-4 text-fg-muted" /><span class="flex-1">@label</span>
+                            <span x-show="$store.theme.mode === '@mode'"><icon name="check" class="h-4 w-4 text-primary-text" /></span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @* Kullanıcı menüsü *@
+            <div class="relative" x-data="{ open: false }" @@keydown.escape="open = false; $refs.btn.focus()" @@click.outside="open = false">
+                <button type="button" x-ref="btn" class="flex min-h-[44px] items-center gap-2 rounded-md px-1.5 hover:bg-surface-2 lg:min-h-[40px]" @@click="open = !open" :aria-expanded="open" aria-haspopup="true">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-sm border border-line-strong font-mono text-[11px] font-medium text-fg" aria-hidden="true">@Format.Initials(Model.UserName)</span>
+                    <span class="sr-only">Kullanıcı menüsü: @Model.UserName</span>
+                    <icon name="chevron-down" class="hidden h-4 w-4 text-fg-subtle sm:block" />
+                </button>
+                <div x-cloak x-show="open" x-transition.opacity.duration.100ms class="menu right-0" role="menu">
+                    <div class="border-b border-line px-3 pb-2 pt-1.5">
+                        <p class="text-sm font-medium text-fg">@Model.UserName</p>
+                        <p class="text-xs text-fg-muted">@Model.UserRole</p>
+                    </div>
+                    <a href="@Url.Action("Index", "NotificationSettings", new { siteId })" role="menuitem" class="menu-item"><icon name="bell" class="h-4 w-4 text-fg-muted" />Bildirim tercihleri</a>
+                    <button type="button" role="menuitem" class="menu-item" aria-disabled="true" title="Kimlik doğrulama sonraki aşamada"><icon name="log-out" class="h-4 w-4 text-fg-muted" />Çıkış yap</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

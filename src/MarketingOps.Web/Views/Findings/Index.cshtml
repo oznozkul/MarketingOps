@@ -1,0 +1,80 @@
+@model MarketingOps.Web.ViewModels.Findings.FindingsIndexViewModel
+@using MarketingOps.Application.Findings.Commands.BulkUpdateFindings
+@using MarketingOps.Web.ViewModels.Findings
+@{
+    var q = Model.Query;
+    var baseUrl = Url.SiteAction("Index", "Findings");
+    (string Key, string Label)[] columns = [("category", "Kategori"), ("pageType", "Sayfa tipi"), ("affected", "Etkilenen sayfa"), ("firstSeen", "İlk tespit"), ("lastSeen", "Son görülme"), ("status", "Durum"), ("task", "Görev")];
+}
+<div id="findings-page" class="flex flex-col gap-5" x-data="findingsList"
+     x-on:htmx:before-request="if ($event.detail.requestConfig.verb === 'get') selected = []">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <h1 class="page-title">Bulgular</h1>
+            <p class="mt-1 max-w-prose text-sm text-fg-muted">Aynı kural ve sayfa tipinden gelen bulgular tek satırda gruplanır.</p>
+        </div>
+        <a class="btn btn-secondary" href="@(Url.SiteAction("Export", "Findings") + Context.Request.QueryString)" download><icon name="download" />CSV indir</a>
+    </div>
+
+    @* Filtreler: değişiklikte yalnızca tablo bölgesi yenilenir, URL güncellenir (paylaşılabilir). *@
+    <form id="findings-filter" role="search" aria-label="Bulgu filtreleri" class="flex flex-col gap-2 lg:flex-row lg:items-center"
+          hx-get="@baseUrl" hx-target="#findings-results" hx-select="#findings-results" hx-swap="outerHTML" hx-push-url="true"
+          hx-trigger="change, input changed delay:400ms from:#findings-q" x-on:submit.prevent>
+        <input type="hidden" name="status" value="@FindingsQuery.AnyStatus" />
+        <div class="relative lg:w-72">
+            <label class="sr-only" for="findings-q">Bulgu ya da kural kodu ara</label>
+            <icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+            <input id="findings-q" name="q" type="search" value="@q.Q" class="input pl-9" placeholder="Bulgu ya da kural kodu" autocomplete="off" />
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            @foreach (var menu in Model.Menus)
+            {
+                <partial name="_FilterMenu" model="menu" />
+            }
+            <label class="inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-sm border border-line-strong bg-surface px-3 text-sm text-fg hover:bg-surface-2">
+                <input type="checkbox" class="checkbox" name="new" value="true" checked="@q.NewOnly" />
+                Son taramada yeni
+            </label>
+        </div>
+        <div class="lg:ml-auto" x-data="{ open: false }" x-on:click.outside="open = false" x-on:keydown.escape="open = false">
+            <div class="relative">
+                <button type="button" class="btn btn-ghost btn-sm" x-on:click="open = !open" :aria-expanded="open" aria-controls="findings-columns">
+                    <icon name="columns-3" />Kolonlar
+                </button>
+                <div id="findings-columns" x-cloak x-show="open" x-transition.opacity
+                     class="absolute right-0 z-overlay mt-1 w-56 rounded-sm border border-line-strong bg-surface p-2 shadow-overlay">
+                    <p class="px-2 pb-1 text-xs text-fg-muted">Görünür kolonlar</p>
+                    @foreach (var (key, label) in columns)
+                    {
+                        <label class="flex min-h-[36px] cursor-pointer items-center gap-2 rounded-sm px-2 text-sm hover:bg-surface-2">
+                            <input type="checkbox" class="checkbox" form="" x-model="cols.@key" x-on:change.stop="saveCols()" />@label
+                        </label>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+
+    @* Toplu işlem çubuğu: seçim varken görünür. *@
+    <div x-cloak x-show="selected.length > 0" x-transition.opacity role="region" aria-label="Toplu işlemler"
+         class="flex flex-wrap items-center gap-2 rounded-sm border border-primary bg-primary-soft px-3 py-2 text-sm">
+        <span class="font-medium text-fg"><span class="tabular" x-text="selected.length"></span> bulgu seçili</span>
+        <span class="mx-1 h-4 w-px bg-line-strong" aria-hidden="true"></span>
+        <form hx-post="@Url.SiteAction("BulkCreateTasks", "Findings")" hx-disabled-elt="find button" class="contents">
+            <template x-for="id in selected" :key="id"><input type="hidden" name="ids" :value="id" /></template>
+            <button type="submit" class="btn btn-secondary btn-sm"><icon name="clipboard-list" />Görev oluştur</button>
+        </form>
+        <form hx-post="@Url.SiteAction("BulkExport", "Findings")" hx-disabled-elt="find button" class="contents">
+            <template x-for="id in selected" :key="id"><input type="hidden" name="ids" :value="id" /></template>
+            <button type="submit" class="btn btn-secondary btn-sm"><icon name="external-link" />Jira'ya aktar</button>
+        </form>
+        <button type="button" class="btn btn-secondary btn-sm" x-on:click="$dispatch('open-modal', 'bulk-snooze')"><icon name="clock" />Ertele</button>
+        <button type="button" class="btn btn-secondary btn-sm" x-on:click="$dispatch('open-modal', 'bulk-false-positive')"><icon name="bell-off" />Yanlış alarm olarak işaretle</button>
+        <button type="button" class="btn btn-ghost btn-sm sm:ml-auto" x-on:click="selected = []">Seçimi temizle</button>
+    </div>
+
+    <partial name="_FindingsResults" model="Model" />
+
+    <partial name="_Modal" model="@(new ModalViewModel("bulk-snooze", "Seçili bulguları ertele", "_BulkSnoozeForm", new BulkFindingsForm { Action = BulkFindingAction.Snooze }))" />
+    <partial name="_Modal" model="@(new ModalViewModel("bulk-false-positive", "Yanlış alarm olarak işaretle", "_BulkFalsePositiveForm", new BulkFindingsForm { Action = BulkFindingAction.MarkFalsePositive }))" />
+</div>

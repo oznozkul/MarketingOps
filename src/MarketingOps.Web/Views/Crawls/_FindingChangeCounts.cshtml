@@ -1,0 +1,14 @@
+@model MarketingOps.Application.Crawls.Queries.CrawlListItemResponse
+@* Taramanın bulgu değişimi: yeni / çözülen / tekrar açılan. Değerlendirilmemiş taramada neden boş olduğu söylenir. *@
+@if (Model.EvaluatedAt is null)
+{
+    <span class="text-fg-subtle" title="@(Model.IsActive ? "Tarama bitince kurallar çalışır" : "Bu tarama kurallarla değerlendirilmedi")">—<span class="sr-only">değerlendirilmedi</span></span>
+}
+else
+{
+    <span class="inline-flex items-center gap-2 font-mono text-xs">
+        <span class="@(Model.NewFindings > 0 ? "text-critical" : "text-fg-subtle")" title="Yeni açılan">+@Model.NewFindings<span class="sr-only"> yeni</span></span>
+        <span class="@(Model.ResolvedFindings > 0 ? "text-ok" : "text-fg-subtle")" title="Çözülen">−@Model.ResolvedFindings<span class="sr-only"> çözülen</span></span>
+        <span class="@(Model.ReopenedFindings > 0 ? "text-warn" : "text-fg-subtle")" title="Tekrar açılan">↻@Model.ReopenedFindings<span class="sr-only"> tekrar açılan</span></span>
+    </span>
+}

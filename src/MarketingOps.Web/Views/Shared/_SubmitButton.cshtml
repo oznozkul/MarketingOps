@@ -1,0 +1,6 @@
+@model string
+@* Gönderim sürerken buton devre dışı kalır (hx-disabled-elt) ve dönen gösterge görünür. *@
+<button type="submit" class="btn btn-primary">
+    <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />
+    @Model
+</button>

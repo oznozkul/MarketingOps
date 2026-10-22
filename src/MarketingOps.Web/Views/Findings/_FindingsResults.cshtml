@@ -1,0 +1,100 @@
+@model MarketingOps.Web.ViewModels.Findings.FindingsIndexViewModel
+@using MarketingOps.Application.Findings.Queries
+@{
+    var q = Model.Query;
+    var s = Model.Summary;
+    string Key(FindingSort value) => System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
+    var currentSort = Key(q.Sort);
+}
+<div id="findings-results" class="flex flex-col gap-3" hx-target="#findings-results" hx-select="#findings-results" hx-swap="outerHTML" hx-push-url="true">
+    @* Sıralama ve sayfa boyutu filtre formuna aittir; filtre değişince korunur. *@
+    <input type="hidden" form="findings-filter" name="sort" value="@(q.Sort == FindingSort.Severity ? "" : currentSort)" />
+    <input type="hidden" form="findings-filter" name="desc" value="@(q.Desc ? "true" : "")" />
+    <input type="hidden" form="findings-filter" name="pageSize" value="@(q.PageSize == 25 ? "" : q.PageSize.ToString())" />
+
+    @* Özet şerit *@
+    <p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-fg-muted" aria-live="polite">
+        <span><span class="tabular font-semibold text-fg">@Format.Number(s.Total)</span> bulgu</span>
+        <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 bg-critical-solid" aria-hidden="true"></span><span class="tabular font-semibold text-fg">@Format.Number(s.Critical)</span> kritik</span>
+        <span><span class="tabular font-semibold text-fg">@Format.Number(s.NewInLastCrawl)</span> son taramada yeni</span>
+    </p>
+
+    <div hx-target="#findings-page" hx-select="#findings-page" hx-swap="outerHTML">
+        <vc:filter-chips chips="Model.Chips" clear-url="@Url.SiteAction("Index", "Findings")" target="#findings-page" />
+    </div>
+
+    <div class="card overflow-hidden">
+        @if (!s.HasEvaluatedCrawl)
+        {
+            <empty-state icon="scan-search" title="Henüz değerlendirilmiş tarama yok" description="Kurallar her taramadan sonra çalışır ve bulgular burada listelenir.">
+                <a class="btn btn-primary btn-sm" href="@Url.SiteAction("Index", "Crawls")"><icon name="scan-line" />Taramalara git</a>
+            </empty-state>
+        }
+        else if (s.Total == 0 && q.IsDefault)
+        {
+            <empty-state variant="positive" title="Açık bulgu yok" description="Son taramada etkin kuralların hiçbiri sorun bulmadı. Çözülmüş ve ertelenmiş bulgular durum filtresinden görülebilir." />
+        }
+        else if (s.Total == 0)
+        {
+            <empty-state icon="filter" title="Bu filtrelerle eşleşen bulgu yok" description="Filtreleri gevşetin ya da temizleyin.">
+                <a class="btn btn-secondary btn-sm" href="@Url.SiteAction("Index", "Findings")"
+                   hx-get="@Url.SiteAction("Index", "Findings")" hx-target="#findings-page" hx-select="#findings-page" hx-swap="outerHTML">Filtreleri temizle</a>
+            </empty-state>
+        }
+        else
+        {
+            <div class="table-wrap htmx-dim">
+                <table class="table-base min-w-[960px]">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="w-10">
+                                <input type="checkbox" class="checkbox" aria-label="Bu sayfadaki tüm bulguları seç"
+                                       :checked="allSelected" x-on:change="toggleAll($event.target.checked)" />
+                            </th>
+                            <vc:sort-header label="Önem" key="severity" current-sort="@currentSort" descending="q.Desc" target="#findings-results" />
+                            <vc:sort-header label="Bulgu" key="title" current-sort="@currentSort" descending="q.Desc" target="#findings-results" />
+                            <th scope="col" x-show="cols.category">Kategori</th>
+                            <th scope="col" x-show="cols.pageType">Sayfa tipi</th>
+                            <vc:sort-header label="Etkilenen" key="affectedCount" current-sort="@currentSort" descending="q.Desc" target="#findings-results" css-class="num" show="cols.affected" />
+                            <vc:sort-header label="İlk tespit" key="firstSeen" current-sort="@currentSort" descending="q.Desc" target="#findings-results" show="cols.firstSeen" />
+                            <vc:sort-header label="Son görülme" key="lastSeen" current-sort="@currentSort" descending="q.Desc" target="#findings-results" show="cols.lastSeen" />
+                            <vc:sort-header label="Durum" key="status" current-sort="@currentSort" descending="q.Desc" target="#findings-results" show="cols.status" />
+                            <th scope="col" x-show="cols.task">Görev</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in Model.Findings.Items)
+                        {
+                            var href = Url.SiteAction("Detail", "Findings", new { id = f.Id });
+                            <tr class="row-link" :class="selected.includes('@f.Id') && 'bg-primary-soft'"
+                                onclick="if(!event.target.closest('a,input,label'))this.querySelector('a').click()">
+                                <td><input type="checkbox" class="checkbox" data-row value="@f.Id" x-model="selected" aria-label="Seç: @f.Title" /></td>
+                                <td><severity-badge value="@f.Severity" /></td>
+                                <td class="max-w-md">
+                                    <a class="font-medium text-fg hover:underline" href="@href">@f.Title</a>
+                                    <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                                        <span class="font-mono text-2xs text-fg-muted">@f.RuleCode</span>
+                                        @if (f.IsNewInLastCrawl)
+                                        {
+                                            <span class="badge @ToneClasses.Badge(Tone.Neutral)">Yeni</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td x-show="cols.category"><category-badge value="@f.Category" /></td>
+                                <td x-show="cols.pageType" class="whitespace-nowrap @(f.PageTypeName is null ? "text-fg-subtle" : "text-fg-muted")">@(f.PageTypeName ?? "Eşleşmeyen")</td>
+                                <td x-show="cols.affected" class="num">@Format.Number(f.AffectedCount)</td>
+                                <td x-show="cols.firstSeen" class="whitespace-nowrap text-fg-muted"><time datetime="@Format.Iso(f.FirstSeenAt)">@Format.ShortDate(f.FirstSeenAt)</time></td>
+                                <td x-show="cols.lastSeen" class="whitespace-nowrap text-fg-muted"><time datetime="@Format.Iso(f.LastSeenAt)">@Format.ShortDate(f.LastSeenAt)</time></td>
+                                <td x-show="cols.status"><status-badge value="@f.Status" /></td>
+                                <td x-show="cols.task" class="whitespace-nowrap font-mono text-xs">
+                                    @if (f.TaskKey is not null) { <span class="text-fg">@f.TaskKey</span> } else { <span class="text-fg-subtle">—<span class="sr-only">görev yok</span></span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <vc:pagination page="Model.Findings.Page" page-size="Model.Findings.PageSize" total="Model.Findings.TotalCount" target="#findings-results" item-label="bulgu" />
+        }
+    </div>
+</div>

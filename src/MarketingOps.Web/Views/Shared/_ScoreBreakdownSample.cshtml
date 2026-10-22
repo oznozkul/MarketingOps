@@ -1,0 +1,57 @@
+@model IReadOnlyList<MarketingOps.Web.ViewModels.Design.DesignScoreDeduction>
+@* Yalnızca /_design için örnek. Gerçek döküm Faz 7'de GetScoreBreakdownQuery ile gelecek. *@
+@{
+    var total = Model.Sum(d => d.Deduction);
+}
+<div class="space-y-5">
+    <div class="flex items-baseline gap-2">
+        <span class="tabular font-mono text-[32px] font-medium leading-none text-fg">@(100 - (int)Math.Round(total))</span>
+        <span class="text-sm text-fg-muted">/ 100</span>
+    </div>
+
+    <div class="border-l-2 border-fg bg-surface-2 p-3 text-sm text-fg-muted">
+        <p class="font-medium text-fg">Hesaplama</p>
+        <p class="mt-1">Skor 100'den başlar. Her açık bulgu, <span class="font-medium text-fg">önem ağırlığı × etkilenen sayfa oranı</span> kadar puan düşürür. Tek bir bulgunun düşürebileceği puanın üst sınırı vardır.</p>
+        <dl class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            @foreach (var (severity, weight) in new[] { (Severity.Critical, 15), (Severity.High, 8), (Severity.Medium, 3), (Severity.Low, 1) })
+            {
+                <div class="flex items-center gap-1.5"><dt><severity-badge value="@severity" /></dt><dd class="tabular">ağırlık @weight</dd></div>
+            }
+        </dl>
+    </div>
+
+    <div>
+        <h3 class="section-title">Puanı en çok düşüren bulgular</h3>
+        <div class="table-wrap mt-2 rounded border border-line">
+            <table class="table-base">
+                <thead>
+                    <tr>
+                        <th scope="col">Bulgu</th>
+                        <th scope="col" class="num">Etkilenen</th>
+                        <th scope="col" class="num">Düşüş</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="font-medium text-fg">@d.Title</span>
+                                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+                                    <severity-badge value="@d.Severity" />
+                                    <span>@d.PageTypeName</span>
+                                </div>
+                            </td>
+                            <td class="num text-xs text-fg-muted">
+                                @Format.Number(d.AffectedPages) / @Format.Number(d.PageTypePages)
+                                <div>@Format.Percent(d.PageTypePages == 0 ? 100 : Math.Min(100, d.AffectedPages * 100.0 / d.PageTypePages))</div>
+                            </td>
+                            <td class="num font-medium text-fg">@Format.Signed(-(int)Math.Round(d.Deduction))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="mt-2 text-xs text-fg-muted">Listelenen bulgular toplam <span class="tabular font-medium text-fg">@Format.Number((double)total, 1)</span> puan düşürüyor.</p>
+    </div>
+</div>

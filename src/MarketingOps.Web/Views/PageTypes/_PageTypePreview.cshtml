@@ -1,0 +1,52 @@
+@model MarketingOps.Web.ViewModels.PageTypes.PageTypePreviewViewModel
+@if (Model.Result is null)
+{
+    <div class="border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm">
+        <p class="font-medium text-fg">Önizleme için koşulları tamamlayın</p>
+        <ul class="mt-1 list-inside list-disc text-xs text-fg-muted">
+            @foreach (var problem in Model.Problems)
+            {
+                <li>@problem</li>
+            }
+        </ul>
+    </div>
+}
+else
+{
+    var r = Model.Result;
+    <div class="space-y-3">
+        <p class="text-sm text-fg">
+            <span class="tabular font-mono text-lg font-medium">@Format.Number(r.MatchedCount)</span>
+            <span class="text-fg-muted">/ @Format.Number(r.TotalCount) örnek eşleşiyor</span>
+        </p>
+        @if (r.OverlapCount > 0)
+        {
+            <div role="note" class="flex items-start gap-2 border-l-2 border-warn-solid bg-warn-soft px-3 py-2 text-xs text-warn">
+                <icon name="triangle-alert" class="mt-px h-3.5 w-3.5 shrink-0" />
+                <p><span class="font-medium">@Format.Number(r.OverlapCount) URL başka bir sayfa tipine de uyuyor.</span> Bir sayfaya yalnızca bir tip atanır; koşulları ayrıştırın.</p>
+            </div>
+        }
+        <ul class="divide-y divide-line rounded-sm border border-line">
+            @foreach (var item in r.Results)
+            {
+                <li class="flex items-start gap-2 px-3 py-2">
+                    @if (item.IsMatch)
+                    {
+                        <icon name="check" class="mt-0.5 h-4 w-4 shrink-0 text-fg" label="Eşleşiyor" />
+                    }
+                    else
+                    {
+                        <icon name="minus" class="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" label="Eşleşmiyor" />
+                    }
+                    <div class="min-w-0 flex-1">
+                        <p class="break-all font-mono text-xs @(item.IsMatch ? "text-fg" : "text-fg-muted")">@item.Url</p>
+                        @if (item.OverlappingPageTypes.Count > 0)
+                        {
+                            <p class="mt-0.5 text-xs text-warn">Çakışma: @string.Join(", ", item.OverlappingPageTypes)</p>
+                        }
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+}

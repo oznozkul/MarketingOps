@@ -1,0 +1,53 @@
+@model MarketingOps.Web.ViewModels.Sites.CrawlSettingsForm
+@using MarketingOps.Domain.Sites
+@{
+    string? E(string f) => ViewData.ModelState.FirstError(f);
+}
+<form id="crawl-settings-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateCrawlSettings", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <form-errors />
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+            <label class="label" for="crawl-schedule">Tarama sıklığı</label>
+            <select id="crawl-schedule" name="Schedule" class="select">
+                @foreach (var schedule in Enum.GetValues<CrawlSchedule>())
+                {
+                    <option value="@schedule" selected="@(schedule == Model.Schedule)">@DisplayText.Of(schedule)</option>
+                }
+            </select>
+            <field-error for="Schedule" />
+        </div>
+        <div>
+            <label class="label" for="crawl-rps">Hız limiti</label>
+            <div class="flex items-center gap-2">
+                <input id="crawl-rps" name="MaxRequestsPerSecond" type="number" inputmode="numeric" min="@CrawlSettings.MinRequestsPerSecond" max="@CrawlSettings.MaxRequestsPerSecondLimit"
+                       value="@Model.MaxRequestsPerSecond" class="input tabular w-24"
+                       aria-invalid="@(E("MaxRequestsPerSecond") is null ? null : "true")" aria-describedby="crawl-rps-hint @(E("MaxRequestsPerSecond") is null ? "" : "MaxRequestsPerSecond-error")" />
+                <span class="text-sm text-fg-muted">istek / saniye</span>
+            </div>
+            <field-error for="MaxRequestsPerSecond" />
+            <p id="crawl-rps-hint" class="hint">@CrawlSettings.MinRequestsPerSecond–@CrawlSettings.MaxRequestsPerSecondLimit arası. Siteyi yormamak için düşük tutun.</p>
+        </div>
+        <div>
+            <label class="label" for="crawl-max-pages">Maksimum sayfa</label>
+            <input id="crawl-max-pages" name="MaxPages" type="number" inputmode="numeric" min="1" max="@CrawlSettings.MaxPagesLimit" value="@Model.MaxPages" class="input tabular"
+                   aria-invalid="@(E("MaxPages") is null ? null : "true")" aria-describedby="@(E("MaxPages") is null ? null : "MaxPages-error")" />
+            <field-error for="MaxPages" />
+        </div>
+    </div>
+    <div>
+        <label class="label" for="crawl-excluded">Hariç tutulan path'ler</label>
+        <textarea id="crawl-excluded" name="ExcludedPathPatterns" rows="4" class="textarea font-mono text-xs" spellcheck="false"
+                  placeholder="/hesabim/**&#10;/arama?*" aria-describedby="crawl-excluded-hint @(E("ExcludedPathPatterns") is null ? "" : "ExcludedPathPatterns-error")"
+                  aria-invalid="@(E("ExcludedPathPatterns") is null ? null : "true")">@Model.ExcludedPathPatterns</textarea>
+        <field-error for="ExcludedPathPatterns" />
+        <p id="crawl-excluded-hint" class="hint">Satır başına bir desen. <code class="kbd">*</code> tek path parçası, <code class="kbd">**</code> alt klasörlerin tamamı.</p>
+    </div>
+    <div class="flex items-start gap-3 border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm">
+        <icon name="lock" class="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+        <div>
+            <p class="font-medium text-fg">robots.txt kurallarına uyulur</p>
+            <p class="text-xs text-fg-muted">Bu ayar her zaman açıktır ve kapatılamaz.</p>
+        </div>
+    </div>
+    <div class="flex justify-end"><partial name="_SubmitButton" model="@("Tarama ayarlarını kaydet")" /></div>
+</form>

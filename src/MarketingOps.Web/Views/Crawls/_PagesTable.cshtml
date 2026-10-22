@@ -1,0 +1,103 @@
+@model MarketingOps.Web.ViewModels.Crawls.CrawlDetailViewModel
+@using MarketingOps.Application.Crawls.Queries.GetPages
+@{
+    var crawlId = Model.Detail.Crawl.Id;
+    var filter = Model.Filter;
+    var baseUrl = Url.SiteAction("Detail", "Crawls", new { crawlId });
+    var pageTypeValue = filter.Unmatched ? "unmatched" : filter.PageTypeId?.ToString() ?? "";
+}
+<div id="pages-region" class="space-y-3" hx-target="#pages-region" hx-select="#pages-region" hx-swap="outerHTML" hx-push-url="true">
+    @* Filtreler: query string'de tutulur, paylaşılabilir. Sayfa tipi seçimi "unmatched" ya da pageTypeId'ye çevrilir. *@
+    <form class="flex flex-col gap-2 sm:flex-row sm:items-end" hx-get="@baseUrl" hx-trigger="change, input changed delay:400ms from:#pages-q"
+          x-data x-on:submit.prevent>
+        <div>
+            <label class="label text-xs" for="pages-type">Sayfa tipi</label>
+            <select id="pages-type" class="select sm:w-48"
+                    x-on:change="const f = $el.form; f.querySelector('[name=pageTypeId]').value = ($el.value && $el.value !== 'unmatched') ? $el.value : ''; f.querySelector('[name=unmatched]').value = $el.value === 'unmatched' ? 'true' : '';">
+                <option value="">Tümü</option>
+                @foreach (var t in Model.Detail.PageTypes)
+                {
+                    var value = t.PageTypeId?.ToString() ?? "unmatched";
+                    <option value="@value" selected="@(value == pageTypeValue)">@(t.Name ?? "Eşleşmeyen sayfalar") (@Format.Number(t.Count))</option>
+                }
+            </select>
+            <input type="hidden" name="pageTypeId" value="@filter.PageTypeId" />
+            <input type="hidden" name="unmatched" value="@(filter.Unmatched ? "true" : "")" />
+        </div>
+        <div>
+            <label class="label text-xs" for="pages-status">Durum</label>
+            <select id="pages-status" name="status" class="select sm:w-48">
+                <option value="">Tümü</option>
+                @foreach (var s in Enum.GetValues<PageStatusFilter>())
+                {
+                    <option value="@s" selected="@(filter.Status == s)">@DisplayText.Of(s)</option>
+                }
+            </select>
+        </div>
+        <div class="flex-1">
+            <label class="label text-xs" for="pages-q">URL'de ara</label>
+            <div class="relative">
+                <icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
+                <input id="pages-q" name="q" type="search" value="@filter.Q" class="input pl-9 font-mono text-xs" placeholder="/urun/" autocomplete="off" />
+            </div>
+        </div>
+        @if (!filter.IsEmpty)
+        {
+            <a class="btn btn-ghost btn-sm" href="@(baseUrl)#sayfalar" hx-get="@baseUrl">Filtreleri temizle</a>
+        }
+    </form>
+
+    <div class="card overflow-hidden">
+        @if (Model.Pages.TotalCount == 0)
+        {
+            <empty-state icon="filter" compact="true" title="@(filter.IsEmpty ? "Bu taramada sayfa yok" : "Bu filtrelerle eşleşen sayfa yok")" />
+        }
+        else
+        {
+            <div class="table-wrap htmx-dim">
+                <table class="table-base min-w-[860px]">
+                    <thead>
+                        <tr>
+                            <th scope="col">Sayfa</th>
+                            <th scope="col">Sayfa tipi</th>
+                            <th scope="col">Durum</th>
+                            <th scope="col" class="num">Yanıt (TTFB)</th>
+                            <th scope="col" class="num">HTML</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Pages.Items)
+                        {
+                            <tr>
+                                <td class="max-w-lg">
+                                    <a class="block break-all font-mono text-xs text-fg hover:underline" href="@p.Url" target="_blank" rel="noopener noreferrer">@p.Url<span class="sr-only"> (yeni sekmede açılır)</span></a>
+                                    @if (p.Title is not null) { <span class="mt-0.5 block truncate text-xs text-fg-muted">@p.Title</span> }
+                                    @if (p.FetchError is not null) { <span class="mt-0.5 block text-xs text-critical">@p.FetchError</span> }
+                                </td>
+                                <td class="whitespace-nowrap @(p.PageTypeName is null ? "text-fg-subtle" : "text-fg-muted")">@(p.PageTypeName ?? "Eşleşmeyen")</td>
+                                <td class="whitespace-nowrap">
+                                    @if (p.StatusCode is null)
+                                    {
+                                        <span class="badge @ToneClasses.Badge(Tone.Critical)">Yanıt yok</span>
+                                    }
+                                    else
+                                    {
+                                        var tone = p.StatusCode >= 400 ? Tone.Critical : p.StatusCode >= 300 ? Tone.Warn : Tone.Neutral;
+                                        <span class="badge @ToneClasses.Badge(tone) font-mono">@p.StatusCode</span>
+                                    }
+                                    @if (p.RedirectCount > 0)
+                                    {
+                                        <span class="badge @ToneClasses.Badge(Tone.Warn)" title="Yönlendirme zinciri">@p.RedirectCount yönlendirme</span>
+                                    }
+                                </td>
+                                <td class="num text-fg-muted">@(p.ResponseTimeMs is { } ms ? $"{Format.Number(ms)} ms" : "—")</td>
+                                <td class="num text-fg-muted">@(p.HtmlSizeBytes is { } b ? $"{Format.Number(b / 1024.0, 0)} KB" : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <vc:pagination page="Model.Pages.Page" page-size="Model.Pages.PageSize" total="Model.Pages.TotalCount" target="#pages-region" item-label="sayfa" />
+        }
+    </div>
+</div>

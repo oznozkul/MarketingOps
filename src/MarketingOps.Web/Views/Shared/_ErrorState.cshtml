@@ -1,0 +1,5 @@
+@model string
+@* Bölgesel hata durumu: DataSourceErrorFilter htmx isteklerinde bunu döndürür. *@
+<div class="card">
+    <error-state description="@Model" compact="true" />
+</div>
