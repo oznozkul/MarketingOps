@@ -137,6 +137,7 @@ public sealed class GetOverviewQueryHandler(IAppDbContext db, ScoreReader scores
     private static DateTimeOffset At(DateOnly day)
     {
         var local = day.ToDateTime(TimeOnly.MinValue);
-        return new DateTimeOffset(local, IstanbulClock.Zone.GetUtcOffset(local));
+        // Npgsql yalnızca UTC offset'li DateTimeOffset yazar; İstanbul gece yarısını aynı anın UTC karşılığına çeviririz.
+        return new DateTimeOffset(local, IstanbulClock.Zone.GetUtcOffset(local)).ToUniversalTime();
     }
 }

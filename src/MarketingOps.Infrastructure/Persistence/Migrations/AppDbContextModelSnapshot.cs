@@ -368,6 +368,9 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.HasIndex("SiteId", "Status")
                         .HasDatabaseName("ix_findings_site_id_status");
 
+                    b.HasIndex("SiteId", "Status", "Category")
+                        .HasDatabaseName("ix_findings_site_id_status_category");
+
                     b.ToTable("findings", (string)null);
                 });
 
@@ -673,6 +676,224 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("web_vitals_daily", (string)null);
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.NotificationChannelConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ProtectedSlackWebhook")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("protected_slack_webhook");
+
+                    b.Property<string>("ProtectedTeamsWebhook")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("protected_teams_webhook");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_channel_config");
+
+                    b.HasIndex("SiteId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_channel_config_site_id");
+
+                    b.ToTable("notification_channel_config", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.NotificationDelivery", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("channel");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("event_type");
+
+                    b.Property<Guid?>("FindingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("finding_id");
+
+                    b.Property<DateTimeOffset>("SentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_deliveries");
+
+                    b.HasIndex("SiteId", "EventType", "FindingId", "SentAt")
+                        .HasDatabaseName("ix_notification_deliveries_site_id_event_type_finding_id_sent_");
+
+                    b.ToTable("notification_deliveries", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.NotificationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("event_type");
+
+                    b.Property<TimeOnly?>("QuietEnd")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("quiet_end");
+
+                    b.Property<TimeOnly?>("QuietStart")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("quiet_start");
+
+                    b.Property<int>("RepeatIntervalHours")
+                        .HasColumnType("integer")
+                        .HasColumnName("repeat_interval_hours");
+
+                    b.Property<int?>("ScoreDropPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("score_drop_points");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("_channels")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("channels");
+
+                    b.Property<string>("_recipients")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("recipients");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notification_rules");
+
+                    b.HasIndex("SiteId", "EventType")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notification_rules_site_id_event_type");
+
+                    b.ToTable("notification_rules", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.ReportSchedule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<DateOnly?>("LastSentOn")
+                        .HasColumnType("date")
+                        .HasColumnName("last_sent_on");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("period");
+
+                    b.Property<TimeOnly>("SendAt")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("send_at");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("_recipients")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("recipients");
+
+                    b.HasKey("Id")
+                        .HasName("pk_report_schedules");
+
+                    b.HasIndex("SiteId", "Period")
+                        .IsUnique()
+                        .HasDatabaseName("ix_report_schedules_site_id_period");
+
+                    b.ToTable("report_schedules", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.UserNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("Href")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("href");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_notifications");
+
+                    b.HasIndex("SiteId", "ReadAt")
+                        .HasDatabaseName("ix_user_notifications_site_id_read_at");
+
+                    b.ToTable("user_notifications", (string)null);
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Organizations.Organization", b =>
                 {
                     b.Property<Guid>("Id")
@@ -734,6 +955,44 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_site_rule_settings_site_id_rule_code");
 
                     b.ToTable("site_rule_settings", (string)null);
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Scores.ScoreSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("category");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer")
+                        .HasColumnName("score");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<DateTimeOffset>("TakenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("taken_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_score_snapshots");
+
+                    b.HasIndex("SiteId", "Category", "Date")
+                        .IsUnique()
+                        .HasDatabaseName("ix_score_snapshots_site_id_category_date");
+
+                    b.ToTable("score_snapshots", (string)null);
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.Sites.PageType", b =>
@@ -1303,6 +1562,56 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_web_vitals_daily_sites_site_id");
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.NotificationChannelConfig", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_channel_config_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.NotificationDelivery", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_deliveries_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.NotificationRule", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notification_rules_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.ReportSchedule", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_report_schedules_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Notifications.UserNotification", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_notifications_sites_site_id");
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Rules.SiteRuleSetting", b =>
                 {
                     b.HasOne("MarketingOps.Domain.Sites.Site", null)
@@ -1311,6 +1620,16 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_site_rule_settings_sites_site_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Scores.ScoreSnapshot", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Sites.Site", null)
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_score_snapshots_sites_site_id");
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.Sites.PageType", b =>

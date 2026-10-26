@@ -1,4 +1,5 @@
 using MarketingOps.Application.Common.Interfaces;
+using MarketingOps.Application.Connectors;
 using MarketingOps.Domain.Connectors;
 using MarketingOps.Domain.Notifications;
 using MediatR;

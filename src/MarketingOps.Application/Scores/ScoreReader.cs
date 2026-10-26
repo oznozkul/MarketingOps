@@ -22,7 +22,7 @@ public sealed class ScoreReader(IAppDbContext db)
         {
             var counts = await db.PageSnapshots.AsNoTracking()
                 .Where(p => p.CrawlId == id && p.PageTypeId != null && p.StatusCode >= 200 && p.StatusCode < 300
-                    && p.ContentType != null && EF.Functions.ILike(p.ContentType, "%html%"))
+                    && p.ContentType != null && p.ContentType.Contains("html"))
                 .GroupBy(p => p.PageTypeId!.Value)
                 .Select(g => new { PageTypeId = g.Key, Count = g.Count() })
                 .ToListAsync(cancellationToken);
