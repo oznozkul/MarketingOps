@@ -9,6 +9,8 @@ var builder = Host.CreateApplicationBuilder(args);
 // Tek yapılandırma dosyası Web projesindeki appsettings.json'dır; derlemede bu projenin çıktısına kopyalanır.
 // Yerelde dotnet run içerik kökünü proje klasörü yaptığı için dosya çıktı klasöründen ayrıca okunur.
 builder.Configuration.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), optional: true);
+// Sonradan eklenen kaynak öncekini ezer; ortam değişkeni ve komut satırı Web'deki gibi dosyanın önünde kalmalı.
+builder.Configuration.AddEnvironmentVariables().AddCommandLine(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);

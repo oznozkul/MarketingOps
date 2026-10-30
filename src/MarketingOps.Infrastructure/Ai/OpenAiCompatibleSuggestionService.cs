@@ -8,8 +8,8 @@ using MarketingOps.Application.Tasks.Suggestions;
 namespace MarketingOps.Infrastructure.Ai;
 
 /// <summary>
-/// OpenAI uyumlu <c>/chat/completions</c> (DeepSeek, Ollama). İki sağlayıcının ortak paydası olan <c>json_object</c> çıktı biçimi
-/// kullanılır; şema istemde tarif edilir ve yanıt her durumda doğrulanır.
+/// OpenAI uyumlu <c>/chat/completions</c> (DeepSeek, Ollama, LM Studio). Çıktı biçimi <c>json_object</c>, LM Studio'da <c>json_schema</c>;
+/// şema her durumda istemde de tarif edilir ve yanıt doğrulanır.
 /// </summary>
 public sealed class OpenAiCompatibleSuggestionService(HttpClient http, OpenAiCompatibleOptions options, KnowledgeBase knowledge) : IAiSuggestionService
 {
@@ -23,7 +23,7 @@ public sealed class OpenAiCompatibleSuggestionService(HttpClient http, OpenAiCom
         {
             ["model"] = options.Model,
             ["temperature"] = 0.2,
-            ["response_format"] = new JsonObject { ["type"] = "json_object" },
+            ["response_format"] = ResponseFormat(),
             ["messages"] = new JsonArray
             {
                 new JsonObject { ["role"] = "system", ["content"] = SuggestionPrompt.System + "\nYanıt biçimi (JSON): " + SuggestionPrompt.Schema.GetRawText() },
@@ -44,6 +44,14 @@ public sealed class OpenAiCompatibleSuggestionService(HttpClient http, OpenAiCom
         var content = choice.GetProperty("message").GetProperty("content").GetString() ?? "";
         return SuggestionPrompt.Parse(StripFence(content), request);
     }
+
+    private JsonObject ResponseFormat() => options.JsonSchema
+        ? new JsonObject
+        {
+            ["type"] = "json_schema",
+            ["json_schema"] = new JsonObject { ["name"] = "task_suggestion", ["strict"] = true, ["schema"] = JsonNode.Parse(SuggestionPrompt.Schema.GetRawText()) }
+        }
+        : new JsonObject { ["type"] = "json_object" };
 
     /// <summary>Bazı yerel modeller JSON'u ```json bloğuna sarar.</summary>
     private static string StripFence(string text)

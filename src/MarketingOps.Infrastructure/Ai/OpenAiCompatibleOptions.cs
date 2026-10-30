@@ -13,4 +13,7 @@ public sealed class OpenAiCompatibleOptions
     public string Model { get; set; } = "";
     public string? ApiKey { get; set; }
     public int TimeoutSeconds { get; set; } = 180;
+
+    /// <summary>Çıktı biçimi json_schema mı. LM Studio json_object kabul etmez; DeepSeek de json_schema'yı.</summary>
+    public bool JsonSchema { get; set; }
 }

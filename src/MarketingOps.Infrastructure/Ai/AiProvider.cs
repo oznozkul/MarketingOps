@@ -5,5 +5,6 @@ public enum AiProvider
     None,
     Anthropic,
     DeepSeek,
-    Ollama
+    Ollama,
+    LmStudio
 }

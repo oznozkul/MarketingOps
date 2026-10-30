@@ -33,6 +33,9 @@ public static class AiServiceCollectionExtensions
             case AiProvider.Ollama when !string.IsNullOrWhiteSpace(options.Ollama.Model):
                 AddOpenAiCompatible(services, options.Ollama);
                 break;
+            case AiProvider.LmStudio when !string.IsNullOrWhiteSpace(options.LmStudio.Model):
+                AddOpenAiCompatible(services, options.LmStudio);
+                break;
         }
         return services;
     }

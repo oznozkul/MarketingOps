@@ -66,6 +66,7 @@ cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.j
   - `Anthropic` — `Ai:Anthropic:ApiKey`, model `claude-opus-5-5` (yapılandırılmış çıktı; güvenlik reddinde `Ai:Anthropic:FallbackModel` ile sunucu tarafı yedek).
   - `DeepSeek` — `Ai:DeepSeek:ApiKey`, model `deepseek-chat` (OpenAI uyumlu API; sunucular Çin'de).
   - `Ollama` (şu an seçili) — `Ai:Ollama:BaseUrl` (Docker'dan makinedeki Ollama: `http://host.docker.internal:11434/v1`), `Ai:Ollama:Model` (`qwen2.5:7b`), `Ai:Ollama:TimeoutSeconds`. Veri makineden çıkmaz. 7B modelde bir öneri M1/16 GB'ta yaklaşık 1,5–2 dakika sürer; Türkçe metin kalitesi sınırlıdır, belleğiniz yetiyorsa `qwen2.5:14b` daha iyi sonuç verir.
+  - `LmStudio` — `Ai:LmStudio:BaseUrl` (`http://localhost:1234/v1`), `Ai:LmStudio:Model` (`qwen/qwen3.5-9b`). LM Studio'nun OpenAI uyumlu sunucusu; `json_object` kabul etmediği için çıktı `json_schema` ile istenir. Veri makineden çıkmaz.
   - `None` — adım atlanır. Entegrasyon testleri her zaman `None` ile çalışır.
 - Modele kuralın sitedeki eşikleri ve etkilenen sayfaların ayrıntısı (ör. asıl title) verilir; mevcut değerin aynısı olan öneriler atılır.
 - **Bilgi tabanı:** `knowledge/*.md` içindeki `<!-- ref: perf-doc:p30 -->` işaretli parçalar, kuralın referans anahtarına göre AI'a verilir (vektör DB yok). Biçim: `knowledge/README.md`.
