@@ -41,7 +41,8 @@ public static partial class HtmlSnapshotParser
             SchemaTypes = SchemaTypes(document),
             OpenGraph = Og("title") is null && Og("description") is null && Og("image") is null
                 ? null
-                : new OpenGraphInfo(Og("title"), Og("description"), Og("image"), Og("type"), Og("url")),
+                : new OpenGraphInfo(Og("title"), Og("description"), Og("image"), Og("type"), Og("url"),
+                    Og("image:width"), Og("image:height"), Og("image:alt")),
             InternalLinks = internalLinks.Select(u => u.AbsoluteUri).ToList(),
             ExternalLinks = externalLinks,
             Images = document.QuerySelectorAll("img").Take(MaxImages)
@@ -49,7 +50,7 @@ public static partial class HtmlSnapshotParser
                     i.GetAttribute("width"), i.GetAttribute("height"), i.GetAttribute("loading")))
                 .ToList(),
             Scripts = document.QuerySelectorAll("script")
-                .Where(s => !IsJsonLd(s))
+                .Where(s => !StructuredDataExtractor.IsJsonLd(s))
                 .Select(s => new ScriptInfo(Resolve(s.GetAttribute("src"))?.AbsoluteUri, s.HasAttribute("async"), s.HasAttribute("defer"),
                     head is not null && head.Contains(s)))
                 .ToList(),
@@ -60,7 +61,15 @@ public static partial class HtmlSnapshotParser
                 .Select(l => new PreloadInfo(l.Href!, l.As))
                 .ToList(),
             Preconnects = document.QuerySelectorAll("link[rel~='preconnect' i]").Select(l => l.GetAttribute("href")).OfType<string>().ToList(),
-            WordCount = CountWords(document)
+            WordCount = CountWords(document),
+            Version = PageSnapshotData.MarkupVersion,
+            StructuredData = StructuredDataExtractor.Extract(document),
+            Links = MarkupExtractor.Links(document),
+            Headings = MarkupExtractor.Headings(document),
+            Forms = MarkupExtractor.Forms(document),
+            Tables = MarkupExtractor.Tables(document),
+            Iframes = MarkupExtractor.Iframes(document),
+            Landmarks = MarkupExtractor.Landmarks(document)
         };
         return new ParsedPage(data, internalLinks);
     }
@@ -68,14 +77,11 @@ public static partial class HtmlSnapshotParser
     private static IReadOnlyList<string> Texts(IDocument document, string selector) =>
         document.QuerySelectorAll(selector).Select(e => Clip(WhitespaceRegex().Replace(e.TextContent, " ").Trim())).OfType<string>().Where(t => t.Length > 0).ToList();
 
-    private static bool IsJsonLd(IElement script) =>
-        string.Equals(script.GetAttribute("type"), "application/ld+json", StringComparison.OrdinalIgnoreCase);
-
     /// <summary>JSON-LD (@graph dahil) ve microdata'daki üst düzey schema tipleri.</summary>
     private static IReadOnlyList<string> SchemaTypes(IDocument document)
     {
         var types = new List<string>();
-        foreach (var script in document.QuerySelectorAll("script").Where(IsJsonLd))
+        foreach (var script in document.QuerySelectorAll("script").Where(StructuredDataExtractor.IsJsonLd))
         {
             try
             {
@@ -84,7 +90,7 @@ public static partial class HtmlSnapshotParser
             }
             catch (JsonException)
             {
-                // Bozuk JSON-LD: tip bilgisi yok sayılır; kural motoru bunu ayrıca raporlayabilir.
+                // Bozuk JSON-LD'nin tipi okunamaz; seo.schema.invalid kuralı StructuredData.Invalid'den raporlar.
             }
         }
         types.AddRange(document.QuerySelectorAll("[itemscope][itemtype]")

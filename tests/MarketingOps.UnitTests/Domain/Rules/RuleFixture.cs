@@ -15,11 +15,34 @@ public static class RuleFixture
     public static PageSnapshotData Good { get; } = new()
     {
         Title = "Yaz lastikleri ve jant modelleri | Örnek",
-        MetaDescription = "Yaz lastiği modelleri, fiyatları ve araç uyumluluğu.",
+        MetaDescription = "Yaz lastiği modelleri, fiyatları ve araç uyumluluğu. Aynı gün kargo ve ücretsiz montaj.",
         Canonical = "https://example.com/sayfa",
         H1 = ["Yaz lastikleri"],
         WordCount = 400
     };
+
+    /// <summary>Faz 8 işaretleme alanları dolu ve hiçbir kuralı ihlal etmeyen sayfa.</summary>
+    public static PageSnapshotData GoodMarkup { get; } = Good with
+    {
+        Version = PageSnapshotData.MarkupVersion,
+        Lang = "tr",
+        Viewport = "width=device-width, initial-scale=1",
+        OpenGraph = new OpenGraphInfo("Yaz lastikleri", "Yaz lastiği modelleri", "https://example.com/og.jpg", "website", "https://example.com/sayfa",
+            "1200", "630", "Yaz lastikleri"),
+        StructuredData = new StructuredDataInfo
+        {
+            JsonLdBlocks = 1,
+            Nodes =
+            [
+                new SchemaNode { Type = "WebPage", TopLevel = true, Properties = ["url", "name"] },
+                new SchemaNode { Type = "BreadcrumbList", TopLevel = true, Properties = ["itemListElement", "itemListElement.position", "itemListElement.name", "itemListElement.item"] }
+            ]
+        },
+        Headings = new HeadingFacts { Levels = [1, 2, 3, 2] },
+        Landmarks = new LandmarkFacts { Main = 1, Header = 1, Nav = 1, Footer = 1 }
+    };
+
+    public static ElementIssue Issue(params string[] samples) => new() { Count = samples.Length, Samples = samples };
 
     public static PageSnapshot Page(
         PageSnapshotData? data = null, string path = "/sayfa", int? status = 200, Guid? pageTypeId = null,

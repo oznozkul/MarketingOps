@@ -29,4 +29,8 @@ public abstract class RuleBase : IRule
 
     protected RuleViolation Violation(PageSnapshot page, string? current, string? detail = null) =>
         new(Code, page.PageTypeId, page.Url, current, detail);
+
+    /// <summary>İşaretleme sorununun sayısı ve ekibin öğeyi bulacağı örnekler.</summary>
+    protected RuleViolation Violation(PageSnapshot page, ElementIssue issue) =>
+        Violation(page, $"{issue.Count.ToString("N0", Tr)} öğe", string.Join(" · ", issue.Samples));
 }

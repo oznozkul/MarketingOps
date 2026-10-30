@@ -115,7 +115,8 @@ public sealed class GetOverviewQueryHandler(IAppDbContext db, ScoreReader scores
         {
             var date = today.AddDays(-29 + offset);
             byDay.TryGetValue(date, out var scores);
-            return new OverviewTrendPoint(date, Score(scores, ScoreCategory.Tracking), Score(scores, ScoreCategory.Seo), Score(scores, ScoreCategory.Performance));
+            return new OverviewTrendPoint(date, Score(scores, ScoreCategory.Tracking), Score(scores, ScoreCategory.Seo), Score(scores, ScoreCategory.Performance),
+                Score(scores, ScoreCategory.Accessibility));
         }).ToList();
     }
 
@@ -126,7 +127,7 @@ public sealed class GetOverviewQueryHandler(IAppDbContext db, ScoreReader scores
         site.PageTypes.OrderBy(p => p.Name).Select(pageType =>
         {
             var seo = facts.Findings.Where(f => f.PageTypeId == pageType.Id && ScoreCategoryMap.Includes(ScoreCategory.Seo, f.Category))
-                .Select(f => ScoreReader.ToInput(f, facts.Pages));
+                .Select(f => ScoreReader.ToPageTypeInput(f, facts.Pages));
             return new OverviewPageTypeRow(pageType.Id, pageType.Name, facts.Pages.GetValueOrDefault(pageType.Id), active.Count(f => f.PageTypeId == pageType.Id), ScoreCalculator.Score(seo));
         }).ToList();
 

@@ -24,7 +24,7 @@ public sealed class GetScoreBreakdownQueryHandler(IAppDbContext db, ScoreReader 
         var deductions = ScoreCalculator.Breakdown(inputs)
             .Select(d => new ScoreDeductionResponse(d.FindingId, d.Title, d.Severity,
                 d.PageTypeId is Guid id && names.TryGetValue(id, out var name) ? name : null,
-                d.AffectedCount, d.PageTypePageCount, d.Points))
+                d.AffectedCount, d.PageCount, d.Points))
             .ToList();
         return new ScoreBreakdownResponse(request.Category, ScoreCalculator.Score(inputs), previous, deductions);
     }

@@ -10,7 +10,7 @@ public sealed class MetaDescriptionDuplicateRule : RuleBase, ISiteRule
     public override string Name => "Meta description tekrarı";
     public override string Description => "Aynı meta description'ı paylaşan indekslenebilir sayfaları bulur.";
     public override FindingCategory Category => FindingCategory.TechnicalSeo;
-    public override Severity DefaultSeverity => Severity.Low;
+    public override Severity DefaultSeverity => Severity.Medium;
     public override RuleScope Scope => RuleScope.Site;
     public override string ReferenceKey => "google:snippets";
     public override string Impact => "Tekrar eden açıklamalar arama sonuçlarında sayfaları ayırt etmeyi zorlaştırır; arama motoru açıklamayı kendisi üretmeyi seçebilir.";

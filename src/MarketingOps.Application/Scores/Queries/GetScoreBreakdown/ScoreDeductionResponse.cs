@@ -8,5 +8,5 @@ public sealed record ScoreDeductionResponse(
     Severity Severity,
     string? PageTypeName,
     int AffectedCount,
-    int PageTypePageCount,
+    int PageCount,
     decimal Points);

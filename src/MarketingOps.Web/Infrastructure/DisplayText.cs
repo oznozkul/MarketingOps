@@ -36,7 +36,8 @@ public static class DisplayText
         FindingCategory.Tracking => "Tracking",
         FindingCategory.TechnicalSeo => "Teknik SEO",
         FindingCategory.Content => "İçerik",
-        _ => "Performans"
+        FindingCategory.Performance => "Performans",
+        _ => "Erişilebilirlik ve mobil"
     };
 
     public static string Of(WorkTaskStatus v) => v switch
@@ -176,7 +177,8 @@ public static class DisplayText
     {
         ScoreCategory.Tracking => "Tracking Sağlığı",
         ScoreCategory.Seo => "SEO Sağlığı",
-        _ => "Performans"
+        ScoreCategory.Performance => "Performans",
+        _ => "Erişilebilirlik ve Mobil Sağlığı"
     };
 
     public static string Of(NotificationEventType v) => v switch

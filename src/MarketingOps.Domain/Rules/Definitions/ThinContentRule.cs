@@ -7,7 +7,7 @@ namespace MarketingOps.Domain.Rules.Definitions;
 
 public sealed class ThinContentRule : RuleBase, IPageRule
 {
-    public static readonly RuleThreshold MinWords = new("minWords", "En az kelime", "kelime", 250m, 50m, 2000m);
+    public static readonly RuleThreshold MinWords = new("minWords", "En az kelime", "kelime", 300m, 50m, 2000m);
 
     public override IReadOnlyList<RuleThreshold> Thresholds => [MinWords];
 

@@ -15,7 +15,10 @@ public class RuleTests
     public void Clean_page_violates_no_page_rule()
     {
         foreach (var rule in RuleCatalog.All.OfType<IPageRule>())
+        {
             Run(rule, Page()).ShouldBeEmpty(rule.Code);
+            Run(rule, Page(GoodMarkup)).ShouldBeEmpty(rule.Code);
+        }
     }
 
     [Fact]

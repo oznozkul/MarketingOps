@@ -11,7 +11,7 @@ public sealed class ImageAltMissingRule : RuleBase, IPageRule
     public override string Name => "Görselde alt etiketi eksik";
     public override string Description => "alt özniteliği hiç olmayan görselleri bulur. Boş alt (alt='') süs görseller için geçerli sayıldığından işaretlenmez.";
     public override FindingCategory Category => FindingCategory.Content;
-    public override Severity DefaultSeverity => Severity.Low;
+    public override Severity DefaultSeverity => Severity.Medium;
     public override RuleScope Scope => RuleScope.Page;
     public override string ReferenceKey => "google:images";
     public override string Impact => "Alt metni görsel aramada görünürlüğü ve ekran okuyucu kullanıcılarının sayfayı anlamasını etkiler.";

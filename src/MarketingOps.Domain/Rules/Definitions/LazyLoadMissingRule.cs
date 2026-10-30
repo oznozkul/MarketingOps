@@ -15,7 +15,7 @@ public sealed class LazyLoadMissingRule : RuleBase, IPageRule
     public override string Name => "Ekran altı görsellerde lazy load eksik";
     public override string Description => "İlk görünümdeki görsellerden sonra gelen ve loading='lazy' olmayan görselleri bulur.";
     public override FindingCategory Category => FindingCategory.Performance;
-    public override Severity DefaultSeverity => Severity.Low;
+    public override Severity DefaultSeverity => Severity.Medium;
     public override RuleScope Scope => RuleScope.Page;
     public override string ReferenceKey => "perf-doc:p18";
     public override string Impact => "Ekranda görünmeyen görsellerin hemen indirilmesi ilk yüklemede bant genişliğini ana içerikle paylaştırır.";

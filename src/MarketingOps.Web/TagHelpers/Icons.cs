@@ -5,6 +5,7 @@ public static class Icons
 {
     public static readonly IReadOnlyDictionary<string, string> Paths = new Dictionary<string, string>
     {
+        ["accessibility"] = """<circle cx="16" cy="4" r="1" /><path d="m18 19 1-7-6 1" /><path d="m5 8 3-3 5.5 3-2.36 3.5" /><path d="M4.24 14.5a5 5 0 0 0 6.88 6" /><path d="M13.76 17.5a5 5 0 0 0-6.88-6" />""",
         ["activity"] = """<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />""",
         ["arrow-down"] = """<path d="M12 5v14" /><path d="m19 12-7 7-7-7" />""",
         ["arrow-up-down"] = """<path d="m21 16-4 4-4-4" /><path d="M17 20V4" /><path d="m3 8 4-4 4 4" /><path d="M7 4v16" />""",

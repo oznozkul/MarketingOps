@@ -11,7 +11,7 @@
     var orders = Model.Orders.Days.Select(d => new { label = Format.ShortDate(d.Date), orders = d.OrderCount, purchases = d.PurchaseCount, diff = d.GapPercent });
     var trend = new
     {
-        points = Model.Trend.Select(p => new { label = Format.ShortDate(p.Date), tracking = p.Tracking, seo = p.Seo, performance = p.Performance }),
+        points = Model.Trend.Select(p => new { label = Format.ShortDate(p.Date), tracking = p.Tracking, seo = p.Seo, performance = p.Performance, accessibility = p.Accessibility }),
         events = Model.Events.Select(e => new { label = Format.ShortDate(e.Date), kind = "finding", text = e.Text })
     };
 }
@@ -62,7 +62,7 @@
             </section>
         }
 
-        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Skorlar">
+        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Skorlar">
             @foreach (var score in Model.Scores)
             {
                 @await Component.InvokeAsync("ScoreCard", new ScoreCardViewModel(DisplayText.Of(score.Category), score.Score, score.Previous, Url.SiteAction("Breakdown", "Overview", new { category = score.Category })))

@@ -5,5 +5,6 @@ public enum FindingCategory
     Tracking,
     TechnicalSeo,
     Content,
-    Performance
+    Performance,
+    Accessibility
 }

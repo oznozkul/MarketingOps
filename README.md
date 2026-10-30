@@ -78,6 +78,16 @@ cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.j
 - **Yeni kurallar:** `seo.opportunity.striking_distance` (11–20. sıra, yüksek gösterim), `seo.index.not_indexed`, `perf.cwv.lcp|inp|cls`. Kaynağın güncel verisi yoksa kural çalışmaz; bağlantı koparsa mevcut bulgular yanlışlıkla çözülmez.
 - **Kurulum (SaaS sahibi, bir kez):** Google Cloud Console'da bir proje açın → Search Console API, Google Analytics Admin API, Google Analytics Data API, Tag Manager API ve PageSpeed Insights API'yi etkinleştirin → OAuth izin ekranını yapılandırın (geliştirmede "Testing" + test kullanıcıları) → "Web application" türünde OAuth istemcisi oluşturup yetkili yönlendirme adresine `http://localhost:8080/connectors/google/callback` (canlıda kendi domaininiz) ekleyin → Client ID/Secret'ı `appsettings.json` içindeki `Google` bölümüne yazın. Herkese açık kullanım için Google'ın hassas scope doğrulaması gerekir. İsteğe bağlı: `Google:PageSpeedApiKey`.
 
+## HTML denetimi ve skorlar (Faz 8, adım 1)
+Plan ve kararlar: [marketingops-faz8-plani.md](marketingops-faz8-plani.md).
+- **Sıkı denetim:** Kural tek sayfada bile ihlal görürse bulgu açılır; yeni kurallar her sitede açık başlar. SEO kuralları indekslenebilir, erişilebilirlik kuralları bütün HTML sayfalara bakar.
+- **Parser:** `HtmlSnapshotParser` sayfadan ayrıca structured data düğümlerini (`StructuredDataExtractor`; dolu özellik yolları, ör. `offers.price`), linkleri, başlık sırasını, form alanlarını, tabloları, iframe'leri ve sayfa bölgelerini (`MarkupExtractor`) çıkarır. Sorun başına sayı ve en fazla 5 örnek saklanır. Snapshot'taki `Version` 2'den küçükse (eski tarama) bu alanlara bakan kurallar çalışmaz.
+- **Structured data zorunlu:** Her indekslenebilir sayfada geçerli JSON-LD ya da microdata olmalı (`seo.schema.missing`); bozuk blok (`seo.schema.invalid`), bilinen tiplerde zorunlu alan (`seo.schema.properties`, tablo `SchemaRequirements`), ana sayfada Organization + WebSite, diğer sayfalarda BreadcrumbList.
+- **Diğer yeni kurallar:** Open Graph (eksik, görsel boyutu/açıklaması, og:url ↔ canonical), meta description uzunluğu, jenerik ve hedefsiz link, `_blank` + noopener, iframe lazy; erişilebilirlik ve mobil kategorisinde adsız link, başlık sırası, `th`'siz tablo, başlıksız iframe, etiketsiz form alanı, sayfa bölgeleri, etiketsiz menüler, viewport, `<html lang>`.
+- **Dördüncü skor:** "Erişilebilirlik ve Mobil Sağlığı" (`FindingCategory.Accessibility`).
+- **Skor formülü:** 100'den başlar; bulgu `önem ağırlığı × sitede etkilenen sayfa oranı` kadar düşürür. Bir kuralın bütün sayfa tiplerindeki bulguları birlikte en fazla o kuralın ağırlığı kadar düşürür, böylece şablondan gelen tek sorun her sayfa tipinde ayrı cezalandırılmaz. Oran sitenin bütün HTML sayfalarına göredir ve yalnızca taranan sayfalara dayanan kurallarda uygulanır; tracking denetimi ve PageSpeed gibi örnek ölçen kaynakların bulguları tam ağırlık düşürür. Genel Bakış'taki sayfa tipi skoru oranı tipin kendi sayfa sayısından hesaplar. Ağırlıklar: Critical 15, High 8, Medium 3, Low 1.
+- **Bilgi tabanı:** `knowledge/erisilebilirlik.md` (erişilebilirlik ve mobil), `knowledge/seo-dokumani.md` (iç SEO dokümanının özetleri), `google-search.md`'ye Open Graph, breadcrumb ve organizasyon notları.
+
 ## Migration
 ```sh
 dotnet tool restore

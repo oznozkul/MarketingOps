@@ -43,6 +43,12 @@ public sealed class FakeSite : ICrawlerHttpClient
         for (var i = 1; i <= 12; i++) Html($"/urun/p{i}", shared ?? $"Ürün {i}", schema: "Product");
     }
 
+    /// <summary>Ürün sayfalarının head'ine işaretleme ekler (ör. viewport). İşaretleme kuralları testleri için.</summary>
+    public void SetProductHead(string head)
+    {
+        for (var i = 1; i <= 12; i++) Html($"/urun/p{i}", $"Ürün {i}", schema: "Product", head: head);
+    }
+
     /// <summary>Testin araya girmesi: null dışı bir yanıt dönerse sitenin normal yanıtı yerine o kullanılır.</summary>
     public Func<string, CrawlerResponse?>? Intercept { get; set; }
 
@@ -66,11 +72,11 @@ public sealed class FakeSite : ICrawlerHttpClient
             : new CrawlerResponse(404, null, "text/html", null, null, null, null, 3));
     }
 
-    private void Html(string path, string title, string? schema = null, string[]? links = null)
+    private void Html(string path, string title, string? schema = null, string[]? links = null, string head = "")
     {
         var jsonLd = schema is null ? "" : $$"""<script type="application/ld+json">{"@type":"{{schema}}"}</script>""";
         var anchors = string.Concat((links ?? []).Select(l => $"<a href=\"{l}\">{l}</a>"));
-        var body = $"<html><head><title>{title}</title>{jsonLd}</head><body><h1>{title}</h1>{anchors}</body></html>";
+        var body = $"<html><head><title>{title}</title>{head}{jsonLd}</head><body><h1>{title}</h1>{anchors}</body></html>";
         _pages[path] = new CrawlerResponse(200, null, "text/html; charset=utf-8", "gzip", "max-age=60", body, body.Length, 40);
     }
 

@@ -16,7 +16,7 @@ public sealed class TitleLengthRule : RuleBase, IPageRule
     public override string Name => "Title uzunluğu";
     public override string Description => "Title uzunluğunun önerilen aralıkta olup olmadığını kontrol eder.";
     public override FindingCategory Category => FindingCategory.Content;
-    public override Severity DefaultSeverity => Severity.Low;
+    public override Severity DefaultSeverity => Severity.Medium;
     public override RuleScope Scope => RuleScope.Page;
     public override string ReferenceKey => "google:title-links";
     public override string Impact => "Çok uzun title'lar arama sonuçlarında kesilir; çok kısa title'lar sayfayı yeterince tanımlamaz.";

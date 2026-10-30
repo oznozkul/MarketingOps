@@ -47,3 +47,23 @@ Sayfanın ana metni, o sayfanın konusunu anlatır. Ürün, kategori ya da ebat 
 <!-- ref: google:links -->
 
 İç bağlantı, taranabilir bir adres olmalıdır: gerçek bir `href`, javascript: veya boş hedef değil. Hedef 4xx ya da 5xx dönüyorsa ya da yanıt vermiyorsa bağlantı kırık sayılır. Kırık bağlantı ziyaretçiyi hata sayfasına götürür ve tarama bütçesini harcar. Kaldırılan bir sayfanın bağlantısı güncel adrese çevrilir ya da şablondan çıkarılır.
+
+<!-- ref: social:open-graph -->
+
+Open Graph etiketleri bir bağlantının sosyal ağlarda ve mesajlaşma uygulamalarında nasıl görüneceğini belirler. og:title ve
+og:description kartın başlığı ve metnidir; og:image görselidir; og:url paylaşımların toplanacağı asıl adrestir ve canonical ile
+aynıdır; og:type sayfanın türüdür (website, article, product).
+
+Görsel ve adres mutlak (https ile başlayan) yazılır. Görselin boyutu og:image:width ve og:image:height ile bildirilirse ilk
+paylaşımda da görünür; og:image:alt görselin ne olduğunu anlatır.
+
+<!-- ref: google:breadcrumbs -->
+
+BreadcrumbList, sayfanın site hiyerarşisindeki yerini adım adım anlatır. Arama sonucunda adres yerine bu yol gösterilebilir. Her
+adım sırası (position), adı (name) ve son adım dışında adresi (item) ile yazılır; sayfada görünen gezinme yoluyla aynı adımları
+taşır.
+
+<!-- ref: google:organization -->
+
+Organization (e-ticarette OnlineStore) ve WebSite, sitenin sahibini ve adını anlatır. Ana sayfada bir kez tanımlanır; diğer
+düğümler @id ile bunlara bağlanır. Logo, ad ve adres arama sonucunda ve bilgi panelinde kullanılır.

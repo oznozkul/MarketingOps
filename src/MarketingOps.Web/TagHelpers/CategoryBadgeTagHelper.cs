@@ -15,7 +15,8 @@ public class CategoryBadgeTagHelper : TagHelper
         FindingCategory.Tracking => "activity",
         FindingCategory.TechnicalSeo => "file-code",
         FindingCategory.Content => "list",
-        _ => "gauge"
+        FindingCategory.Performance => "gauge",
+        _ => "accessibility"
     };
 
     public override void Process(TagHelperContext context, TagHelperOutput output) =>

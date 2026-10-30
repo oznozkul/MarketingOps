@@ -8,6 +8,7 @@ public static class ScoreCategoryMap
     {
         ScoreCategory.Tracking => finding == FindingCategory.Tracking,
         ScoreCategory.Seo => finding is FindingCategory.TechnicalSeo or FindingCategory.Content,
-        _ => finding == FindingCategory.Performance
+        ScoreCategory.Performance => finding == FindingCategory.Performance,
+        _ => finding == FindingCategory.Accessibility
     };
 }

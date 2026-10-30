@@ -19,7 +19,8 @@ public static class NotificationText
     {
         ScoreCategory.Tracking => "Tracking",
         ScoreCategory.Seo => "SEO",
-        _ => "Performans"
+        ScoreCategory.Performance => "Performans",
+        _ => "Erişilebilirlik ve mobil"
     } : "Skor";
 
     public static string ConnectorName(string? value) => value switch

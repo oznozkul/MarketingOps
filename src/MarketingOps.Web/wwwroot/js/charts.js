@@ -146,7 +146,8 @@
         datasets: [
           { label: 'Tracking', data: points.map(function (p) { return p.tracking; }), borderColor: t.series[1], backgroundColor: t.series[1] },
           { label: 'SEO', data: points.map(function (p) { return p.seo; }), borderColor: t.series[2], backgroundColor: t.series[2], borderDash: [6, 3] },
-          { label: 'Performans', data: points.map(function (p) { return p.performance; }), borderColor: t.series[3], backgroundColor: t.series[3], borderDash: [2, 2] }
+          { label: 'Performans', data: points.map(function (p) { return p.performance; }), borderColor: t.series[3], backgroundColor: t.series[3], borderDash: [2, 2] },
+          { label: 'Erişilebilirlik', data: points.map(function (p) { return p.accessibility; }), borderColor: t.series[0], backgroundColor: t.series[0], borderDash: [10, 3, 2, 3] }
         ].map(function (ds) { return Object.assign(ds, { borderWidth: 1.75, pointRadius: 0, pointHoverRadius: 3, tension: 0 }); })
       },
       options: {

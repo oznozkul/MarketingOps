@@ -14,7 +14,7 @@
     </div>
     <div class="border-l-2 border-fg bg-surface-2 p-3 text-sm text-fg-muted">
         <p class="font-medium text-fg">Hesaplama</p>
-        <p class="mt-1">Skor 100'den başlar. Her açık bulgu, <span class="font-medium text-fg">önem ağırlığı × etkilenen sayfa oranı</span> kadar puan düşürür. Tek bir bulgunun düşürebileceği puan, önem ağırlığını aşmaz. Sayfa tipi yoksa ya da o tipte sayfa sayısı yoksa tam ağırlık düşer.</p>
+        <p class="mt-1">Skor 100'den başlar. Her açık bulgu, <span class="font-medium text-fg">önem ağırlığı × sitede etkilenen sayfa oranı</span> kadar puan düşürür. Bir kuralın bütün sayfa tiplerindeki bulguları birlikte en fazla önem ağırlığı kadar düşürür; şablondan gelen tek sorun her sayfa tipinde ayrı cezalandırılmaz. Örnek sayfa ölçen kaynakların (tracking denetimi, PageSpeed) ve sayfaya dayanmayan bulguların ağırlığı tam düşer.</p>
     </div>
     <div>
         <h3 class="section-title">Puanı en çok düşüren bulgular</h3>
@@ -36,7 +36,7 @@
                     <tbody>
                         @foreach (var d in Model.Deductions)
                         {
-                            var ratio = d.PageTypePageCount == 0 ? 1d : Math.Min(1d, d.AffectedCount / (double)d.PageTypePageCount);
+                            var ratio = d.PageCount == 0 ? 1d : Math.Min(1d, d.AffectedCount / (double)d.PageCount);
                             <tr>
                                 <td>
                                     <a class="font-medium text-fg hover:underline" href="@Url.SiteAction("Detail", "Findings", new { id = d.FindingId })">@d.Title</a>
@@ -46,10 +46,10 @@
                                     </div>
                                 </td>
                                 <td class="num text-xs text-fg-muted">
-                                    @Format.Number(d.AffectedCount) / @Format.Number(d.PageTypePageCount)
+                                    @Format.Number(d.AffectedCount) / @Format.Number(d.PageCount)
                                     <div>@Format.Percent(ratio * 100)</div>
                                 </td>
-                                <td class="num font-medium text-fg">@Format.Signed(-(int)Math.Round(d.Points))</td>
+                                <td class="num font-medium text-fg">−@Format.Number((double)d.Points, 1)</td>
                             </tr>
                         }
                     </tbody>

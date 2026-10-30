@@ -32,6 +32,7 @@ public class DesignController(IWebHostEnvironment env, TimeProvider clock) : Con
                 new ScoreCardViewModel("Tracking Sağlığı", 43, 43, BreakdownUrl),
                 new ScoreCardViewModel("SEO Sağlığı", 78, 77, BreakdownUrl),
                 new ScoreCardViewModel("Performans", 66, 66, BreakdownUrl),
+                new ScoreCardViewModel("Erişilebilirlik ve Mobil Sağlığı", 61, 58, BreakdownUrl),
                 new ScoreCardViewModel("Tracking Sağlığı", null, null, null, "GA4", "#")
             ],
             rows.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
@@ -131,6 +132,7 @@ public class DesignController(IWebHostEnvironment env, TimeProvider clock) : Con
                 today.AddDays(i - 29),
                 i >= 27 ? 43 : 57 + i % 3,
                 70 + i / 4 + i % 2,
-                i is >= 17 and <= 20 ? 58 : 64 + i % 3))
+                i is >= 17 and <= 20 ? 58 : 64 + i % 3,
+                52 + i / 3))
             .ToList();
 }
