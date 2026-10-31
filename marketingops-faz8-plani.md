@@ -389,7 +389,7 @@ ihtiyaç görülürse ayrı iş olarak eklenir (not düşüldü).
 - hreflang karşılıklılığı ve dil kodları.
 - Yönlendirmeye giden iç linkler; yetim sayfalar (sitemap'te olup iç link almayan).
 - Karışık içerik (HTTPS sayfada HTTP kaynak); `X-Robots-Tag` header'ı.
-- Koyu tema kontrastı (yalnızca `data-theme` olan sitelerde denenir), `@media` kontrolü, ekran görüntüsü kanıtı.
+- `prefers-color-scheme` (`@media`) ile gelen koyu tema kontrastı, ekran görüntüsü kanıtı. (`data-theme` olan sitelerde koyu tema kontrastı yapıldı, bkz. 7.)
 - Odak kelime kontrolleri (taranan sitede odak kelime alanı yok).
 - Render ile HTML erişilebilirlik bulgularının görünürlük doğrulaması (2.9).
 
