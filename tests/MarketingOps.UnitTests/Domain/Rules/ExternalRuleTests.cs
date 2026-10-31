@@ -13,7 +13,7 @@ public class ExternalRuleTests
 
     private static ExternalData Data(Dictionary<string, SearchMetrics>? search = null, Dictionary<string, IndexInfo>? index = null, List<VitalsSample>? vitals = null) =>
         new(new HashSet<RuleDataSource> { RuleDataSource.Crawl, RuleDataSource.SearchConsole, RuleDataSource.UrlInspection, RuleDataSource.PageSpeed },
-            search ?? [], index ?? [], vitals ?? []);
+            search ?? [], index ?? [], vitals ?? [], []);
 
     [Fact]
     public void Opportunity_flags_pages_just_off_the_first_page_with_enough_impressions()

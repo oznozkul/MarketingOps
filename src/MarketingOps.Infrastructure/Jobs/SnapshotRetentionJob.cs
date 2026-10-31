@@ -34,6 +34,7 @@ public sealed class SnapshotRetentionJob(AppDbContext db, IConfiguration configu
         foreach (var crawlId in prune)
         {
             var deleted = await db.PageSnapshots.Where(p => p.CrawlId == crawlId).ExecuteDeleteAsync(cancellationToken);
+            await db.RenderSamples.Where(r => r.CrawlId == crawlId).ExecuteDeleteAsync(cancellationToken);
             var crawl = await db.Crawls.FirstAsync(c => c.Id == crawlId, cancellationToken);
             crawl.MarkSnapshotsPruned(clock.GetUtcNow());
             await db.SaveChangesAsync(cancellationToken);

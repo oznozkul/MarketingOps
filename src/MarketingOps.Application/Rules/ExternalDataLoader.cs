@@ -1,5 +1,6 @@
 using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Domain.Connectors;
+using MarketingOps.Domain.Rendering;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Rules.Definitions;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MarketingOps.Application.Rules;
 
 /// <summary>
-/// Kural motoru için Search Console, URL Inspection ve PageSpeed verisini yükler. Bir kaynağın verisi eskiyse (bağlantı kopmuş,
+/// Kural motoru için Search Console, URL Inspection, PageSpeed ve değerlendirilen taramanın render verisini yükler. Bir kaynağın verisi eskiyse (bağlantı kopmuş,
 /// senkron çalışmamış) kaynak "yok" sayılır; o kaynağın kuralları çalışmaz ve mevcut bulguları değişmez.
 /// </summary>
 public sealed class ExternalDataLoader(IAppDbContext db, TimeProvider clock)
@@ -17,7 +18,7 @@ public sealed class ExternalDataLoader(IAppDbContext db, TimeProvider clock)
     private static readonly TimeSpan MaxInspectionAge = TimeSpan.FromDays(30);
     private static readonly TimeSpan MaxVitalsAge = TimeSpan.FromDays(14);
 
-    public async Task<ExternalData> LoadAsync(Guid siteId, CancellationToken ct)
+    public async Task<ExternalData> LoadAsync(Guid siteId, Guid crawlId, CancellationToken ct)
     {
         var now = clock.GetUtcNow();
         var today = DateOnly.FromDateTime(now.UtcDateTime);
@@ -59,7 +60,13 @@ public sealed class ExternalDataLoader(IAppDbContext db, TimeProvider clock)
                 .ToListAsync(ct);
         }
 
-        return new ExternalData(available, searchByUrl, indexByUrl, vitals);
+        // Render kapalıysa ya da hiçbir örnek ölçülemediyse kaynak yoktur; render bulguları korunur, çözülmez.
+        var renders = await db.RenderSamples.AsNoTracking()
+            .Where(r => r.CrawlId == crawlId && r.Status != RenderStatus.Failed)
+            .ToListAsync(ct);
+        if (renders.Count > 0) available.Add(RuleDataSource.Render);
+
+        return new ExternalData(available, searchByUrl, indexByUrl, vitals, renders);
     }
 
     private static string? Key(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) ? UrlKey.Normalize(uri) : null;

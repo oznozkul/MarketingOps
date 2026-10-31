@@ -13,7 +13,7 @@ public sealed class LazyLoadMissingRule : RuleBase, IPageRule
 
     public override string Code => "perf.image.lazy_missing";
     public override string Name => "Ekran altı görsellerde lazy load eksik";
-    public override string Description => "İlk görünümdeki görsellerden sonra gelen ve loading='lazy' olmayan görselleri bulur.";
+    public override string Description => "İlk görünümdeki görsellerden sonra gelen ve loading='lazy' olmayan görselleri bulur. Render'da ölçülen sayfa tiplerinde yerini kesin ölçüm alır.";
     public override FindingCategory Category => FindingCategory.Performance;
     public override Severity DefaultSeverity => Severity.Medium;
     public override RuleScope Scope => RuleScope.Page;
@@ -27,6 +27,8 @@ public sealed class LazyLoadMissingRule : RuleBase, IPageRule
     public IEnumerable<RuleViolation> Evaluate(PageSnapshot page, RuleContext context)
     {
         if (!PageChecks.IsHtml(page)) yield break;
+        // Bu sayfa tipi render'da ölçüldüyse kesin sonuç perf.image.lazy_above_fold/eager_below_fold'dadır; aynı sorun için ikinci görev açılmaz.
+        if (context.External.Renders.Any(s => s.HasClearView && s.PageTypeId == page.PageTypeId)) yield break;
         var aboveFold = (int)context.Threshold(AboveFoldImages);
         var eager = page.Data.Images.Skip(aboveFold).Where(i => !string.Equals(i.Loading, "lazy", StringComparison.OrdinalIgnoreCase)).ToList();
         if (eager.Count > 0) yield return Violation(page, $"{eager.Count} görsel", string.Join(", ", eager.Take(5).Select(i => i.Src)));

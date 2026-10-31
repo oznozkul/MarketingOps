@@ -102,6 +102,16 @@ public class Crawl : Entity
         _assetChecks.Add(check);
     }
 
+    /// <summary>Render denetimi bu tarama için kaydedildi; iş tekrar çalışsa da ikinci kez kaydedilmez.</summary>
+    public bool IsRendered => _stages.Any(s => s.Stage == CrawlStage.Render);
+
+    /// <summary>Render denetiminin aşama süresi. Tarama bitmiş, henüz değerlendirilmemiş olmalı.</summary>
+    public void RecordRender(DateTimeOffset startedAt, DateTimeOffset finishedAt)
+    {
+        if (!CanBeEvaluated || IsRendered) throw new DomainException("Bu taramanın render denetimi kaydedilemez.");
+        _stages.Add(new CrawlStageTiming(CrawlStage.Render, startedAt, finishedAt));
+    }
+
     /// <summary>Kural değerlendirmesinin sonucu. Tarama bitmiş olmalı; aşama süresi de kaydedilir.</summary>
     public void RecordEvaluation(DateTimeOffset startedAt, DateTimeOffset finishedAt, int opened, int resolved, int reopened)
     {

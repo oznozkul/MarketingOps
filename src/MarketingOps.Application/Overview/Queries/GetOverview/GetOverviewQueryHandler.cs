@@ -127,7 +127,7 @@ public sealed class GetOverviewQueryHandler(IAppDbContext db, ScoreReader scores
         site.PageTypes.OrderBy(p => p.Name).Select(pageType =>
         {
             var seo = facts.Findings.Where(f => f.PageTypeId == pageType.Id && ScoreCategoryMap.Includes(ScoreCategory.Seo, f.Category))
-                .Select(f => ScoreReader.ToPageTypeInput(f, facts.Pages));
+                .Select(f => ScoreReader.ToPageTypeInput(f, facts));
             return new OverviewPageTypeRow(pageType.Id, pageType.Name, facts.Pages.GetValueOrDefault(pageType.Id), active.Count(f => f.PageTypeId == pageType.Id), ScoreCalculator.Score(seo));
         }).ToList();
 

@@ -88,6 +88,15 @@ Plan ve kararlar: [marketingops-faz8-plani.md](marketingops-faz8-plani.md).
 - **Skor formülü:** 100'den başlar; bulgu `önem ağırlığı × sitede etkilenen sayfa oranı` kadar düşürür. Bir kuralın bütün sayfa tiplerindeki bulguları birlikte en fazla o kuralın ağırlığı kadar düşürür, böylece şablondan gelen tek sorun her sayfa tipinde ayrı cezalandırılmaz. Oran sitenin bütün HTML sayfalarına göredir ve yalnızca taranan sayfalara dayanan kurallarda uygulanır; tracking denetimi ve PageSpeed gibi örnek ölçen kaynakların bulguları tam ağırlık düşürür. Genel Bakış'taki sayfa tipi skoru oranı tipin kendi sayfa sayısından hesaplar. Ağırlıklar: Critical 15, High 8, Medium 3, Low 1.
 - **Bilgi tabanı:** `knowledge/erisilebilirlik.md` (erişilebilirlik ve mobil), `knowledge/seo-dokumani.md` (iç SEO dokümanının özetleri), `google-search.md`'ye Open Graph, breadcrumb ve organizasyon notları.
 
+## Render denetimi (Faz 8, adım 2)
+- **Ne zaman:** Tarama bitince, kural değerlendirmesinden önce (`CrawlStage.Render`, `RenderCrawlJob`). Ayarlar > Siteler > Genel'de açılıp kapatılır (varsayılan açık) ve sayfa tipi başına örnek sayısı seçilir (1–10, varsayılan 3).
+- **Hangi sayfalar:** Her sayfa tipinden doğrudan 2xx dönen HTML sayfalar URL uzunluğuna göre sıralanıp eşit aralıklarla seçilir; ana sayfa her zaman eklenir. Her sayfa masaüstü (1366×900), tablet (768×1024) ve telefonda (375×812, dokunmatik) açılır. Sitenin hız limitine uyulur; çerez onayı seçicisi (tracking ayarı) varsa tıklanır.
+- **Ölçüm:** `Infrastructure/Rendering/render-audit.js` (Elevare CMS SEO analizöründen uyarlandı) sayfanın kendi betikleri çalıştıktan sonra yatay taşmayı, ekrandan geniş öğeleri, WCAG AA kontrastını, küçük yazıyı, küçük dokunma alanlarını, ilk ekrandaki lazy ve ekran altındaki eager görselleri ve orantısız görselleri ölçer. Ekranın %30'undan fazlasını sabit bir katman kaplıyorsa ölçüm "engellenmiş" sayılır; ilk ekran ve kontrast kuralları o örneği kullanmaz.
+- **Kurallar:** `mobile.overflow`, `mobile.wide_element`, `a11y.contrast`, `a11y.text.small`, `mobile.tap_target.small`, `perf.image.lazy_above_fold`, `perf.image.eager_below_fold`, `content.image.distorted`. Render ölçümü olan sayfa tiplerinde sezgisel `perf.image.lazy_missing` yerini kesin ölçüme bırakır.
+- **Skor:** Örneklenen sorun şablon sorunudur; tipin ölçülen örneklerindeki oran tipin bütün sayfalarına yansıtılır (3 örneğin 2'si sorunluysa tipin üçte ikisi). PageSpeed bulguları da aynı şekilde hesaplanır.
+- **Hata:** Tarayıcı açılamazsa ya da sayfalar ölçülemezse tarama başarısız olmaz; aşama kaydedilir, render kuralları o taramada çalışmaz ve mevcut bulguları çözülmez. Ölçülemeyen sayfalar tarama detayında listelenir.
+- **Yerelde Chromium:** Worker Docker imajında kurulu. Yerelde bir kez: `pwsh src/MarketingOps.Worker/bin/Debug/net10.0/playwright.ps1 install chromium` (betiğin entegrasyon testleri de bunu ister).
+
 ## Migration
 ```sh
 dotnet tool restore

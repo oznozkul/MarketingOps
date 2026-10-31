@@ -64,13 +64,36 @@
                             else { <icon name="check" class="h-4 w-4" /> }
                             @DisplayText.Of(stage)
                         </span>
-                        <span class="tabular text-xs text-fg-muted">
+                        <span class="tabular text-right text-xs text-fg-muted">
                             @(timing is null ? "Bu taramada çalışmadı" : timing.FinishedAt is null ? "Sürüyor" : Format.Duration(timing.Duration))
+                            @if (stage == CrawlStage.Render && timing is not null)
+                            {
+                                <span class="block">@Format.Number(d.Render.Measured + d.Render.Obstructed) ölçüm@(d.Render.Obstructed > 0 ? $" · {Format.Number(d.Render.Obstructed)} ekranı kaplanmış" : "")@(d.Render.Failed > 0 ? $" · {Format.Number(d.Render.Failed)} ölçülemedi" : "")</span>
+                            }
                         </span>
                     </li>
                 }
             </ol>
         </section>
+
+        @if (d.Render.Failures.Count > 0)
+        {
+            <section class="card xl:col-span-2" aria-labelledby="render-failures-title">
+                <div class="card-header">
+                    <h2 id="render-failures-title" class="card-title">Render'da ölçülemeyen sayfalar</h2>
+                    <span class="text-xs text-fg-muted">Bu sayfalar render kurallarında değerlendirilmedi.</span>
+                </div>
+                <ul class="divide-y divide-line">
+                    @foreach (var f in d.Render.Failures)
+                    {
+                        <li class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-4 py-2.5 text-sm">
+                            <span class="min-w-0 break-all font-mono text-xs text-fg">@f.Url</span>
+                            <span class="text-xs text-fg-muted">@DisplayText.Of(f.Device) · @f.Error</span>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
 
         <section class="card" aria-labelledby="types-title">
             <div class="card-header"><h2 id="types-title" class="card-title">Sayfa tiplerine dağılım</h2></div>

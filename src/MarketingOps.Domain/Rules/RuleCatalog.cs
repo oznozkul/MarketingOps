@@ -62,7 +62,15 @@ public static class RuleCatalog
         new LandmarksRule(),
         new NavLabelRule(),
         new ViewportRule(),
-        new LangRule()
+        new LangRule(),
+        new MobileOverflowRule(),
+        new WideElementRule(),
+        new ContrastRule(),
+        new SmallTextRule(),
+        new TapTargetRule(),
+        new LazyAboveFoldRule(),
+        new EagerBelowFoldRule(),
+        new DistortedImageRule()
     ];
 
     public static IRule? Find(string code) => All.FirstOrDefault(r => r.Code == code);

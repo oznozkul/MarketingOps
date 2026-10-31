@@ -5,6 +5,7 @@ using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Notifications;
 using MarketingOps.Domain.Scores;
 using MarketingOps.Domain.Organizations;
+using MarketingOps.Domain.Rendering;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
 using MarketingOps.Domain.Tracking;
@@ -20,6 +21,7 @@ public interface IAppDbContext
     DbSet<Site> Sites { get; }
     DbSet<Crawl> Crawls { get; }
     DbSet<PageSnapshot> PageSnapshots { get; }
+    DbSet<RenderSample> RenderSamples { get; }
     DbSet<Finding> Findings { get; }
     DbSet<SiteRuleSetting> SiteRuleSettings { get; }
     DbSet<WorkTask> WorkTasks { get; }

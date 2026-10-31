@@ -24,7 +24,7 @@ public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator 
         var settings = await db.LoadAsync(site.Id, cancellationToken);
 
         // Verisi olmayan kaynağın kuralları çalışmaz; böylece bulguları "görülmedi" diye çözülmez.
-        var external = await externalData.LoadAsync(site.Id, cancellationToken);
+        var external = await externalData.LoadAsync(site.Id, crawl.Id, cancellationToken);
         var enabled = RuleCatalog.All.Where(r => settings.IsEnabled(r) && external.Available.Contains(r.DataSource)).ToList();
         var violations = await evaluator.EvaluateAsync(crawl.Id, crawl.AssetChecks, site, external,
             enabled.Select(r => (r, settings.ThresholdsOf(r))).ToList(), cancellationToken);

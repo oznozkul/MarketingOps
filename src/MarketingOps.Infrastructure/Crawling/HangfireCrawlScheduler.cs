@@ -12,6 +12,7 @@ public sealed class HangfireCrawlScheduler(IBackgroundJobClient jobs, IRecurring
 
     public void EnqueueCrawl(Guid crawlId) => jobs.Enqueue<CrawlJob>(job => job.RunAsync(crawlId, CancellationToken.None));
 
+    public void EnqueueRender(Guid crawlId) => jobs.Enqueue<RenderCrawlJob>(job => job.RunAsync(crawlId, CancellationToken.None));
     public void EnqueueEvaluation(Guid crawlId) => jobs.Enqueue<EvaluateCrawlJob>(job => job.RunAsync(crawlId, CancellationToken.None));
 
     public void EnqueueConnectorSync(Guid siteId) => jobs.Enqueue<ConnectorSyncJob>(job => job.RunAsync(siteId, false, CancellationToken.None));

@@ -912,6 +912,69 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("organizations", (string)null);
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Rendering.RenderSample", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CrawlId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("crawl_id");
+
+                    b.Property<string>("Device")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("device");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("error");
+
+                    b.Property<DateTimeOffset>("MeasuredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("measured_at");
+
+                    b.Property<string>("Measurements")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("measurements");
+
+                    b.Property<Guid?>("PageTypeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("page_type_id");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_render_samples");
+
+                    b.HasIndex("CrawlId", "PageTypeId")
+                        .HasDatabaseName("ix_render_samples_crawl_id_page_type_id");
+
+                    b.HasIndex("CrawlId", "Url", "Device")
+                        .IsUnique()
+                        .HasDatabaseName("ix_render_samples_crawl_id_url_device");
+
+                    b.ToTable("render_samples", (string)null);
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Rules.SiteRuleSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1612,6 +1675,16 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_user_notifications_sites_site_id");
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Rendering.RenderSample", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Crawls.Crawl", null)
+                        .WithMany()
+                        .HasForeignKey("CrawlId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_render_samples_crawls_crawl_id");
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Rules.SiteRuleSetting", b =>
                 {
                     b.HasOne("MarketingOps.Domain.Sites.Site", null)
@@ -1697,6 +1770,14 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                             b1.Property<int>("MaxRequestsPerSecond")
                                 .HasColumnType("integer")
                                 .HasColumnName("crawl_max_requests_per_second");
+
+                            b1.Property<bool>("RenderEnabled")
+                                .HasColumnType("boolean")
+                                .HasColumnName("crawl_render_enabled");
+
+                            b1.Property<int>("RenderSamplesPerPageType")
+                                .HasColumnType("integer")
+                                .HasColumnName("crawl_render_samples_per_page_type");
 
                             b1.Property<string>("Schedule")
                                 .IsRequired()

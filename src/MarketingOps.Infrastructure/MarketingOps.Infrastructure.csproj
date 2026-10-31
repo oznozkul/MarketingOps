@@ -9,6 +9,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Rendering/render-audit.js" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="MarketingOps.UnitTests" />
     <InternalsVisibleTo Include="MarketingOps.IntegrationTests" />
   </ItemGroup>

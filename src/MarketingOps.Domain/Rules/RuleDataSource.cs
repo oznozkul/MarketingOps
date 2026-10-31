@@ -10,5 +10,7 @@ public enum RuleDataSource
     SearchConsole,
     UrlInspection,
     PageSpeed,
-    Tracking
+    Tracking,
+    /// <summary>Taramanın örnek sayfalarının tarayıcıda ölçümü (Faz 8, render denetimi).</summary>
+    Render
 }

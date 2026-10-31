@@ -9,10 +9,12 @@ using MarketingOps.Infrastructure.Ai;
 using MarketingOps.Infrastructure.Google;
 using MarketingOps.Infrastructure.Crawling;
 using MarketingOps.Application.Notifications;
+using MarketingOps.Application.Rendering;
 using MarketingOps.Application.Tracking;
 using MarketingOps.Infrastructure.Jobs;
 using MarketingOps.Infrastructure.Notifications;
 using MarketingOps.Infrastructure.Persistence;
+using MarketingOps.Infrastructure.Rendering;
 using MarketingOps.Infrastructure.Tracking;
 using MarketingOps.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +60,7 @@ public static class DependencyInjection
         services.AddSingleton<SiteCrawler>();
         services.AddTransient<CrawlJob>();
         services.AddTransient<ScheduledCrawlJob>();
+        services.AddTransient<RenderCrawlJob>();
         services.AddTransient<EvaluateCrawlJob>();
         services.AddTransient<EnrichTaskJob>();
         services.AddTransient<SnapshotRetentionJob>();
@@ -78,6 +81,7 @@ public static class DependencyInjection
             }));
         services.AddSingleton<ICrawlScheduler, HangfireCrawlScheduler>();
         services.AddSingleton<ITrackingBrowser, PlaywrightTrackingBrowser>();
+        services.AddSingleton<IRenderAuditor, PlaywrightRenderAuditor>();
         services.AddSingleton<IOrderSource, SqlServerOrderSource>();
         services.AddHttpClient<IMetaGraphClient, MetaGraphClient>();
         services.AddTransient<TrackingAuditJob>();

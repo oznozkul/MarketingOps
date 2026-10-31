@@ -1,5 +1,6 @@
 using MarketingOps.Application.Common.Exceptions;
 using MarketingOps.Application.Common.Interfaces;
+using MarketingOps.Domain.Rendering;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,6 +34,12 @@ public sealed class GetCrawlByIdQueryHandler(IAppDbContext db) : IRequestHandler
         var names = await db.Sites.AsNoTracking().Where(s => s.Id == request.SiteId)
             .SelectMany(s => s.PageTypes).Select(p => new { p.Id, p.Name }).ToDictionaryAsync(p => p.Id, p => p.Name, cancellationToken);
 
+        var renders = db.RenderSamples.AsNoTracking().Where(r => r.CrawlId == request.CrawlId);
+        var renderCounts = await renders.GroupBy(r => r.Status).Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(r => r.Status, r => r.Count, cancellationToken);
+        var renderFailures = await renders.Where(r => r.Status == RenderStatus.Failed).OrderBy(r => r.Url).Take(ListLimit)
+            .Select(r => new FailedRenderResponse(r.Url, r.Device, r.Error)).ToListAsync(cancellationToken);
+
         return new CrawlDetailResponse(
             crawl.Item,
             crawl.ErrorMessage,
@@ -46,6 +53,8 @@ public sealed class GetCrawlByIdQueryHandler(IAppDbContext db) : IRequestHandler
                 .Select(p => new FailedPageResponse(p.Url, p.StatusCode, p.FetchError)).ToListAsync(cancellationToken),
             crawl.SkippedCount,
             crawl.SkippedUrls.Take(ListLimit).Select(s => new SkippedUrlResponse(s.Url, s.Reason)).ToList(),
-            crawl.SnapshotsPrunedAt);
+            crawl.SnapshotsPrunedAt,
+            new RenderSummaryResponse(renderCounts.GetValueOrDefault(RenderStatus.Measured), renderCounts.GetValueOrDefault(RenderStatus.Obstructed),
+                renderCounts.GetValueOrDefault(RenderStatus.Failed), renderFailures));
     }
 }

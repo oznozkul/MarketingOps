@@ -1,6 +1,7 @@
 using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Findings;
+using MarketingOps.Domain.Rendering;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Scores;
 using Microsoft.EntityFrameworkCore;
@@ -32,31 +33,70 @@ public sealed class ScoreReader(IAppDbContext db)
             sitePages = counts.Sum(x => x.Count);
         }
 
+        var samples = new Dictionary<(RuleDataSource, Guid), int>();
+        if (crawlId is Guid rendered)
+        {
+            var renders = await db.RenderSamples.AsNoTracking()
+                .Where(r => r.CrawlId == rendered && r.PageTypeId != null && r.Status != RenderStatus.Failed)
+                .GroupBy(r => r.PageTypeId!.Value)
+                .Select(g => new { PageTypeId = g.Key, Count = g.Select(r => r.Url).Distinct().Count() })
+                .ToListAsync(cancellationToken);
+            foreach (var r in renders) samples[(RuleDataSource.Render, r.PageTypeId)] = r.Count;
+        }
+        var vitalsDate = await db.WebVitals.Where(v => v.SiteId == siteId).MaxAsync(v => (DateOnly?)v.Date, cancellationToken);
+        if (vitalsDate is DateOnly date)
+        {
+            var vitals = await db.WebVitals.AsNoTracking()
+                .Where(v => v.SiteId == siteId && v.Date == date && v.PageTypeId != null)
+                .GroupBy(v => v.PageTypeId!.Value)
+                .Select(g => new { PageTypeId = g.Key, Count = g.Select(v => v.Url).Distinct().Count() })
+                .ToListAsync(cancellationToken);
+            foreach (var v in vitals) samples[(RuleDataSource.PageSpeed, v.PageTypeId)] = v.Count;
+        }
+
         var findings = await db.Findings.AsNoTracking()
             .Where(f => f.SiteId == siteId && (f.Status == FindingStatus.Open || f.Status == FindingStatus.Reopened))
             .Select(f => new ScoreFact(f.Id, f.Title, f.Severity, f.Category, f.RuleCode, f.PageTypeId, f.AffectedCount))
             .ToListAsync(cancellationToken);
-        return new ScoreFacts(pages, sitePages, findings);
+        return new ScoreFacts(pages, sitePages, samples, findings);
     }
 
-    /// <summary>Sayfa tipi skoru için: oran o tipin sayfa sayısına göre.</summary>
-    public static ScoreInput ToPageTypeInput(ScoreFact fact, IReadOnlyDictionary<Guid, int> pages) =>
-        ToInput(fact, fact.PageTypeId is Guid pageType && pages.TryGetValue(pageType, out var count) ? count : 0);
+    /// <summary>Sayfa tipi skoru için: oran o tipin sayfa sayısına, örneklenmiş kaynakta ölçülen örnek sayısına göre.</summary>
+    public static ScoreInput ToPageTypeInput(ScoreFact fact, ScoreFacts facts)
+    {
+        if (SampleCount(fact, facts) is int sampled) return ToInput(fact, fact.AffectedCount, sampled);
+        return ToInput(fact, fact.AffectedCount, fact.PageTypeId is Guid pageType && facts.Pages.TryGetValue(pageType, out var count) ? count : 0);
+    }
 
     /// <summary>
-    /// Site skoru için: taranan sayfalara dayanan kurallarda oran sitenin bütün HTML sayfalarına göre (sayfa tipine uymayan
-    /// sayfa dahil). Örnek sayfa ölçen kaynaklarda (tracking denetimi, PageSpeed) etkilenen sayı siteyi temsil etmez;
-    /// bulgu tam ağırlık düşürür, kural sınırı yine geçerlidir.
+    /// Site skoru için oran sitenin bütün HTML sayfalarına göredir (sayfa tipine uymayan sayfa dahil).
+    /// Örnek ölçen kaynaklarda (render, PageSpeed) sorun şablonundur: tipin ölçülen örneklerindeki oran tipin bütün
+    /// sayfalarına yansıtılır (3 örneğin 2'si sorunluysa tipin üçte ikisi). Örnek sayısı bilinmeyen ya da sayfaya dayanmayan
+    /// bulgu (tracking denetimi, purchase farkı) tam ağırlık düşürür; kural sınırı her durumda geçerlidir.
     /// </summary>
     public static IReadOnlyList<ScoreInput> Inputs(ScoreFacts facts, ScoreCategory category) =>
         facts.Findings
             .Where(f => ScoreCategoryMap.Includes(category, f.Category))
-            .Select(f => ToInput(f, IsPageBased(f.RuleCode) ? facts.SitePages : 0))
+            .Select(f => SiteInput(f, facts))
             .ToList();
 
-    private static bool IsPageBased(string ruleCode) =>
-        RuleCatalog.Find(ruleCode)?.DataSource is RuleDataSource.Crawl or RuleDataSource.SearchConsole or RuleDataSource.UrlInspection;
+    private static ScoreInput SiteInput(ScoreFact fact, ScoreFacts facts)
+    {
+        var source = RuleCatalog.Find(fact.RuleCode)?.DataSource;
+        if (source is RuleDataSource.Crawl or RuleDataSource.SearchConsole or RuleDataSource.UrlInspection)
+            return ToInput(fact, fact.AffectedCount, facts.SitePages);
+        if (SampleCount(fact, facts) is int sampled && fact.PageTypeId is Guid pageType && facts.Pages.TryGetValue(pageType, out var typePages))
+        {
+            var represented = (int)Math.Round(Math.Min(1.0, (double)fact.AffectedCount / sampled) * typePages, MidpointRounding.AwayFromZero);
+            return ToInput(fact, represented, facts.SitePages);
+        }
+        return ToInput(fact, fact.AffectedCount, 0);
+    }
 
-    private static ScoreInput ToInput(ScoreFact fact, int pageCount) =>
-        new(fact.Id, fact.Title, fact.Severity, fact.RuleCode, fact.PageTypeId, fact.AffectedCount, pageCount);
+    private static int? SampleCount(ScoreFact fact, ScoreFacts facts) =>
+        RuleCatalog.Find(fact.RuleCode)?.DataSource is { } source && fact.PageTypeId is Guid pageType
+        && facts.Samples.TryGetValue((source, pageType), out var count) && count > 0 ? count : null;
+
+    private static ScoreInput ToInput(ScoreFact fact, int affected, int pageCount) =>
+        new(fact.Id, fact.Title, fact.Severity, fact.RuleCode, fact.PageTypeId, affected, pageCount);
 }

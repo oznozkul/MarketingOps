@@ -21,7 +21,7 @@ public sealed class PreviewRuleThresholdImpactQueryHandler(IAppDbContext db, Rul
         if (crawl is null) return new ThresholdImpactResponse(null, 0, 0, 0, 0, 0);
 
         var settings = await db.LoadAsync(site.Id, cancellationToken);
-        var results = await evaluator.EvaluateEachAsync(crawl.Id, crawl.AssetChecks, site, await externalData.LoadAsync(site.Id, cancellationToken),
+        var results = await evaluator.EvaluateEachAsync(crawl.Id, crawl.AssetChecks, site, await externalData.LoadAsync(site.Id, crawl.Id, cancellationToken),
             [(rule, settings.ThresholdsOf(rule)), (rule, request.Thresholds)], cancellationToken);
 
         var current = Group(results[0]);

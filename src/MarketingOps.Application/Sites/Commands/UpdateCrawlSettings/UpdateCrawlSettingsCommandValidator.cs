@@ -17,6 +17,8 @@ public sealed class UpdateCrawlSettingsCommandValidator : AbstractValidator<Upda
             .WithMessage($"Hız limiti {CrawlSettings.MinRequestsPerSecond} ile {CrawlSettings.MaxRequestsPerSecondLimit} istek/saniye arasında olmalı.");
         RuleFor(x => x.MaxPages).InclusiveBetween(1, CrawlSettings.MaxPagesLimit)
             .WithMessage($"Maksimum sayfa sayısı 1 ile {CrawlSettings.MaxPagesLimit} arasında olmalı.");
+        RuleFor(x => x.RenderSamplesPerPageType).InclusiveBetween(CrawlSettings.MinRenderSamples, CrawlSettings.MaxRenderSamples)
+            .WithMessage($"Sayfa tipi başına örnek sayısı {CrawlSettings.MinRenderSamples} ile {CrawlSettings.MaxRenderSamples} arasında olmalı.");
         RuleFor(x => x.ExcludedPathPatterns).NotNull().WithMessage("Hariç tutulan path listesi boş bırakılamaz.")
             .Must(p => p.Count <= MaxExcludedPatterns).WithMessage($"En fazla {MaxExcludedPatterns} hariç tutulan path olabilir.");
         RuleForEach(x => x.ExcludedPathPatterns).NotEmpty().WithMessage("Hariç tutulan path boş olamaz.")

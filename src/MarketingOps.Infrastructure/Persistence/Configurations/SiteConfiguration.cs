@@ -23,6 +23,9 @@ public sealed class SiteConfiguration : IEntityTypeConfiguration<Site>
             settings.Property(c => c.MaxRequestsPerSecond).HasColumnName("crawl_max_requests_per_second");
             settings.Property(c => c.MaxPages).HasColumnName("crawl_max_pages");
             settings.Property(c => c.ExcludedPathPatterns).HasColumnName("crawl_excluded_path_patterns");
+            // Veritabanı varsayılanı modelde yok: bool'da EF false'u "atanmamış" sayıp varsayılanı yazardı. Mevcut sitelerin değeri migration'da.
+            settings.Property(c => c.RenderEnabled).HasColumnName("crawl_render_enabled");
+            settings.Property(c => c.RenderSamplesPerPageType).HasColumnName("crawl_render_samples_per_page_type");
             settings.Ignore(c => c.RespectRobotsTxt);
         });
         builder.Navigation(s => s.CrawlSettings).IsRequired();

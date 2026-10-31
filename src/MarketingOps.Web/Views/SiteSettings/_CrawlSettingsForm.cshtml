@@ -54,6 +54,25 @@
         <field-error for="ExcludedPathPatterns" />
         <p id="crawl-excluded-hint" class="hint">Satır başına bir desen. <code class="kbd">*</code> tek path parçası, <code class="kbd">**</code> alt klasörlerin tamamı.</p>
     </div>
+    <fieldset class="space-y-3 border-t border-line pt-4">
+        <legend class="section-title">Render denetimi</legend>
+        <label class="flex items-start gap-2 text-sm">
+            <input type="checkbox" name="RenderEnabled" value="true" class="checkbox mt-0.5" checked="@Model.RenderEnabled" aria-describedby="crawl-render-hint" />
+            <input type="hidden" name="RenderEnabled" value="false" />
+            <span>
+                <span class="font-medium text-fg">Örnek sayfaları tarayıcıda ölç</span>
+                <span id="crawl-render-hint" class="block text-xs text-fg-muted">Tarama bitince her sayfa tipinden örnekler ve ana sayfa masaüstü, tablet ve telefonda açılır: yatay taşma, kontrast, yazı boyutu, dokunma alanı, ilk ekrandaki görseller. Kapalıysa bu kontroller çalışmaz.</span>
+            </span>
+        </label>
+        <div class="max-w-xs">
+            <label class="label" for="crawl-render-samples">Sayfa tipi başına örnek</label>
+            <input id="crawl-render-samples" name="RenderSamplesPerPageType" type="number" inputmode="numeric" min="@CrawlSettings.MinRenderSamples" max="@CrawlSettings.MaxRenderSamples"
+                   value="@Model.RenderSamplesPerPageType" class="input tabular w-24"
+                   aria-invalid="@(E("RenderSamplesPerPageType") is null ? null : "true")" aria-describedby="crawl-render-samples-hint @(E("RenderSamplesPerPageType") is null ? "" : "RenderSamplesPerPageType-error")" />
+            <field-error for="RenderSamplesPerPageType" />
+            <p id="crawl-render-samples-hint" class="hint">@CrawlSettings.MinRenderSamples–@CrawlSettings.MaxRenderSamples arası. Her örnek üç cihazda açılır; sayfa başına birkaç saniye sürer ve sitenin hız limitine uyar.</p>
+        </div>
+    </fieldset>
     <div class="flex items-start gap-3 border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm">
         <icon name="lock" class="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
         <div>

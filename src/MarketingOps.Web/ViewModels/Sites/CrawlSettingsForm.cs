@@ -11,13 +11,17 @@ public sealed class CrawlSettingsForm
     public int MaxRequestsPerSecond { get; set; }
     public int MaxPages { get; set; }
     public string? ExcludedPathPatterns { get; set; }
+    public bool RenderEnabled { get; set; }
+    public int RenderSamplesPerPageType { get; set; }
 
     public static CrawlSettingsForm From(CrawlSettingsResponse settings) => new()
     {
         Schedule = settings.Schedule,
         MaxRequestsPerSecond = settings.MaxRequestsPerSecond,
         MaxPages = settings.MaxPages,
-        ExcludedPathPatterns = string.Join("\n", settings.ExcludedPathPatterns)
+        ExcludedPathPatterns = string.Join("\n", settings.ExcludedPathPatterns),
+        RenderEnabled = settings.RenderEnabled,
+        RenderSamplesPerPageType = settings.RenderSamplesPerPageType
     };
 
     public UpdateCrawlSettingsCommand ToCommand(Guid siteId) => new(
@@ -25,5 +29,7 @@ public sealed class CrawlSettingsForm
         Schedule,
         MaxRequestsPerSecond,
         MaxPages,
-        (ExcludedPathPatterns ?? "").Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+        (ExcludedPathPatterns ?? "").Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
+        RenderEnabled,
+        RenderSamplesPerPageType);
 }

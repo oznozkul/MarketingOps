@@ -8,4 +8,6 @@ public sealed record UpdateCrawlSettingsCommand(
     CrawlSchedule Schedule,
     int MaxRequestsPerSecond,
     int MaxPages,
-    IReadOnlyList<string> ExcludedPathPatterns) : IRequest;
+    IReadOnlyList<string> ExcludedPathPatterns,
+    bool RenderEnabled = true,
+    int RenderSamplesPerPageType = CrawlSettings.DefaultRenderSamples) : IRequest;

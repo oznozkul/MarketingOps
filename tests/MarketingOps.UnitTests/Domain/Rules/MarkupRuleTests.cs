@@ -240,6 +240,6 @@ public class MarkupRuleTests
         RuleCatalog.Find("seo.schema.missing")!.DefaultSeverity.ShouldBe(Severity.High);
         RuleCatalog.Find("a11y.form.no_label")!.DefaultSeverity.ShouldBe(Severity.High);
         RuleCatalog.Find("content.image.alt_missing")!.DefaultSeverity.ShouldBe(Severity.Medium);
-        RuleCatalog.All.Where(r => r.Category == FindingCategory.Accessibility).Count().ShouldBe(9);
+        RuleCatalog.All.Where(r => r.Category == FindingCategory.Accessibility).Count().ShouldBe(14);
     }
 }

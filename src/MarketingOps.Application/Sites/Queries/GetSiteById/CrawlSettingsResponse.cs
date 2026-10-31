@@ -7,4 +7,6 @@ public sealed record CrawlSettingsResponse(
     int MaxRequestsPerSecond,
     int MaxPages,
     IReadOnlyList<string> ExcludedPathPatterns,
-    bool RespectRobotsTxt);
+    bool RespectRobotsTxt,
+    bool RenderEnabled,
+    int RenderSamplesPerPageType);

@@ -5,6 +5,7 @@ using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Sites;
 using MarketingOps.Domain.Notifications;
+using MarketingOps.Domain.Rendering;
 using MarketingOps.Domain.Scores;
 using MarketingOps.Domain.Tracking;
 using MarketingOps.Domain.WorkTasks;
@@ -99,6 +100,13 @@ public static class DisplayText
     };
 
     public static string Of(CrawlTrigger v) => v == CrawlTrigger.Schedule ? "Zamanlanmış" : "Manuel";
+
+    public static string Of(RenderDevice v) => v switch
+    {
+        RenderDevice.Desktop => "Masaüstü",
+        RenderDevice.Tablet => "Tablet",
+        _ => "Mobil"
+    };
 
     public static string Of(CrawlStage v) => v switch
     {
@@ -228,6 +236,7 @@ public static class DisplayText
         ConnectorType v => Of(v),
         CrawlTrigger v => Of(v),
         CrawlStage v => Of(v),
+        RenderDevice v => Of(v),
         SkipReason v => Of(v),
         PageStatusFilter v => Of(v),
         ScoreCategory v => Of(v),

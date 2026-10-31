@@ -23,7 +23,9 @@ public sealed class GetSiteByIdQueryHandler(IAppDbContext db) : IRequestHandler<
                     s.CrawlSettings.MaxRequestsPerSecond,
                     s.CrawlSettings.MaxPages,
                     s.CrawlSettings.ExcludedPathPatterns.ToList(),
-                    true),
+                    true,
+                    s.CrawlSettings.RenderEnabled,
+                    s.CrawlSettings.RenderSamplesPerPageType),
                 new ExpectedTrackingIdsResponse(
                     s.ExpectedTrackingIds.Ga4MeasurementId,
                     s.ExpectedTrackingIds.GtmContainerId,

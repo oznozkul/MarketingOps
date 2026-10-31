@@ -7,6 +7,7 @@ using MarketingOps.Domain.Findings;
 using MarketingOps.Domain.Metrics;
 using MarketingOps.Domain.Notifications;
 using MarketingOps.Domain.Organizations;
+using MarketingOps.Domain.Rendering;
 using MarketingOps.Domain.Scores;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Sites;
@@ -36,6 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
     public DbSet<TagAuditResult> TagAuditResults => Set<TagAuditResult>();
     public DbSet<OrderComparisonDaily> OrderComparisons => Set<OrderComparisonDaily>();
     public DbSet<ScoreSnapshot> ScoreSnapshots => Set<ScoreSnapshot>();
+    public DbSet<RenderSample> RenderSamples => Set<RenderSample>();
     public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
     public DbSet<NotificationChannelConfig> NotificationChannels => Set<NotificationChannelConfig>();
     public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();

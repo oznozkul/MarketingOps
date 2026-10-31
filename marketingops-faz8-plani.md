@@ -1,6 +1,6 @@
 # Faz 8 — HTML denetimi, sıkı structured data, Render denetimi (erişilebilirlik ve mobil)
 
-Durum: **Onaylandı, geliştiriliyor.** Kurallar: [CLAUDE.md](CLAUDE.md). Bu dosya konuşmada alınan kararların tek kaynağıdır;
+Durum: **Tamamlandı (2026-10-31).** Adım 1 `c928933`; adım 2 bu dosyayla birlikte commit'lendi. Kurallar: [CLAUDE.md](CLAUDE.md). Bu dosya konuşmada alınan kararların tek kaynağıdır;
 uygulama sırasında karar değişirse önce burası güncellenir.
 
 Kaynak fikir: Elevare CMS'teki SEO analizörü
@@ -418,3 +418,11 @@ ihtiyaç görülürse ayrı iş olarak eklenir (not düşüldü).
 2. 1.2 ve 2.6 tablolarındaki önem dereceleri **onaylandı**.
 3. 1.4'teki mevcut kuralların sıkılaştırılması **onaylandı**.
 4. 2.7 örneklenmiş veride oran = etkilenen örnek / ölçülen örnek **onaylandı** (Core Web Vitals bulguları dahil).
+
+## 6. Uygulama notları (adım 2)
+- Ölçüm tipleri sadeleşti: `ContrastFailure` ayrı tip olmadı; bütün listeler `RenderElement(Selector, Text, Value, Limit)`. Kontrastta Value oran, Limit gereken oran.
+- Eşiği ayarlanabilen ölçümler betikte gevşek sınırla toplanır (yazı < 16 px, dokunma alanı < 48 px), kural kendi eşiğiyle süzer. Listeler en fazla 50 öğe.
+- Taşma ve geniş öğe tespitinde html/body dışındaki kırpan ya da kaydıran atanın içindeki öğe (karusel izi, kaydırılabilir tablo) sayılmaz; taşma kaynağı olarak en içteki öğeler gösterilir.
+- Render tarama içinde değil, tarama bittikten sonra ayrı iş (`RenderCrawlJob`) olarak çalışır; tarama durumu "Tamamlandı" olduktan sonra aşama eklenir, ardından değerlendirme kuyruğa girer. "Kuralları çalıştır" render'ı yeniden çalıştırmaz.
+- `crawl_render_enabled` için veritabanı varsayılanı modelde yok (EF bool'da false'u "atanmamış" sayardı); mevcut siteler migration'da true/3 aldı.
+- Lastik Borsası doğrulaması (300 sayfa): 16 sayfa × 3 cihaz = 48 ölçüm, render 5 dk 26 sn, hepsi ölçüldü. Erişilebilirlik ve mobil skoru 79 → 68 (kontrast, küçük yazı, dokunma alanı bulguları), mobilde yatay taşma yok.

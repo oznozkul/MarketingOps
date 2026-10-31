@@ -71,7 +71,11 @@ public sealed class SiteCrawler(IServiceScopeFactory scopes, ICrawlerHttpClient 
                 foreach (var asset in assets) c.RecordAssetCheck(asset);
                 c.Finish(clock.GetUtcNow());
             }, ct);
-            if (finished) scheduler.EnqueueEvaluation(crawlId);
+            if (finished)
+            {
+                if (state.Site.CrawlSettings.RenderEnabled) scheduler.EnqueueRender(crawlId);
+                else scheduler.EnqueueEvaluation(crawlId);
+            }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

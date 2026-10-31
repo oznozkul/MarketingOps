@@ -7,6 +7,8 @@ public interface ICrawlScheduler
 {
     void EnqueueCrawl(Guid crawlId);
 
+    /// <summary>Biten taramanın render denetimini kuyruğa ekler; o bitince değerlendirme kuyruğa girer.</summary>
+    void EnqueueRender(Guid crawlId);
     /// <summary>Biten taramanın kural değerlendirmesini kuyruğa ekler.</summary>
     void EnqueueEvaluation(Guid crawlId);
 
