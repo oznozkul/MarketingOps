@@ -1,5 +1,6 @@
 using MarketingOps.Application.Common.Interfaces;
 using MarketingOps.Domain.Connectors;
+using MarketingOps.Domain.Crawls;
 using MarketingOps.Domain.Rendering;
 using MarketingOps.Domain.Rules;
 using MarketingOps.Domain.Rules.Definitions;
@@ -23,6 +24,15 @@ public sealed class ExternalDataLoader(IAppDbContext db, TimeProvider clock)
         var now = clock.GetUtcNow();
         var today = DateOnly.FromDateTime(now.UtcDateTime);
         var available = new HashSet<RuleDataSource> { RuleDataSource.Crawl };
+
+        // Yetim sayfa kuralı tam taramaya bakar: yalnızca tarama tamamlanmış ve sayfa limiti aşılmamışsa kaynak vardır.
+        // Yarım taramada kural çalışmaz, bulgusu yanlışlıkla çözülmez.
+        var crawl = await db.Crawls.AsNoTracking().Where(c => c.Id == crawlId)
+            .Select(c => new { c.Status, c.PagesDiscovered }).FirstOrDefaultAsync(ct);
+        var maxPages = await db.Sites.AsNoTracking().Where(s => s.Id == siteId)
+            .Select(s => (int?)s.CrawlSettings.MaxPages).FirstOrDefaultAsync(ct);
+        if (crawl?.Status == CrawlStatus.Completed && maxPages is { } limit && crawl.PagesDiscovered < limit)
+            available.Add(RuleDataSource.FullCrawl);
 
         var searchByUrl = new Dictionary<string, SearchMetrics>();
         var scConnected = await db.ConnectorAccounts.AnyAsync(a => a.SiteId == siteId && a.Type == ConnectorType.SearchConsole && a.Status == ConnectorStatus.Connected, ct);

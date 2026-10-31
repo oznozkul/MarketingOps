@@ -275,7 +275,7 @@ public sealed class SiteCrawler(IServiceScopeFactory scopes, ICrawlerHttpClient 
         else if (response.StatusCode is >= 200 and < 300 && response.Body is { } html && IsHtml(response.ContentType))
         {
             var parsed = HtmlSnapshotParser.Parse(html, url, state.IsInternal);
-            data = parsed.Data;
+            data = parsed.Data with { RobotsHeader = response.RobotsTag };
             foreach (var link in parsed.InternalLinks) state.Enqueue(link);
             foreach (var script in data.Scripts) state.AddAsset(script.Src);
             foreach (var stylesheet in data.Stylesheets) state.AddAsset(stylesheet);

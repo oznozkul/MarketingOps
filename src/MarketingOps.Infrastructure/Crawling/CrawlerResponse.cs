@@ -13,4 +13,5 @@ public sealed record CrawlerResponse(
     string? Body,
     int? BodySizeBytes,
     int ResponseTimeMs,
-    TimeSpan? RetryAfter = null);
+    TimeSpan? RetryAfter = null,
+    string? RobotsTag = null);

@@ -40,6 +40,15 @@ public class ScoreReaderTests
     }
 
     [Fact]
+    public void Full_crawl_findings_use_the_share_of_site_pages()
+    {
+        var input = ScoreReader.Inputs(Facts(Fact("seo.links.orphan", FindingCategory.TechnicalSeo, 60)), ScoreCategory.Seo).Single();
+
+        input.AffectedCount.ShouldBe(60);
+        input.PageCount.ShouldBe(300);
+    }
+
+    [Fact]
     public void Sampled_page_type_score_uses_the_samples_themselves()
     {
         var input = ScoreReader.ToPageTypeInput(Fact("content.image.distorted", FindingCategory.Content, 2), Facts());

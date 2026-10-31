@@ -62,7 +62,13 @@ public static partial class HtmlSnapshotParser
                 .ToList(),
             Preconnects = document.QuerySelectorAll("link[rel~='preconnect' i]").Select(l => l.GetAttribute("href")).OfType<string>().ToList(),
             WordCount = CountWords(document),
-            Version = PageSnapshotData.MarkupVersion,
+            Hreflangs = document.QuerySelectorAll("link[rel~='alternate' i][hreflang]")
+                .Select(l => (Code: l.GetAttribute("hreflang"), Url: Resolve(l.GetAttribute("href"))))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Code) && x.Url is not null)
+                .Take(100)
+                .Select(x => new HreflangLink(x.Code!.Trim(), x.Url!.AbsoluteUri))
+                .ToList(),
+            Version = PageSnapshotData.SignalsVersion,
             StructuredData = StructuredDataExtractor.Extract(document),
             Links = MarkupExtractor.Links(document),
             Headings = MarkupExtractor.Headings(document),

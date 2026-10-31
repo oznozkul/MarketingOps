@@ -1,3 +1,3 @@
 namespace MarketingOps.Application.Findings.Queries.GetFindingById;
 
-public sealed record FindingOccurrenceResponse(string Url, string? CurrentValue, string? Detail, string? Devices);
+public sealed record FindingOccurrenceResponse(string Url, string? CurrentValue, string? Detail, string? Devices, IReadOnlyList<FindingScreenshotResponse> Screenshots);

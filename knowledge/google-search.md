@@ -24,6 +24,16 @@ Canonical, aynı içeriğin asıl adresini bildirir. İndekslenebilir sayfada ca
 
 Başka bir domaine işaret eden canonical, sayfanın bu sitede indekslenmemesine yol açabilir. Canonical, yönlendirme hedefiyle ve sitemap'teki adresle çelişmemelidir.
 
+<!-- ref: google:hreflang -->
+
+hreflang, bir sayfanın dil ve bölge sürümlerinin adreslerini eşleştirir. Her kod (dil ya da dil-bölge) kümede tek bir adresi gösterir; aynı kodun iki farklı adresi olmaz. Kod geçerli olmalıdır: iki harfli dil (tr, en) ve isteğe bağlı iki harfli bölge (tr-TR, en-US); dil sürümü belli değilse x-default.
+
+Küme karşılıklıdır: bir sürüm diğerini işaret ettiğinde diğeri de onu işaret eder; her sayfa kendi adresini de kümede taşır (kendine referans). İşaret edilen adres 200 döner, yönlenmez ve noindex değildir. Karşılıklılık bozuksa arama motoru bölgesel eşlemeyi güvenilir bulmaz.
+
+<!-- ref: google:robots -->
+
+noindex, arama motoruna sayfayı dizine almamasını söyler. Sayfa kaynağındaki meta robots'ta verilebileceği gibi sunucu ya da CDN'in eklediği X-Robots-Tag yanıt başlığıyla da verilir. Başlıktaki noindex kaynakta görünmez; genel bir sunucu kuralı yüzünden sayfa sessizce dizinden düşebilir. İki sinyal tutarlı olmalıdır: indekslenmesi istenen sayfada hiçbir yerde noindex olmaz, istenmeyen sayfada ise izlenebilir olması için sinyal kaynakta da bulunur.
+
 <!-- ref: google:redirects -->
 
 Kalıcı taşınan bir adres, hedefe tek yönlendirmeyle gider. Zincir (A → B → C) her adımda gecikme ekler ve hedefin bulunmasını zorlaştırır. Eski adres, güncel adrese doğrudan bağlanır. Yönlendirme döngüsü olmaz.

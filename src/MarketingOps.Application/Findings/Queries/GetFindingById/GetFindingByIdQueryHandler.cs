@@ -27,10 +27,34 @@ public sealed class GetFindingByIdQueryHandler(IAppDbContext db) : IRequestHandl
                                                  || (o.CurrentValue?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
         }
         var filtered = occurrences.ToList();
-        var page = filtered
+        var pageItems = filtered
             .Skip((request.OccurrencePage - 1) * request.OccurrencePageSize)
             .Take(request.OccurrencePageSize)
-            .Select(o => new FindingOccurrenceResponse(o.Url, o.CurrentValue, o.Detail, o.Devices))
+            .ToList();
+
+        // Render bulgularında her örnek URL için kanıt ekran görüntüleri; bulgunun gözlemlendiği taramaya ait olanlar.
+        var screenshotsByUrl = new Dictionary<string, IReadOnlyList<FindingScreenshotResponse>>(StringComparer.Ordinal);
+        if (rule?.DataSource == RuleDataSource.Render && pageItems.Count > 0)
+        {
+            var crawlId = pageItems.Select(o => (Guid?)o.LastSeenCrawlId).FirstOrDefault();
+            if (crawlId is Guid id)
+            {
+                var urls = pageItems.Select(o => o.Url).ToList();
+                var shots = await db.RenderScreenshots.AsNoTracking()
+                    .Where(s => s.CrawlId == id && urls.Contains(s.Url))
+                    .OrderBy(s => s.Device)
+                    .Select(s => new { s.Url, s.Device, s.Id })
+                    .ToListAsync(cancellationToken);
+                screenshotsByUrl = shots.GroupBy(s => s.Url)
+                    .ToDictionary(g => g.Key,
+                        g => (IReadOnlyList<FindingScreenshotResponse>)g.Select(s => new FindingScreenshotResponse(s.Id, s.Device)).ToList(),
+                        StringComparer.Ordinal);
+            }
+        }
+
+        var page = pageItems
+            .Select(o => new FindingOccurrenceResponse(o.Url, o.CurrentValue, o.Detail, o.Devices,
+                screenshotsByUrl.TryGetValue(o.Url, out var shots) ? shots : []))
             .ToList();
 
         return new FindingDetailResponse(

@@ -21,7 +21,9 @@ public sealed class FormLabelRule : RuleBase, IPageRule
 
     public IEnumerable<RuleViolation> Evaluate(PageSnapshot page, RuleContext context)
     {
-        if (PageChecks.IsHtml(page) && PageChecks.HasMarkupFacts(page) && page.Data.Forms.Unlabeled.Count > 0)
-            yield return Violation(page, page.Data.Forms.Unlabeled);
+        if (!PageChecks.IsHtml(page) || !PageChecks.HasMarkupFacts(page) || page.Data.Forms.Unlabeled.Count == 0) yield break;
+        // Render, sayfa tipinin örneklerinde görünür etiketsiz alan bulamazsa HTML'deki sorun gizli kopyadan geliyordur.
+        if (PageChecks.RenderSuppressesHtmlFinding(context, page.PageTypeId, m => m.VisibleUnlabeledFields)) yield break;
+        yield return Violation(page, page.Data.Forms.Unlabeled);
     }
 }

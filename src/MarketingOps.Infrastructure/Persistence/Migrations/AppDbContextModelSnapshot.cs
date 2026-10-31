@@ -975,6 +975,54 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                     b.ToTable("render_samples", (string)null);
                 });
 
+            modelBuilder.Entity("MarketingOps.Domain.Rendering.RenderScreenshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<byte[]>("Bytes")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("bytes");
+
+                    b.Property<DateTimeOffset>("CapturedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("captured_at");
+
+                    b.Property<Guid>("CrawlId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("crawl_id");
+
+                    b.Property<string>("Device")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("device");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("site_id");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_render_screenshots");
+
+                    b.HasIndex("CrawlId", "Url", "Device")
+                        .HasDatabaseName("ix_render_screenshots_crawl_id_url_device");
+
+                    b.ToTable("render_screenshots", (string)null);
+                });
+
             modelBuilder.Entity("MarketingOps.Domain.Rules.SiteRuleSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1685,6 +1733,16 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_render_samples_crawls_crawl_id");
+                });
+
+            modelBuilder.Entity("MarketingOps.Domain.Rendering.RenderScreenshot", b =>
+                {
+                    b.HasOne("MarketingOps.Domain.Crawls.Crawl", null)
+                        .WithMany()
+                        .HasForeignKey("CrawlId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_render_screenshots_crawls_crawl_id");
                 });
 
             modelBuilder.Entity("MarketingOps.Domain.Rules.SiteRuleSetting", b =>

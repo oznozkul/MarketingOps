@@ -6,8 +6,9 @@ namespace MarketingOps.Domain.Crawls;
 public sealed record PageSnapshotData
 {
     /// <summary>
-    /// Ayrıştırıcının sürümü. 2: Faz 8'in işaretleme alanları (<see cref="StructuredData"/> ve sonrası) dolu.
-    /// Eski kayıtlarda 0'dır; bu alanlara bakan kurallar eski kayıtları değerlendirmez.
+    /// Ayrıştırıcının sürümü. 2: Faz 8'in işaretleme alanları (<see cref="StructuredData"/> ve sonrası) dolu;
+    /// 3: <see cref="Hreflangs"/> ve <see cref="RobotsHeader"/> da dolu. Eski kayıtlarda 0'dır; yeni alanlara
+    /// bakan kurallar eski kayıtları değerlendirmez.
     /// </summary>
     public int Version { get; init; }
 
@@ -38,7 +39,16 @@ public sealed record PageSnapshotData
     public IframeFacts Iframes { get; init; } = IframeFacts.None;
     public LandmarkFacts Landmarks { get; init; } = LandmarkFacts.None;
 
+    /// <summary>link[rel=alternate][hreflang] çiftleri (dil/bölge kodu + adres), en fazla 100.</summary>
+    public IReadOnlyList<HreflangLink> Hreflangs { get; init; } = [];
+
+    /// <summary>X-Robots-Tag yanıt başlığı; noindex yalnızca başlıktaysa seo.noindex.header kuralı kullanır.</summary>
+    public string? RobotsHeader { get; init; }
+
     public const int MarkupVersion = 2;
+
+    /// <summary>Sürüm 3: <see cref="Hreflangs"/> ve <see cref="RobotsHeader"/> alanları dolu.</summary>
+    public const int SignalsVersion = 3;
 
     public static PageSnapshotData Empty { get; } = new();
 }

@@ -7,6 +7,8 @@ namespace MarketingOps.Domain.Rules;
 public enum RuleDataSource
 {
     Crawl,
+    /// <summary>Taramanın tamamını kapsayan kurallar (yetim sayfa); yalnızca tarama tamamlanmış ve sayfa limiti aşılmamışsa bulunur.</summary>
+    FullCrawl,
     SearchConsole,
     UrlInspection,
     PageSpeed,

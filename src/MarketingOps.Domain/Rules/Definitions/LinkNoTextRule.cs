@@ -21,7 +21,9 @@ public sealed class LinkNoTextRule : RuleBase, IPageRule
 
     public IEnumerable<RuleViolation> Evaluate(PageSnapshot page, RuleContext context)
     {
-        if (PageChecks.IsHtml(page) && PageChecks.HasMarkupFacts(page) && page.Data.Links.NoText.Count > 0)
-            yield return Violation(page, page.Data.Links.NoText);
+        if (!PageChecks.IsHtml(page) || !PageChecks.HasMarkupFacts(page) || page.Data.Links.NoText.Count == 0) yield break;
+        // Render, sayfa tipinin örneklerinde görünür adsız link bulamazsa HTML'deki sorun gizli kopyadan geliyordur.
+        if (PageChecks.RenderSuppressesHtmlFinding(context, page.PageTypeId, m => m.VisibleNoTextLinks)) yield break;
+        yield return Violation(page, page.Data.Links.NoText);
     }
 }

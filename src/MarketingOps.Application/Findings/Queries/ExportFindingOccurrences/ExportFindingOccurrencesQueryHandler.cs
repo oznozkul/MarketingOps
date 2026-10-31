@@ -15,6 +15,6 @@ public sealed class ExportFindingOccurrencesQueryHandler(IAppDbContext db) : IRe
             .Select(f => f.Occurrences)
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Bulgu bulunamadı.");
-        return occurrences.Select(o => new FindingOccurrenceResponse(o.Url, o.CurrentValue, o.Detail, o.Devices)).ToList();
+        return occurrences.Select(o => new FindingOccurrenceResponse(o.Url, o.CurrentValue, o.Detail, o.Devices, [])).ToList();
     }
 }

@@ -10,6 +10,7 @@
     const MAX = options.maxElements || 50;
     const SCAN_CAP = options.scanCap || 5000;
     const isMobile = options.device === 'Mobile';
+    const dark = options.dark || false;
     const doc = document;
     const win = window;
     const vw = doc.documentElement.clientWidth;
@@ -113,6 +114,57 @@
         return acc ? blend(acc, base) : base;
     }
 
+    // Görünür (CSS ile gizlenmemiş) adsız link ve etiketsiz form alanı sayıları: HTML kurallarının render ile doğrulanması.
+    const renderedVisible = (el) => visible(el) && !hiddenByAncestor(el);
+    function hasAccessibleName(el) {
+        const labelledBy = el.getAttribute('aria-labelledby');
+        if (labelledBy) {
+            const ids = labelledBy.split(/\s+/).filter(Boolean);
+            if (ids.some((id) => { const t = doc.getElementById(id); return t && clip(t.textContent, 0) !== ''; })) return true;
+        }
+        if ((el.getAttribute('aria-label') || '').trim()) return true;
+        if (clip(el.textContent, 0) !== '') return true;
+        if (el.querySelector('img[alt]')) return true;
+        if ((el.getAttribute('title') || '').trim()) return true;
+        return false;
+    }
+    const NON_FIELD = { hidden: 1, submit: 1, button: 1, reset: 1, image: 1 };
+    function isLabelled(field) {
+        if ((field.getAttribute('aria-label') || '').trim()) return true;
+        if ((field.getAttribute('aria-labelledby') || '').trim()) return true;
+        if ((field.getAttribute('title') || '').trim()) return true;
+        const id = field.getAttribute('id');
+        if (id && doc.querySelector('label[for="' + CSS.escape(id) + '"]')) return true;
+        return field.closest('label') != null;
+    }
+    let visibleNoTextLinks = 0;
+    for (const a of doc.querySelectorAll('a')) {
+        if (renderedVisible(a) && !hasAccessibleName(a)) visibleNoTextLinks++;
+    }
+    let visibleUnlabeledFields = 0;
+    for (const field of doc.querySelectorAll('input, select, textarea')) {
+        if (NON_FIELD[(field.getAttribute('type') || '').toLowerCase()]) continue;
+        if (renderedVisible(field) && !isLabelled(field)) visibleUnlabeledFields++;
+    }
+
+    // Okunabilen stil dosyalarında @media (prefers-color-scheme: dark) var mı. Farklı origin'deki CSS okunamaz, atlanır.
+    function hasDarkMedia(rules) {
+        for (const r of Array.prototype.slice.call(rules || [])) {
+            if (r.type === CSSRule.MEDIA_RULE) {
+                const t = (r.conditionText || '').toLowerCase();
+                if (t.includes('prefers-color-scheme') && t.includes('dark')) return true;
+                if (hasDarkMedia(r.cssRules)) return true;
+            }
+        }
+        return false;
+    }
+    let darkMediaQuery = false;
+    try {
+        for (const sheet of Array.prototype.slice.call(doc.styleSheets)) {
+            try { if (hasDarkMedia(sheet.cssRules)) { darkMediaQuery = true; break; } } catch (e) { /* okunamayan stil atlanır */ }
+        }
+    } catch (e) { /* güvenli: stiller okunamazsa koyu tema yeniden ölçülmez */ }
+
     // ---- ölçümler ----------------------------------------------------------------
     const texts = all.filter((el) => ownText(el) && visible(el) && !el.closest('[aria-hidden="true"], :disabled, [aria-disabled="true"]'));
     const smallText = [];
@@ -142,7 +194,10 @@
         }
     };
     const root = doc.documentElement;
-    if (root.hasAttribute('data-theme')) {
+    if (dark) {
+        // Tarayıcı zaten koyu renk şemasını öykünüyor (prefers-color-scheme); kontrastı bir kez ölçüp "koyu tema:" diye işaretle.
+        measureContrast('koyu');
+    } else if (root.hasAttribute('data-theme')) {
         const initial = root.getAttribute('data-theme');
         try {
             for (const theme of ['light', 'dark']) {
@@ -238,7 +293,11 @@
     const bySmallest = (a, b) => a.value - b.value;
     return {
         obstructed,
+        darkMediaQuery,
         measurements: {
+            version: 1,
+            visibleNoTextLinks,
+            visibleUnlabeledFields,
             viewportWidth: vw,
             documentWidth: docWidth,
             overflowOffenders: take(overflow),

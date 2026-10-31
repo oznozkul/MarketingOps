@@ -38,6 +38,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPublisher pub
     public DbSet<OrderComparisonDaily> OrderComparisons => Set<OrderComparisonDaily>();
     public DbSet<ScoreSnapshot> ScoreSnapshots => Set<ScoreSnapshot>();
     public DbSet<RenderSample> RenderSamples => Set<RenderSample>();
+    public DbSet<RenderScreenshot> RenderScreenshots => Set<RenderScreenshot>();
     public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
     public DbSet<NotificationChannelConfig> NotificationChannels => Set<NotificationChannelConfig>();
     public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();

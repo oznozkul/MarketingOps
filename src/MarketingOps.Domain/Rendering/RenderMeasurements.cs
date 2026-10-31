@@ -8,6 +8,20 @@ public sealed record RenderMeasurements
 {
     public const int MaxElements = 50;
 
+    /// <summary>Ölçümün sürümü. 1: görünürlük sayımları (<see cref="VisibleNoTextLinks"/>, <see cref="VisibleUnlabeledFields"/>) dolu.</summary>
+    public const int VisibilityVersion = 1;
+
+    public int Version { get; init; }
+
+    /// <summary>Ekranda gerçekten görünen ama erişilebilir adı olmayan link sayısı (CSS ile gizli kopyalar sayılmaz).</summary>
+    public int VisibleNoTextLinks { get; init; }
+
+    /// <summary>Ekranda gerçekten görünen ama etiketi olmayan form alanı sayısı.</summary>
+    public int VisibleUnlabeledFields { get; init; }
+
+    /// <summary>Görünürlük sayımları dolu; eski ölçümlerde bu alanlar 0'dır ve yanlış bastırma yapmamak için ayrılır.</summary>
+    public bool HasVisibilityCounts => Version >= VisibilityVersion;
+
     public int ViewportWidth { get; init; }
     public int DocumentWidth { get; init; }
 

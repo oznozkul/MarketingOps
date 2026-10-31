@@ -22,6 +22,7 @@ public interface IAppDbContext
     DbSet<Crawl> Crawls { get; }
     DbSet<PageSnapshot> PageSnapshots { get; }
     DbSet<RenderSample> RenderSamples { get; }
+    DbSet<RenderScreenshot> RenderScreenshots { get; }
     DbSet<Finding> Findings { get; }
     DbSet<SiteRuleSetting> SiteRuleSettings { get; }
     DbSet<WorkTask> WorkTasks { get; }

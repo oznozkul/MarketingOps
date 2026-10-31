@@ -437,3 +437,57 @@ Backend promptlarındaki kontrol listesi bu fazın değişikliklerine uygulandı
 - Eksik kalan maddeler tamamlandı: render süre tahmini, bulgu detayında cihaz kolonu (`FindingOccurrence.Devices`; JSON kolon olduğu için `OccurrenceDevices` migration'ı yalnızca model snapshot'ını günceller), `data-theme` olan sitelerde iki temada kontrast.
 - Eşzamanlı değerlendirme çakışması: `EvaluateCrawlJob` ve `RenderCrawlJob` tarama başına `DisableConcurrentExecution` kilidi taşır.
 - `docker compose up` temiz ortamda doğrulanamadı: bu makinede Avast HTTPS taraması imaj içindeki NuGet bağlantısını kesiyor (ortam sorunu).
+
+---
+
+## 8. Ertelenen işler (2026-11-01)
+
+Faz 8'in kapsam dışı bırakıp sonraya attığı denetimler. Her madde aynı desende uygulandı: tarayıcı/parser veriyi
+çıkarır → kural değerlendirir → birim testi → ekranda görünür.
+
+### 8.1 Yeni kurallar (kural motoruna, sıkılık ilkesiyle)
+
+| Kod | Ad | Kaynak | Önem | Kapsam |
+|---|---|---|---|---|
+| seo.canonical.target | Canonical hedefi geçersiz | Crawl (site) | High | Başka adresi canonical gösteren indekslenebilir sayfada hedef taramadaysa denetlenir: yanıt yok / 4xx-5xx / yönleniyor / noindex / hedefin canonical'ı başka adres. Taranmamış hedef değerlendirilmez. |
+| seo.links.to_redirect | Yönlenen adrese iç bağlantı | Crawl (site) | Medium | HTML sayfalardaki iç linklerden taramada yönlendirme zinciri olan adreslere gidenler; ilk 5 link ayrıntıda. |
+| seo.links.orphan | Yetim sayfa | FullCrawl (site) | Medium | Sitemap'te olup taranan hiçbir sayfadan link almayan indekslenebilir sayfalar (ana sayfa hariç). |
+| seo.hreflang.invalid | hreflang kümesi hatalı | Crawl (sayfa) | High | Geçersiz dil/bölge kodu (ISO 639-1 + isteğe bağlı ISO 3166-1 alpha-2, x-default), aynı kod farklı adres, kendine referans yok. |
+| seo.hreflang.return_missing | hreflang geri bağlantısı eksik | Crawl (site) | High | Hedef taranmışsa geri bağlantı vermiyor ya da hata/yönlenme/noindex. |
+| seo.noindex.header | Noindex yalnızca X-Robots-Tag başlığında | Crawl (sayfa) | Medium | noindex yalnızca başlıkta, sayfa kaynağında (meta robots) yok. |
+
+Bilgi tabanı: google:canonical (mevcut), google:hreflang, google:robots bölümleri knowledge/google-search.md'ye eklendi.
+
+### 8.2 Veri modeli
+- PageSnapshotData.Version = 3 (SignalsVersion), yeni alanlar: Hreflangs (HreflangLink(Code, Url), en fazla 100),
+  RobotsHeader (X-Robots-Tag). PageChecks.HasSignals bu sürüme bakar; eski snapshot'lar (0/2) yeni kurallarda
+  bulgu üretmez.
+- PageChecks.IsNoindex artık X-Robots-Tag başlığını da dikkate alır; none = noindex.
+- RuleDataSource.FullCrawl: ExternalDataLoader yalnızca tarama Completed ve PagesDiscovered < MaxPages ise ekler;
+  yarım taramada yetim sayfa bulgusu yanlışlıkla çözülmez. ScoreReader oran listesine eklendi (site oranı).
+- RenderMeasurements.Version = 1 (VisibilityVersion) + VisibleNoTextLinks, VisibleUnlabeledFields; HasVisibilityCounts
+  eski render ölçümlerini ayırır.
+
+### 8.3 Render: koyu tema kontrastı (prefers-color-scheme)
+- render-audit.js okunabilen stil dosyalarında @media (prefers-color-scheme: dark) varsa darkMediaQuery döner ve
+  görünür adsız link / görünür etiketsiz form alanı sayımlarını ölçer (ölçüm sürümüyle).
+- PlaywrightRenderAuditor koyu renk şeması öykünüp sayfayı yalnızca kontrast için yeniden ölçer; sonuçlar "koyu tema:"
+  önekiyle birleşir.
+
+### 8.4 Render: ekran görüntüsü kanıtı
+- Sorunlu öğe bulunan örnekte sayfanın en fazla 3000 px yüksekliğinde JPEG görüntüsü, sorunlu öğeler çerçevelenir.
+- RenderScreenshot tablosu (migration RenderScreenshots), saklama işi bunları da siler.
+- Bulgu detayında render bulgularının etkilenen sayfalarında "Ekran görüntüsü" bağlantısı (cihaza göre).
+
+### 8.5 Render: görünürlük doğrulaması (plan 2.9)
+- Render ölçülen bir sayfa tipinde hiçbir örnekte görünür sorunlu öğe yoksa LinkNoTextRule ve FormLabelRule o tipte
+  bulgu açmaz (CSS ile gizli kopyadan gelen yanlış alarm önlenir). Eski ölçüm sürümüyle bastırma yapılmaz.
+
+### 8.6 Doğrulama
+- Birim testleri: Faz8DeferredRuleTests (canonical hedefi, yönlenene link, yetim sayfa, hreflang, X-Robots-Tag,
+  görünürlük doğrulaması) ve ScoreReaderTests'e FullCrawl oran testi.
+- dotnet build yeşil. Lastik Borsası taramasıyla tarayıcıda doğrulama bu maddede yapılmadı (ayrı iş).
+
+### 8.7 Hâlâ kapsam dışı
+- Odak kelime kontrolleri (Search Console verisinde sayfa başına sorgu yok).
+- Karışık içerik (HTTPS sayfada HTTP kaynak).

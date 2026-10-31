@@ -9,6 +9,7 @@ using MarketingOps.Application.Findings.Queries.GetFindingById;
 using MarketingOps.Application.Findings.Queries.GetFindings;
 using MarketingOps.Application.Findings.Queries.GetFindingSummary;
 using MarketingOps.Application.Metrics.Queries.GetSearchPerformance;
+using MarketingOps.Application.Rendering.Queries.GetRenderScreenshot;
 using MarketingOps.Application.Sites.Queries.GetSiteById;
 using MarketingOps.Application.Tasks.Commands.CreateTasks;
 using MarketingOps.Application.Tasks.Queries.GetTaskById;
@@ -101,6 +102,14 @@ public class FindingsController(ISender sender) : SiteControllerBase
 
         ViewData["Title"] = detail.Item.Title;
         return View(model);
+    }
+
+    /// <summary>Render bulgusunun kanıt ekran görüntüsü (salt okunur, JPEG).</summary>
+    [HttpGet("{id:guid}/screenshot/{shotId:guid}")]
+    public async Task<IActionResult> Screenshot(Guid siteId, Guid id, Guid shotId, CancellationToken ct)
+    {
+        var shot = await sender.Send(new GetRenderScreenshotQuery(siteId, shotId), ct);
+        return shot is null ? NotFound() : File(shot.Bytes, shot.ContentType);
     }
 
     [HttpGet("{id:guid}/occurrences.csv")]

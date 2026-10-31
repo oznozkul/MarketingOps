@@ -47,9 +47,13 @@ public sealed class RenderCrawlCommandHandler(
             var results = await auditor.AuditAsync(targets, new RenderOptions(site.CrawlSettings.MaxRequestsPerSecond, site.Journey.ConsentButtonSelector), cancellationToken);
             var now = clock.GetUtcNow();
             foreach (var r in results)
+            {
                 db.RenderSamples.Add(r.Measurements is { } m
                     ? RenderSample.Measured(crawl.Id, site.Id, r.Target.Url, r.Target.PageTypeId, r.Target.Device, m, r.Obstructed, now)
                     : RenderSample.Failed(crawl.Id, site.Id, r.Target.Url, r.Target.PageTypeId, r.Target.Device, r.Error ?? "Ölçüm alınamadı.", now));
+                if (r.ScreenshotJpeg is { Length: > 0 })
+                    db.RenderScreenshots.Add(RenderScreenshot.Create(crawl.Id, site.Id, r.Target.Url, r.Target.Device, r.ScreenshotHeight, r.ScreenshotJpeg, now));
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

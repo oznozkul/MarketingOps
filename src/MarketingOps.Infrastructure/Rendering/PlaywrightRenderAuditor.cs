@@ -83,7 +83,24 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
 
             var output = await page.EvaluateAsync<JsonElement>(Script.Value, new { device = target.Device.ToString(), maxElements = RenderMeasurements.MaxElements });
             var measurements = output.GetProperty("measurements").Deserialize<RenderMeasurements>(Json) ?? RenderMeasurements.Empty;
-            return new RenderResult(target, measurements, output.GetProperty("obstructed").GetBoolean(), null);
+            var obstructed = output.GetProperty("obstructed").GetBoolean();
+
+            // Okunabilir stillerde @media (prefers-color-scheme: dark) varsa sayfa koyu renk şemasıyla yeniden ölçülür;
+            // yalnızca kontrast sonuçları "koyu tema:" önekiyle birleştirilir (site data-theme kullanmıyorsa bu tek yoldur).
+            var darkMediaQuery = output.TryGetProperty("darkMediaQuery", out var dm) && dm.GetBoolean();
+            if (darkMediaQuery)
+            {
+                await page.EmulateMediaAsync(new PageEmulateMediaOptions { ColorScheme = ColorScheme.Dark });
+                var darkOutput = await page.EvaluateAsync<JsonElement>(Script.Value, new { device = target.Device.ToString(), maxElements = RenderMeasurements.MaxElements, dark = true });
+                var darkMeasurements = darkOutput.GetProperty("measurements").Deserialize<RenderMeasurements>(Json) ?? RenderMeasurements.Empty;
+                measurements = measurements with
+                {
+                    ContrastFailures = measurements.ContrastFailures.Concat(darkMeasurements.ContrastFailures).Take(RenderMeasurements.MaxElements).ToList()
+                };
+            }
+
+            var screenshot = await CaptureScreenshotAsync(page, measurements);
+            return new RenderResult(target, measurements, obstructed, null, screenshot.Jpeg, screenshot.Height);
         }
         catch (Exception ex) when (ex is PlaywrightException or TimeoutException or JsonException or KeyNotFoundException)
         {
@@ -95,6 +112,38 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
             await page.CloseAsync();
         }
     }
+
+    /// <summary>Ölçümde sorunlu öğe varsa kanıt ekran görüntüsü: sorunlular çerçevelenir, yükseklik 3000 px'i aşmaz. En iyi çabadır.</summary>
+    private async Task<(byte[]? Jpeg, int Height)> CaptureScreenshotAsync(IPage page, RenderMeasurements measurements)
+    {
+        var selectors = Offenders(measurements);
+        if (selectors.Count == 0) return (null, 0);
+        try
+        {
+            var outline = string.Join(",", selectors) + "{ outline: 3px solid #e11d48 !important; outline-offset: 1px; }";
+            await page.AddStyleTagAsync(new PageAddStyleTagOptions { Content = outline });
+            var scrollHeight = await page.EvaluateAsync<int>("document.documentElement.scrollHeight");
+            var height = Math.Clamp(scrollHeight, 1, RenderScreenshot.MaxHeight);
+            var width = Math.Max(1, measurements.ViewportWidth);
+            var bytes = await page.ScreenshotAsync(new PageScreenshotOptions
+            {
+                Type = ScreenshotType.Jpeg,
+                Quality = 70,
+                Clip = new Clip { X = 0, Y = 0, Width = width, Height = height }
+            });
+            return (bytes, height);
+        }
+        catch (Exception ex) when (ex is PlaywrightException or TimeoutException)
+        {
+            logger.LogInformation("Ekran görüntüsü alınamadı: {Error}", ex.Message);
+            return (null, 0);
+        }
+    }
+
+    private static IReadOnlyList<string> Offenders(RenderMeasurements m) =>
+        m.OverflowOffenders.Concat(m.WideElements).Concat(m.ContrastFailures).Concat(m.SmallText)
+            .Concat(m.SmallTapTargets).Concat(m.LazyAboveFold).Concat(m.EagerBelowFold).Concat(m.DistortedImages)
+            .Select(e => e.Selector).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.Ordinal).ToList();
 
     /// <summary>Bekleme adımları en iyi çabadır: ağ hiç sakinleşmeyen ya da onay düğmesi olmayan sayfa yine ölçülür.</summary>
     private static async Task QuietlyAsync(Func<Task> step)

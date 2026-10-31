@@ -45,8 +45,9 @@ public sealed class CrawlerHttpClient(HttpClient http) : ICrawlerHttpClient
         var retryAfter = response.Headers.RetryAfter is { } ra
             ? ra.Delta ?? (ra.Date is { } at ? at - DateTimeOffset.UtcNow : null)
             : null;
+        var robotsTag = response.Headers.TryGetValues("X-Robots-Tag", out var robots) ? string.Join(",", robots) : null;
         return new CrawlerResponse((int)response.StatusCode, location, contentType, encoding,
-            response.Headers.CacheControl?.ToString(), body, size, ttfb, retryAfter);
+            response.Headers.CacheControl?.ToString(), body, size, ttfb, retryAfter, robotsTag);
     }
 
     private static bool IsText(string? contentType) =>

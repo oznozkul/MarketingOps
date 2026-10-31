@@ -83,7 +83,7 @@ public sealed class ScoreReader(IAppDbContext db)
     private static ScoreInput SiteInput(ScoreFact fact, ScoreFacts facts)
     {
         var source = RuleCatalog.Find(fact.RuleCode)?.DataSource;
-        if (source is RuleDataSource.Crawl or RuleDataSource.SearchConsole or RuleDataSource.UrlInspection)
+        if (source is RuleDataSource.Crawl or RuleDataSource.FullCrawl or RuleDataSource.SearchConsole or RuleDataSource.UrlInspection)
             return ToInput(fact, fact.AffectedCount, facts.SitePages);
         if (SampleCount(fact, facts) is int sampled && fact.PageTypeId is Guid pageType && facts.Pages.TryGetValue(pageType, out var typePages))
         {
