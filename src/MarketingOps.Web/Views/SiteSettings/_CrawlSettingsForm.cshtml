@@ -1,9 +1,12 @@
 @model MarketingOps.Web.ViewModels.Sites.CrawlSettingsForm
 @using MarketingOps.Domain.Sites
+@using MarketingOps.Web.ViewModels.Sites
 @{
     string? E(string f) => ViewData.ModelState.FirstError(f);
     // Sayfa başına en az bir istek; yönlendirme, sitemap ve robots.txt istekleri hariç alt sınır.
     var hours = Model.MaxPages / (double)Math.Max(1, Model.MaxRequestsPerSecond) / 3600;
+    // Ana sayfa + her tipten örnekler, her biri üç cihazda.
+    var renderMinutes = (Model.PageTypeCount * Model.RenderSamplesPerPageType + 1) * 3 * CrawlSettingsForm.SecondsPerRender / 60.0;
     var window = Model.Schedule switch { CrawlSchedule.Every12Hours => 12, CrawlSchedule.Daily => 24, _ => 168 };
 }
 <form id="crawl-settings-form" class="space-y-5" hx-post="@Url.SiteAction("UpdateCrawlSettings", "SiteSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
@@ -70,8 +73,13 @@
                    value="@Model.RenderSamplesPerPageType" class="input tabular w-24"
                    aria-invalid="@(E("RenderSamplesPerPageType") is null ? null : "true")" aria-describedby="crawl-render-samples-hint @(E("RenderSamplesPerPageType") is null ? "" : "RenderSamplesPerPageType-error")" />
             <field-error for="RenderSamplesPerPageType" />
-            <p id="crawl-render-samples-hint" class="hint">@CrawlSettings.MinRenderSamples–@CrawlSettings.MaxRenderSamples arası. Her örnek üç cihazda açılır; sayfa başına birkaç saniye sürer ve sitenin hız limitine uyar.</p>
+            <p id="crawl-render-samples-hint" class="hint">@CrawlSettings.MinRenderSamples–@CrawlSettings.MaxRenderSamples arası. Her örnek üç cihazda açılır ve sitenin hız limitine uyar.</p>
         </div>
+        <p class="text-xs text-fg-muted" x-data
+           x-init="const f = $el.closest('form'); const calc = () => { const s = Math.max(1, +f.RenderSamplesPerPageType.value || 1); const pages = @Model.PageTypeCount * s + 1; $el.querySelector('[data-pages]').textContent = pages.toLocaleString('tr-TR'); $el.querySelector('[data-render-est]').textContent = Math.max(1, Math.round(pages * 3 * @CrawlSettingsForm.SecondsPerRender / 60)) + ' dakika'; }; f.addEventListener('input', calc);">
+            Render taramadan sonra en fazla yaklaşık <span data-render-est class="font-medium text-fg">@Math.Max(1, Math.Round(renderMinutes)) dakika</span> sürer:
+            <span data-pages class="tabular">@Format.Number(Model.PageTypeCount * Model.RenderSamplesPerPageType + 1)</span> sayfa (@Model.PageTypeCount sayfa tipi × örnek sayısı + ana sayfa) × 3 cihaz. Örnek sayısından az sayfası olan tiplerde daha kısa sürer.
+        </p>
     </fieldset>
     <div class="flex items-start gap-3 border-l-2 border-line-strong bg-surface-2 px-3 py-2 text-sm">
         <icon name="lock" class="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />

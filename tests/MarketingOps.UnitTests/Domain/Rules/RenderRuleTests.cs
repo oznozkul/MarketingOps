@@ -55,7 +55,8 @@ public class RenderRuleTests
         var bad = new RenderMeasurements { ContrastFailures = [El("p.fiyat", 2.9, "1.299 TL", 4.5)] };
 
         var violation = Run(new ContrastRule(), With(samples: [Sample(RenderDevice.Mobile, bad), Sample(RenderDevice.Desktop, bad)])).ShouldHaveSingleItem();
-        violation.CurrentValue.ShouldBe("1 öğe · masaüstü, mobil");
+        violation.CurrentValue.ShouldBe("1 öğe");
+        violation.Devices.ShouldBe("masaüstü, mobil");
         violation.Detail.ShouldBe("p.fiyat \"1.299 TL\" 2,9:1 (gereken 4,5:1)");
     }
 
@@ -82,14 +83,14 @@ public class RenderRuleTests
     public void Small_text_and_tap_targets_use_site_thresholds()
     {
         var text = new RenderMeasurements { SmallText = [El("small", 11), El("p.not", 13)] };
-        Run(new SmallTextRule(), With(samples: Sample(RenderDevice.Desktop, text))).ShouldHaveSingleItem().CurrentValue.ShouldBe("1 öğe · masaüstü");
+        Run(new SmallTextRule(), With(samples: Sample(RenderDevice.Desktop, text))).ShouldHaveSingleItem().CurrentValue.ShouldBe("1 öğe");
         Run(new SmallTextRule(), With(new Dictionary<string, decimal> { ["minPx"] = 14 }, Sample(RenderDevice.Desktop, text)))
-            .ShouldHaveSingleItem().CurrentValue.ShouldBe("2 öğe · masaüstü");
+            .ShouldHaveSingleItem().CurrentValue.ShouldBe("2 öğe");
 
         var taps = new RenderMeasurements { SmallTapTargets = [El("a.favori", 20), El("button.sepet", 40)] };
         Run(new TapTargetRule(), With(samples: Sample(RenderDevice.Mobile, taps))).ShouldHaveSingleItem().Detail.ShouldBe("a.favori (20 px)");
         Run(new TapTargetRule(), With(new Dictionary<string, decimal> { ["minPx"] = 44 }, Sample(RenderDevice.Mobile, taps)))
-            .ShouldHaveSingleItem().CurrentValue.ShouldBe("2 öğe · mobil");
+            .ShouldHaveSingleItem().CurrentValue.ShouldBe("2 öğe");
         Run(new TapTargetRule(), With(samples: Sample(RenderDevice.Tablet, taps))).ShouldBeEmpty();
     }
 
@@ -107,7 +108,7 @@ public class RenderRuleTests
 
         Run(new WideElementRule(), With(samples: samples)).ShouldHaveSingleItem().Detail.ShouldBe("table.ebatlar (640 px)");
         Run(new LazyAboveFoldRule(), With(samples: samples)).ShouldHaveSingleItem().Detail.ShouldBe("img.banner \"kis.jpg\"");
-        Run(new EagerBelowFoldRule(), With(samples: samples)).ShouldHaveSingleItem().CurrentValue.ShouldBe("2 öğe · mobil");
+        Run(new EagerBelowFoldRule(), With(samples: samples)).ShouldHaveSingleItem().CurrentValue.ShouldBe("2 öğe");
         Run(new DistortedImageRule(), With(samples: samples)).ShouldHaveSingleItem().Detail.ShouldBe("img.logo \"logo.png\" (%18 sapma)");
     }
 

@@ -91,6 +91,24 @@ public class RenderAuditScriptTests
     }
 
     [Fact]
+    public async Task Sites_with_a_theme_attribute_are_measured_in_both_themes()
+    {
+        var html = """
+            <!doctype html><html data-theme="light"><head><style>
+              body { background: #fff; color: #111; }
+              [data-theme="dark"] body { background: #1a1a1a; color: #eee; }
+              [data-theme="dark"] .gece { color: #333; }
+            </style></head><body><p class="gece">Yalnızca koyu temada okunmaz</p><p class="her">Her temada okunur</p></body></html>
+            """;
+
+        var m = (await Measure(html, RenderDevice.Desktop)).Measurements!;
+
+        var failure = m.ContrastFailures.ShouldHaveSingleItem();
+        failure.Selector.ShouldContain("p.gece");
+        failure.Text!.ShouldStartWith("koyu tema:");
+    }
+
+    [Fact]
     public async Task A_fixed_layer_covering_the_screen_marks_the_measurement_obstructed()
     {
         var html = Page.Replace("</body>", """<div style="position:fixed;inset:0;background:#000c">Çerez onayı</div></body>""");

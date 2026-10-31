@@ -45,7 +45,7 @@ public sealed class EvaluateCrawlCommandHandler(IAppDbContext db, RuleEvaluator 
 
             var count = group.Count();
             var severity = SiteRuleSetting.EffectiveSeverity(rule, settings.GetValueOrDefault(rule.Code), group.Key.PageTypeId);
-            var occurrences = group.Take(Finding.MaxOccurrencesKept).Select(v => new FindingOccurrence(v.Url, v.CurrentValue, v.Detail, crawl.Id)).ToList();
+            var occurrences = group.Take(Finding.MaxOccurrencesKept).Select(v => new FindingOccurrence(v.Url, v.CurrentValue, v.Detail, crawl.Id, v.Devices)).ToList();
 
             if (byFingerprint.TryGetValue(fingerprint, out var finding))
             {

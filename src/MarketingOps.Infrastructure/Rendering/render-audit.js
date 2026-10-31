@@ -2,7 +2,8 @@
 // page.evaluate ile tek bir fonksiyon olarak çağırır ve dönen nesneyi RenderMeasurements'a çevirir.
 // Ölçüm mantığı Elevare CMS'in SEO analizöründen (elevare-seo.js v2.2) alındı; editöre özgü kısımlar (bileşen eşleme,
 // canvas, Elevare işaretleri) çıkarıldı, karusel ve kırpma tespiti siteden bağımsız hale getirildi.
-// Betik sayfaya hiçbir şey yazmaz; DOM'u yalnızca okur.
+// Betik siteye hiçbir şey yazmaz. DOM'u okur; tek istisna, tema öznitelikli sitelerde kontrastı iki temada ölçmek için
+// bu tarayıcı oturumundaki kopyada data-theme'in geçici olarak değiştirilmesidir.
 (options) => {
     'use strict';
 
@@ -113,22 +114,47 @@
     }
 
     // ---- ölçümler ----------------------------------------------------------------
-    const contrast = [], smallText = [];
-    let textChecked = 0;
-    for (const el of all) {
-        if (!ownText(el) || !visible(el)) continue;
-        if (el.closest('[aria-hidden="true"], :disabled, [aria-disabled="true"]')) continue;
-        const cs = style(el);
-        const fs = parseFloat(cs.fontSize) || 16;
+    const texts = all.filter((el) => ownText(el) && visible(el) && !el.closest('[aria-hidden="true"], :disabled, [aria-disabled="true"]'));
+    const smallText = [];
+    for (const el of texts) {
+        const fs = parseFloat(style(el).fontSize) || 16;
         if (fs < 16) smallText.push(item(el, fs));
-        const fg = parseColor(cs.color);
-        const bg = fg && effectiveBg(el);
-        if (!fg || !bg) continue;
-        textChecked++;
-        const weight = parseInt(cs.fontWeight, 10) || 400;
-        const needed = fs >= 24 || (fs >= 18.66 && weight >= 700) ? 3 : 4.5;
-        const ratio = contrastRatio(fg.a < 1 ? blend(fg, bg) : fg, bg);
-        if (ratio < needed) contrast.push(item(el, ratio, needed));
+    }
+
+    // Kontrast. Site temayı <html data-theme> ile değiştiriyorsa ziyaretçi açık ya da koyu temayı görebilir; ikisi de ölçülür.
+    // Öznitelik yalnızca bu tarayıcı oturumundaki kopyada değiştirilir ve sonunda eski haline döner.
+    const contrast = [], seen = new Set();
+    const measureContrast = (theme) => {
+        for (const el of texts) {
+            const cs = style(el);
+            const fg = parseColor(cs.color);
+            const bg = fg && effectiveBg(el);
+            if (!fg || !bg) continue;
+            const fs = parseFloat(cs.fontSize) || 16;
+            const weight = parseInt(cs.fontWeight, 10) || 400;
+            const needed = fs >= 24 || (fs >= 18.66 && weight >= 700) ? 3 : 4.5;
+            const ratio = contrastRatio(fg.a < 1 ? blend(fg, bg) : fg, bg);
+            if (ratio >= needed || seen.has(el)) continue;
+            seen.add(el);
+            const failure = item(el, ratio, needed);
+            if (theme) failure.text = clip(theme + ' tema: ' + (failure.text || ''), 60);
+            contrast.push(failure);
+        }
+    };
+    const root = doc.documentElement;
+    if (root.hasAttribute('data-theme')) {
+        const initial = root.getAttribute('data-theme');
+        try {
+            for (const theme of ['light', 'dark']) {
+                root.setAttribute('data-theme', theme);
+                void root.offsetHeight;   // stilleri yeniden hesaplat
+                measureContrast(theme === 'dark' ? 'koyu' : 'açık');
+            }
+        } finally {
+            root.setAttribute('data-theme', initial);
+        }
+    } else {
+        measureContrast(null);
     }
 
     const tapTargets = [];
@@ -222,9 +248,7 @@
             smallTapTargets: take(tapTargets.sort(bySmallest)),
             lazyAboveFold: take(lazyAbove),
             eagerBelowFold: take(eagerBelow),
-            distortedImages: take(distorted.sort((a, b) => b.value - a.value)),
-            elementsScanned: all.length,
-            textElementsChecked: textChecked
+            distortedImages: take(distorted.sort((a, b) => b.value - a.value))
         }
     };
 }

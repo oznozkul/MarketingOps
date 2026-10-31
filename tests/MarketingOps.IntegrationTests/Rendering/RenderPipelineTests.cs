@@ -65,6 +65,26 @@ public class RenderPipelineTests(IntegrationTestContext context)
         (await db.Findings.AnyAsync(f => f.SiteId == siteId && f.RuleCode == "mobile.viewport.invalid")).ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task Render_findings_are_kept_open_when_a_later_render_fails()
+    {
+        var auditor = new OverflowingProducts();
+        var (client, factory, siteId, first) = await CrawlAsync(auditor);
+        await SendAsync(factory, new RenderCrawlCommand(first));
+        await SendAsync(factory, new EvaluateCrawlCommand(first));
+
+        // İkinci taramada tarayıcı açılamaz: render verisi yok, render kuralları çalışmaz, bulgu "görülmedi" diye çözülmez.
+        auditor.Broken = true;
+        var second = await TestSites.StartCrawlAsync(client, siteId);
+        await factory.Services.GetRequiredService<SiteCrawler>().RunAsync(second, CancellationToken.None);
+        await SendAsync(factory, new RenderCrawlCommand(second));
+        await SendAsync(factory, new EvaluateCrawlCommand(second));
+
+        var overflow = (await client.GetFromJsonAsync<PagedResponse<FindingListItemResponse>>(
+            $"/api/sites/{siteId}/findings?ruleCode=mobile.overflow&status=Open&status=Resolved", IntegrationTestContext.Json))!.Items.ShouldHaveSingleItem();
+        overflow.Status.ShouldBe(FindingStatus.Open);
+    }
+
     private async Task<(HttpClient Client, Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Factory, Guid SiteId, Guid CrawlId)> CrawlAsync(IRenderAuditor auditor)
     {
         var site = new FakeSite(UniqueDomain.Next());
@@ -90,9 +110,11 @@ public class RenderPipelineTests(IntegrationTestContext context)
     {
         public int Calls { get; private set; }
         public List<RenderTarget> Targets { get; } = [];
+        public bool Broken { get; set; }
 
         public Task<IReadOnlyList<RenderResult>> AuditAsync(IReadOnlyList<RenderTarget> targets, RenderOptions options, CancellationToken cancellationToken)
         {
+            if (Broken) throw new InvalidOperationException("Chromium açılamadı.");
             Calls++;
             Targets.AddRange(targets);
             IReadOnlyList<RenderResult> results = targets.Select(t => new RenderResult(t, t.Device == RenderDevice.Mobile && t.Url.Contains("/urun/")

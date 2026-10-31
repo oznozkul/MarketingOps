@@ -14,8 +14,18 @@ public sealed class CrawlSettingsForm
     public bool RenderEnabled { get; set; }
     public int RenderSamplesPerPageType { get; set; }
 
-    public static CrawlSettingsForm From(CrawlSettingsResponse settings) => new()
+    /// <summary>Render süre tahmini için; formdan gelmez, sitenin sayfa tiplerinden doldurulur.</summary>
+    public int PageTypeCount { get; set; }
+
+    /// <summary>
+    /// Bir sayfanın bir cihazda açılıp ölçülmesinin kabaca süresi (yükleme, ağ sakinleşmesi, ölçüm, hız limiti beklemesi).
+    /// Lastik Borsası'nda 48 ölçüm 5 dk 26 sn sürdü.
+    /// </summary>
+    public const int SecondsPerRender = 7;
+
+    public static CrawlSettingsForm From(CrawlSettingsResponse settings, int pageTypeCount) => new()
     {
+        PageTypeCount = pageTypeCount,
         Schedule = settings.Schedule,
         MaxRequestsPerSecond = settings.MaxRequestsPerSecond,
         MaxPages = settings.MaxPages,

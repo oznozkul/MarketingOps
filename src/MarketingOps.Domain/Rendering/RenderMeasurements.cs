@@ -35,8 +35,5 @@ public sealed record RenderMeasurements
     /// <summary>Doğal oranından %2'den fazla sapmış görseller; Value sapma yüzdesi.</summary>
     public IReadOnlyList<RenderElement> DistortedImages { get; init; } = [];
 
-    public int ElementsScanned { get; init; }
-    public int TextElementsChecked { get; init; }
-
     public static RenderMeasurements Empty { get; } = new();
 }

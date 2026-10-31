@@ -30,7 +30,7 @@ public sealed class GetFindingByIdQueryHandler(IAppDbContext db) : IRequestHandl
         var page = filtered
             .Skip((request.OccurrencePage - 1) * request.OccurrencePageSize)
             .Take(request.OccurrencePageSize)
-            .Select(o => new FindingOccurrenceResponse(o.Url, o.CurrentValue, o.Detail))
+            .Select(o => new FindingOccurrenceResponse(o.Url, o.CurrentValue, o.Detail, o.Devices))
             .ToList();
 
         return new FindingDetailResponse(

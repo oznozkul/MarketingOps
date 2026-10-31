@@ -3,6 +3,8 @@
     var d = Model.Detail;
     var occurrences = d.Occurrences;
     var baseUrl = Url.SiteAction("Detail", "Findings", new { id = d.Item.Id });
+    // Render bulgularında sorunun görüldüğü cihazlar ayrı kolonda.
+    var hasDevices = occurrences.Items.Any(o => o.Devices is not null);
 }
 <div id="occurrences-region" class="space-y-3" hx-target="#occurrences-region" hx-select="#occurrences-region" hx-swap="outerHTML" hx-push-url="true">
     <form role="search" hx-get="@baseUrl" hx-trigger="input changed delay:400ms from:#occ-q, search from:#occ-q" x-data x-on:submit.prevent>
@@ -21,7 +23,7 @@
         {
             <div class="table-wrap htmx-dim">
                 <table class="table-base min-w-[640px]">
-                    <thead><tr><th scope="col">URL</th><th scope="col">Mevcut değer</th></tr></thead>
+                    <thead><tr><th scope="col">URL</th>@if (hasDevices) { <th scope="col">Cihaz</th> }<th scope="col">Mevcut değer</th></tr></thead>
                     <tbody>
                         @foreach (var o in occurrences.Items)
                         {
@@ -29,6 +31,7 @@
                                 <td class="max-w-md">
                                     <a class="inline-flex items-start gap-1 break-all font-mono text-xs text-fg hover:underline" href="@o.Url" target="_blank" rel="noopener noreferrer">@o.Url<icon name="external-link" class="mt-0.5 h-3 w-3 shrink-0 text-fg-muted" /><span class="sr-only"> (yeni sekmede açılır)</span></a>
                                 </td>
+                                @if (hasDevices) { <td class="whitespace-nowrap text-xs text-fg-muted">@(o.Devices ?? "—")</td> }
                                 <td class="max-w-sm text-xs">
                                     @if (o.CurrentValue is not null) { <span class="block break-words text-fg">@o.CurrentValue</span> }
                                     @if (o.Detail is not null) { <span class="mt-0.5 break-all text-fg-muted" title="@o.Detail">@o.Detail</span> }

@@ -28,7 +28,7 @@ public class SiteSettingsController(ISender sender, ISiteContext context) : Site
             site,
             context.Sites,
             new SiteNameForm { Name = site.Name },
-            CrawlSettingsForm.From(site.CrawlSettings),
+            CrawlSettingsForm.From(site.CrawlSettings, site.PageTypes.Count),
             TrackingIdsForm.From(site.ExpectedTrackingIds),
             TrackingJourneyForm.From(site.Journey),
             OrderSourceForm.From(site.OrderSource),
@@ -66,12 +66,15 @@ public class SiteSettingsController(ISender sender, ISiteContext context) : Site
     [HttpPost("crawl-settings")]
     public async Task<IActionResult> UpdateCrawlSettings(Guid siteId, CrawlSettingsForm form, CancellationToken ct)
     {
-        if (ModelState.IsValid && await TrySendAsync(sender, form.ToCommand(siteId)))
+        var saved = ModelState.IsValid && await TrySendAsync(sender, form.ToCommand(siteId));
+        var site = await sender.Send(new GetSiteByIdQuery(siteId), ct);
+        if (saved)
         {
             Response.Toast("Tarama ayarları kaydedildi.");
             // Kaydedilen (normalize edilmiş) değerler gösterilsin.
-            form = CrawlSettingsForm.From((await sender.Send(new GetSiteByIdQuery(siteId), ct)).CrawlSettings);
+            form = CrawlSettingsForm.From(site.CrawlSettings, site.PageTypes.Count);
         }
+        form.PageTypeCount = site.PageTypes.Count;
         return PartialView("_CrawlSettingsForm", form);
     }
 

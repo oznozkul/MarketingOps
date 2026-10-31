@@ -266,7 +266,7 @@ Tarayıcı gerektiren kontroller. Projede boş duran `CrawlStage.Render` aşamas
 `CrawlSettings`'e (owned, migration ile kolon):
 - `RenderEnabled` (bool, varsayılan **true**) — sıkılık ilkesi.
 - `RenderSamplesPerPageType` (int, varsayılan 3, 1–10; dışında `DomainException`, Türkçe mesaj).
-- Ayarlar > Siteler > Genel'de iki alan; tahmini süre metni (örnek sayısı × 3 cihaz × ~4 sn).
+- Ayarlar > Siteler > Genel'de iki alan; tahmini süre metni ((sayfa tipi × örnek + ana sayfa) × 3 cihaz × ~7 sn; Lastik Borsası ölçümüne göre).
 
 ### 2.3 Veri
 - Yeni entity `RenderSample` (aggregate root değil; tarama çıktısı, `PageSnapshot` gibi): `Id`, `CrawlId`, `SiteId`, `Url`,
@@ -280,7 +280,6 @@ Tarayıcı gerektiren kontroller. Projede boş duran `CrawlStage.Render` aşamas
   - `LazyAboveFold`, `EagerBelowFold` (list<RenderElement>, görsel src)
   - `DistortedImages (list<RenderElement>)` + doğal/görünen oran
   - `WideElements (list<RenderElement>)` (mobilde viewport'tan geniş öğeler)
-  - `ElementsScanned`, `TextElementsChecked`
 - `RenderElement`: `Selector` (kısa CSS yolu, en fazla 3 ata + id/class, 160 karakter), `Text` (40 karakter), `Value` (ölçü).
 - Listeler en fazla 20 öğe; sayılar ayrıca tutulur.
 - Tablo `render_samples`; indeks `(crawl_id)`, `(site_id, crawl_id, page_type_id)`.
@@ -426,3 +425,15 @@ ihtiyaç görülürse ayrı iş olarak eklenir (not düşüldü).
 - Render tarama içinde değil, tarama bittikten sonra ayrı iş (`RenderCrawlJob`) olarak çalışır; tarama durumu "Tamamlandı" olduktan sonra aşama eklenir, ardından değerlendirme kuyruğa girer. "Kuralları çalıştır" render'ı yeniden çalıştırmaz.
 - `crawl_render_enabled` için veritabanı varsayılanı modelde yok (EF bool'da false'u "atanmamış" sayardı); mevcut siteler migration'da true/3 aldı.
 - Lastik Borsası doğrulaması (300 sayfa): 16 sayfa × 3 cihaz = 48 ölçüm, render 5 dk 26 sn, hepsi ölçüldü. Erişilebilirlik ve mobil skoru 79 → 68 (kontrast, küçük yazı, dokunma alanı bulguları), mobilde yatay taşma yok.
+
+## 7. Faz sonu gözden geçirme (2026-10-31)
+Backend promptlarındaki kontrol listesi bu fazın değişikliklerine uygulandı:
+- Her tip kendi dosyasında, dosya adı = tip adı. İç içe özel yardımcılar (`RenderRule.Run`, test sahteleri) kodun mevcut kalıbıyla aynı.
+- Kullanılmayan kod: `RenderMeasurements.ElementsScanned/TextElementsChecked` hiçbir yerde okunmuyordu, kaldırıldı.
+- Yeni sorguların hepsi `AsNoTracking` + projection; yeni liste sorgusu yok, N+1 yok.
+- Domain kuralları domain'de (ayar sınırları, `Crawl.RecordRender` koruması); handler'lar aynı kontrolü yalnızca erken çıkış için yapar.
+- Hata mesajları Türkçe.
+- Eklenen testler: render ayarlarının kaydı/doğrulaması, eski sürüm snapshot'la değerlendirme, render başarısız olunca bulgunun açık kalması, koyu tema kontrastı, iş kilitleri.
+- Eksik kalan maddeler tamamlandı: render süre tahmini, bulgu detayında cihaz kolonu (`FindingOccurrence.Devices`; JSON kolon olduğu için `OccurrenceDevices` migration'ı yalnızca model snapshot'ını günceller), `data-theme` olan sitelerde iki temada kontrast.
+- Eşzamanlı değerlendirme çakışması: `EvaluateCrawlJob` ve `RenderCrawlJob` tarama başına `DisableConcurrentExecution` kilidi taşır.
+- `docker compose up` temiz ortamda doğrulanamadı: bu makinede Avast HTTPS taraması imaj içindeki NuGet bağlantısını kesiyor (ortam sorunu).

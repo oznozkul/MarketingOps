@@ -1542,6 +1542,8 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
 
                             b1.Property<string>("Detail");
 
+                            b1.Property<string>("Devices");
+
                             b1.Property<Guid>("LastSeenCrawlId");
 
                             b1.Property<string>("Url")

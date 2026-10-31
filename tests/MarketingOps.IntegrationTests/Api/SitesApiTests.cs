@@ -69,6 +69,28 @@ public class SitesApiTests(IntegrationTestContext context)
     }
 
     [Fact]
+    public async Task Render_settings_default_to_on_and_are_saved_and_validated()
+    {
+        var siteId = await CreateSiteAsync(UniqueDomain.Next());
+        var settings = $"/api/sites/{siteId}/crawl-settings";
+
+        var created = (await _client.GetFromJsonAsync<SiteDetailResponse>($"/api/sites/{siteId}", IntegrationTestContext.Json))!.CrawlSettings;
+        created.RenderEnabled.ShouldBeTrue();
+        created.RenderSamplesPerPageType.ShouldBe(3);
+
+        (await _client.PutAsJsonAsync(settings, new { schedule = "Daily", maxRequestsPerSecond = 2, maxPages = 100, excludedPathPatterns = Array.Empty<string>(),
+            renderEnabled = false, renderSamplesPerPageType = 5 })).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var saved = (await _client.GetFromJsonAsync<SiteDetailResponse>($"/api/sites/{siteId}", IntegrationTestContext.Json))!.CrawlSettings;
+        saved.RenderEnabled.ShouldBeFalse();
+        saved.RenderSamplesPerPageType.ShouldBe(5);
+
+        var invalid = await _client.PutAsJsonAsync(settings, new { schedule = "Daily", maxRequestsPerSecond = 2, maxPages = 100, excludedPathPatterns = Array.Empty<string>(),
+            renderSamplesPerPageType = 0 });
+        invalid.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await invalid.Content.ReadFromJsonAsync<ValidationProblemDetails>())!.Errors.Keys.ShouldContain(k => k.Contains("RenderSamplesPerPageType", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Same_domain_written_differently_is_a_conflict()
     {
         var domain = UniqueDomain.Next();

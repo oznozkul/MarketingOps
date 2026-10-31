@@ -107,8 +107,8 @@ public class FindingsController(ISender sender) : SiteControllerBase
     public async Task<IActionResult> ExportOccurrences(Guid siteId, Guid id, CancellationToken ct)
     {
         var rows = await sender.Send(new ExportFindingOccurrencesQuery(siteId, id), ct);
-        return CsvFile.Create($"bulgu-{id.ToString()[..8]}-sayfalar.csv", ["URL", "Mevcut değer", "Ayrıntı"],
-            rows.Select(o => new[] { o.Url, o.CurrentValue, o.Detail }));
+        return CsvFile.Create($"bulgu-{id.ToString()[..8]}-sayfalar.csv", ["URL", "Mevcut değer", "Ayrıntı", "Cihaz"],
+            rows.Select(o => new[] { o.Url, o.CurrentValue, o.Detail, o.Devices }));
     }
 
     [HttpPost("{id:guid}/false-positive")]

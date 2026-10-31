@@ -27,9 +27,9 @@ public abstract class RenderRule : RuleBase, ISiteRule
 
     protected abstract string Describe(RenderElement element);
 
-    /// <summary>Bulgunun "mevcut değer" alanı; varsayılanı öğe sayısı ve cihazlar.</summary>
+    /// <summary>Bulgunun "mevcut değer" alanı; varsayılanı en çok sorun görülen cihazdaki öğe sayısı. Cihazlar ayrı alandadır.</summary>
     protected virtual string Current(IReadOnlyList<(RenderSample Sample, IReadOnlyList<RenderElement> Offenders)> hits) =>
-        $"{hits.Max(h => h.Offenders.Count).ToString("N0", Number)} öğe · {DeviceNames(hits)}";
+        $"{hits.Max(h => h.Offenders.Count).ToString("N0", Number)} öğe";
 
     public ISiteRuleRun Start(RuleContext context) => new Run(this, context);
 
@@ -62,7 +62,7 @@ public abstract class RenderRule : RuleBase, ISiteRule
                     .ToList();
                 if (hits.Count == 0) continue;
                 var examples = hits.SelectMany(h => h.Offenders).DistinctBy(e => e.Selector).Take(MaxSamples).Select(rule.Describe);
-                yield return new RuleViolation(rule.Code, page.First().PageTypeId, page.Key, rule.Current(hits), string.Join(" · ", examples));
+                yield return new RuleViolation(rule.Code, page.First().PageTypeId, page.Key, rule.Current(hits), string.Join(" · ", examples), DeviceNames(hits));
             }
         }
     }
