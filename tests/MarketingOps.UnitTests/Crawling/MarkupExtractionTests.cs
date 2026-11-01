@@ -16,9 +16,17 @@ public class MarkupExtractionTests
         $"<!doctype html><html><head>{head}</head><body>{body}</body></html>", PageUrl, _ => true).Data;
 
     [Fact]
-    public void Marks_the_snapshot_with_the_markup_version()
+    public void Marks_the_snapshot_with_the_current_parser_version()
     {
-        ParseFixture().Version.ShouldBe(PageSnapshotData.MarkupVersion);
+        ParseFixture().Version.ShouldBe(PageSnapshotData.SignalsVersion);
+    }
+
+    [Fact]
+    public void Reads_hreflang_alternates_as_absolute_urls()
+    {
+        var data = Parse("", "<link rel=\"alternate\" hreflang=\"en\" href=\"/en/winter\"><link rel=\"alternate\" hreflang=\" \" href=\"/x\"><link rel=\"alternate\" href=\"/feed\">");
+
+        data.Hreflangs.ShouldHaveSingleItem().ShouldBe(new HreflangLink("en", "https://lastikborsasi.com/en/winter"));
     }
 
     [Fact]

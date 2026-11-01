@@ -487,6 +487,16 @@ Bilgi tabanı: google:canonical (mevcut), google:hreflang, google:robots bölüm
 - Birim testleri: Faz8DeferredRuleTests (canonical hedefi, yönlenene link, yetim sayfa, hreflang, X-Robots-Tag,
   görünürlük doğrulaması) ve ScoreReaderTests'e FullCrawl oran testi.
 - dotnet build yeşil. Lastik Borsası taramasıyla tarayıcıda doğrulama bu maddede yapılmadı (ayrı iş).
+- Gözden geçirme düzeltmeleri: kanıt görüntüsü tam sayfa (FullPage + CSS ölçeği) ve açık temada alınır; çerçeve
+  kuralları seçici başına ayrı, kırpılmış seçici atlanır; render tarafı alt="" görseli ad saymaz (HTML ile aynı);
+  data-theme olan sitede koyu renk şeması ikinci kez ölçülmez; yetim sayfada kendine link sayılmaz ve FullCrawl
+  hata veren sayfa olmayan taramayı ister; ekran görüntüsü örneğin kendi taramasıyla eşlenir; X-Robots-Tag'de
+  yalnızca genel ve googlebot yönergeleri sayılır.
+- Bilinen sınır: yalnızca yönlenen eski adresten link alan sayfa yetim görünebilir (yönlenen snapshot hedefini
+  saklamıyor).
+- Testler: Directory.Build.targets test projelerinde testhost.exe'yi çıktıdan çıkarır; bu makinede antivirüs o
+  apphost'u kısıtlı çalıştırıp testleri başlatmıyordu. Playwright testleri %TEMP% yazılamadığı için bu makinede
+  yalnızca TEMP başka klasöre yönlendirilince geçer (7/7).
 
 ### 8.7 Hâlâ kapsam dışı
 - Odak kelime kontrolleri (Search Console verisinde sayfa başına sorgu yok).

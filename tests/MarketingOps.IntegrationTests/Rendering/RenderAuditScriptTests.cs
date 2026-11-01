@@ -98,7 +98,26 @@ public class RenderAuditScriptTests
               body { background: #fff; color: #111; }
               [data-theme="dark"] body { background: #1a1a1a; color: #eee; }
               [data-theme="dark"] .gece { color: #333; }
+              @media (prefers-color-scheme: dark) { .her { font-style: normal; } }
             </style></head><body><p class="gece">Yalnızca koyu temada okunmaz</p><p class="her">Her temada okunur</p></body></html>
+            """;
+
+        var m = (await Measure(html, RenderDevice.Desktop)).Measurements!;
+
+        // Sitede ayrıca prefers-color-scheme olsa da koyu tema ikinci kez ölçülmez (tek satır).
+        var failure = m.ContrastFailures.ShouldHaveSingleItem();
+        failure.Selector.ShouldContain("p.gece");
+        failure.Text!.ShouldStartWith("koyu tema:");
+    }
+
+    [Fact]
+    public async Task Sites_with_a_dark_color_scheme_media_query_are_measured_in_dark_mode()
+    {
+        var html = """
+            <!doctype html><html><head><style>
+              body { background: #fff; color: #111; }
+              @media (prefers-color-scheme: dark) { body { background: #1a1a1a; color: #eee; } .gece { color: #333; } }
+            </style></head><body><p class="gece">Yalnızca koyu modda okunmaz</p><p>Her modda okunur</p></body></html>
             """;
 
         var m = (await Measure(html, RenderDevice.Desktop)).Measurements!;
@@ -106,6 +125,40 @@ public class RenderAuditScriptTests
         var failure = m.ContrastFailures.ShouldHaveSingleItem();
         failure.Selector.ShouldContain("p.gece");
         failure.Text!.ShouldStartWith("koyu tema:");
+    }
+
+    [Fact]
+    public async Task Evidence_screenshot_covers_the_page_below_the_fold()
+    {
+        var result = await Measure(Page.Replace("</body>", """<div style="height:2000px"></div></body>"""), RenderDevice.Mobile);
+
+        result.ScreenshotJpeg.ShouldNotBeNull();
+        result.ScreenshotHeight.ShouldBeGreaterThan(812);
+        JpegHeight(result.ScreenshotJpeg).ShouldBe(result.ScreenshotHeight);
+    }
+
+    [Fact]
+    public async Task An_image_link_with_empty_alt_counts_as_a_visible_link_without_name()
+    {
+        var html = $$"""<!doctype html><html><body><a href="/sepet"><img src="{{Pixel}}" width="40" height="40" alt=""></a><a href="/x"><img src="{{Pixel}}" width="40" height="40" alt="Sepet"></a></body></html>""";
+
+        var m = (await Measure(html, RenderDevice.Desktop)).Measurements!;
+
+        m.HasVisibilityCounts.ShouldBeTrue();
+        m.VisibleNoTextLinks.ShouldBe(1);
+    }
+
+    /// <summary>JPEG'in SOF bölümündeki görüntü yüksekliği (piksel).</summary>
+    private static int JpegHeight(byte[] jpeg)
+    {
+        for (var i = 2; i + 8 < jpeg.Length;)
+        {
+            if (jpeg[i] != 0xFF) { i++; continue; }
+            var marker = jpeg[i + 1];
+            if (marker is >= 0xC0 and <= 0xC3) return (jpeg[i + 5] << 8) | jpeg[i + 6];
+            i += 2 + ((jpeg[i + 2] << 8) | jpeg[i + 3]);
+        }
+        throw new InvalidOperationException("JPEG yüksekliği okunamadı.");
     }
 
     [Fact]

@@ -25,13 +25,14 @@ public sealed class ExternalDataLoader(IAppDbContext db, TimeProvider clock)
         var today = DateOnly.FromDateTime(now.UtcDateTime);
         var available = new HashSet<RuleDataSource> { RuleDataSource.Crawl };
 
-        // Yetim sayfa kuralı tam taramaya bakar: yalnızca tarama tamamlanmış ve sayfa limiti aşılmamışsa kaynak vardır.
+        // Yetim sayfa kuralı tam taramaya bakar: tarama tamamlanmış, sayfa limiti aşılmamış ve hiçbir sayfa hata vermemişse
+        // kaynak vardır (hata veren sayfanın linkleri bilinmez, gösterdiği sayfalar yanlışlıkla yetim çıkar).
         // Yarım taramada kural çalışmaz, bulgusu yanlışlıkla çözülmez.
         var crawl = await db.Crawls.AsNoTracking().Where(c => c.Id == crawlId)
-            .Select(c => new { c.Status, c.PagesDiscovered }).FirstOrDefaultAsync(ct);
+            .Select(c => new { c.Status, c.PagesDiscovered, c.PagesFailed }).FirstOrDefaultAsync(ct);
         var maxPages = await db.Sites.AsNoTracking().Where(s => s.Id == siteId)
             .Select(s => (int?)s.CrawlSettings.MaxPages).FirstOrDefaultAsync(ct);
-        if (crawl?.Status == CrawlStatus.Completed && maxPages is { } limit && crawl.PagesDiscovered < limit)
+        if (crawl?.Status == CrawlStatus.Completed && crawl.PagesFailed == 0 && maxPages is { } limit && crawl.PagesDiscovered < limit)
             available.Add(RuleDataSource.FullCrawl);
 
         var searchByUrl = new Dictionary<string, SearchMetrics>();

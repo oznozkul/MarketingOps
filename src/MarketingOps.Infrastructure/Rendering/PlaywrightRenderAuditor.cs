@@ -95,8 +95,11 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
                 var darkMeasurements = darkOutput.GetProperty("measurements").Deserialize<RenderMeasurements>(Json) ?? RenderMeasurements.Empty;
                 measurements = measurements with
                 {
-                    ContrastFailures = measurements.ContrastFailures.Concat(darkMeasurements.ContrastFailures).Take(RenderMeasurements.MaxElements).ToList()
+                    ContrastFailures = measurements.ContrastFailures.Concat(darkMeasurements.ContrastFailures)
+                        .DistinctBy(e => e.Selector).Take(RenderMeasurements.MaxElements).ToList()
                 };
+                // Kanıt görüntüsü ziyaretçinin varsayılan (açık) görünümünde alınır.
+                await page.EmulateMediaAsync(new PageEmulateMediaOptions { ColorScheme = ColorScheme.Light });
             }
 
             var screenshot = await CaptureScreenshotAsync(page, measurements);
@@ -120,7 +123,8 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
         if (selectors.Count == 0) return (null, 0);
         try
         {
-            var outline = string.Join(",", selectors) + "{ outline: 3px solid #e11d48 !important; outline-offset: 1px; }";
+            // Her seçici ayrı kural: tarayıcı geçersiz seçicili kuralı tümden atar, biri bozuksa diğerleri yine çerçevelenir.
+            var outline = string.Concat(selectors.Select(s => s + "{outline:3px solid #e11d48 !important;outline-offset:1px}\n"));
             await page.AddStyleTagAsync(new PageAddStyleTagOptions { Content = outline });
             var scrollHeight = await page.EvaluateAsync<int>("document.documentElement.scrollHeight");
             var height = Math.Clamp(scrollHeight, 1, RenderScreenshot.MaxHeight);
@@ -129,6 +133,10 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
             {
                 Type = ScreenshotType.Jpeg,
                 Quality = 70,
+                // FullPage olmadan Playwright kırpmayı görünen alana indirir; ekranın altındaki öğeler görüntüye girmez.
+                FullPage = true,
+                Scale = ScreenshotScale.Css, // telefonun piksel yoğunluğu görüntüyü 3 katına çıkarmasın; yükseklik CSS pikselidir
+
                 Clip = new Clip { X = 0, Y = 0, Width = width, Height = height }
             });
             return (bytes, height);
@@ -143,7 +151,9 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
     private static IReadOnlyList<string> Offenders(RenderMeasurements m) =>
         m.OverflowOffenders.Concat(m.WideElements).Concat(m.ContrastFailures).Concat(m.SmallText)
             .Concat(m.SmallTapTargets).Concat(m.LazyAboveFold).Concat(m.EagerBelowFold).Concat(m.DistortedImages)
-            .Select(e => e.Selector).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.Ordinal).ToList();
+            .Select(e => e.Selector)
+            .Where(s => !string.IsNullOrWhiteSpace(s) && !s.EndsWith('…')) // ölçüm betiğinin kırptığı seçici geçersiz CSS'tir
+            .Distinct(StringComparer.Ordinal).ToList();
 
     /// <summary>Bekleme adımları en iyi çabadır: ağ hiç sakinleşmeyen ya da onay düğmesi olmayan sayfa yine ölçülür.</summary>
     private static async Task QuietlyAsync(Func<Task> step)

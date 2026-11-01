@@ -109,7 +109,7 @@ public class FindingsController(ISender sender) : SiteControllerBase
     public async Task<IActionResult> Screenshot(Guid siteId, Guid id, Guid shotId, CancellationToken ct)
     {
         var shot = await sender.Send(new GetRenderScreenshotQuery(siteId, shotId), ct);
-        return shot is null ? NotFound() : File(shot.Bytes, shot.ContentType);
+        return File(shot.Bytes, shot.ContentType);
     }
 
     [HttpGet("{id:guid}/occurrences.csv")]

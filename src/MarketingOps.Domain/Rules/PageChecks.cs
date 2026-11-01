@@ -14,7 +14,7 @@ public static class PageChecks
 
     public static bool IsNoindex(PageSnapshot page) =>
         page.Data.MetaRobots?.Contains("noindex", StringComparison.OrdinalIgnoreCase) == true
-        || RobotsHasNoindex(page.Data.RobotsHeader);
+        || RobotsHeaderHasNoindex(page.Data.RobotsHeader);
 
     /// <summary>Snapshot Faz 8'in işaretleme alanlarını taşıyor; eski kayıtlarda bu alanlar boştur ve yanlış bulgu üretir.</summary>
     public static bool HasMarkupFacts(PageSnapshot page) => page.Data.Version >= PageSnapshotData.MarkupVersion;
@@ -42,9 +42,22 @@ public static class PageChecks
         return samples.Count > 0 && samples.All(r => visibleCount(r.Measurements) == 0);
     }
 
-    private static bool RobotsHasNoindex(string? header) =>
+    /// <summary>
+    /// X-Robots-Tag başlığı noindex içeriyor mu ("none" = noindex). "googlebot: noindex" gibi Google'a özel yönerge
+    /// sayılır; başka bir bota özel yönerge ("bingbot: noindex") Google'ın dizinini etkilemez, sayılmaz.
+    /// </summary>
+    public static bool RobotsHeaderHasNoindex(string? header) =>
         header is not null && header.Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(token => token.Trim())
-            .Any(token => token.Equals("noindex", StringComparison.OrdinalIgnoreCase)
-                         || token.Equals("none", StringComparison.OrdinalIgnoreCase));
+            .Select(DirectiveForGoogle)
+            .Any(token => token is not null && (token.Equals("noindex", StringComparison.OrdinalIgnoreCase)
+                                                || token.Equals("none", StringComparison.OrdinalIgnoreCase)));
+
+    private static string? DirectiveForGoogle(string token)
+    {
+        var colon = token.IndexOf(':');
+        if (colon < 0) return token.Trim();
+        var agent = token[..colon].Trim();
+        // "unavailable_after: <tarih>" bot adı değil yönergedir; noindex olmadığı için sonucu etkilemez.
+        return agent.Equals("googlebot", StringComparison.OrdinalIgnoreCase) ? token[(colon + 1)..].Trim() : null;
+    }
 }

@@ -77,6 +77,13 @@ public class Faz8DeferredRuleTests
     }
 
     [Fact]
+    public void A_link_to_itself_does_not_rescue_an_orphan()
+    {
+        var selfLinking = Page(Good with { InternalLinks = ["https://example.com/yetim"] }, path: "/yetim", inSitemap: true);
+        Run(new OrphanPageRule(), selfLinking).ShouldHaveSingleItem();
+    }
+
+    [Fact]
     public void Orphan_rule_uses_the_full_crawl_data_source()
     {
         new OrphanPageRule().DataSource.ShouldBe(RuleDataSource.FullCrawl);
@@ -138,6 +145,9 @@ public class Faz8DeferredRuleTests
         PageChecks.IsNoindex(Page(Good with { RobotsHeader = "none" })).ShouldBeTrue();
         PageChecks.IsNoindex(Page(Good with { RobotsHeader = "index, follow" })).ShouldBeFalse();
         PageChecks.IsNoindex(Page(Good)).ShouldBeFalse();
+        PageChecks.RobotsHeaderHasNoindex("googlebot: noindex").ShouldBeTrue();
+        PageChecks.RobotsHeaderHasNoindex("bingbot: noindex").ShouldBeFalse();
+        PageChecks.RobotsHeaderHasNoindex("unavailable_after: 25 Jun 2030 15:00:00 PST").ShouldBeFalse();
         PageChecks.HasSignals(Page(HreflangData())).ShouldBeTrue();
         PageChecks.HasSignals(Page(GoodMarkup)).ShouldBeFalse();
     }

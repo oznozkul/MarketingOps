@@ -25,13 +25,8 @@ public sealed class NoindexHeaderRule : RuleBase, IPageRule
     {
         if (!PageChecks.IsHtml(page) || !PageChecks.HasSignals(page)) yield break;
         var header = page.Data.RobotsHeader;
-        if (header is null || !HasNoindex(header)) yield break;
+        if (!PageChecks.RobotsHeaderHasNoindex(header)) yield break;
         if (page.Data.MetaRobots?.Contains("noindex", StringComparison.OrdinalIgnoreCase) == true) yield break;
         yield return Violation(page, header, "noindex yalnızca X-Robots-Tag başlığında");
     }
-
-    private static bool HasNoindex(string header) =>
-        header.Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(t => t.Trim())
-            .Any(t => t.Equals("noindex", StringComparison.OrdinalIgnoreCase) || t.Equals("none", StringComparison.OrdinalIgnoreCase));
 }

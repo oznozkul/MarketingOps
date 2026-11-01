@@ -124,7 +124,8 @@
         }
         if ((el.getAttribute('aria-label') || '').trim()) return true;
         if (clip(el.textContent, 0) !== '') return true;
-        if (el.querySelector('img[alt]')) return true;
+        // HTML tarafıyla (MarkupExtractor) aynı: alt="" olan görsel linke ad vermez.
+        if (Array.prototype.some.call(el.querySelectorAll('img[alt]'), (img) => img.getAttribute('alt').trim() !== '')) return true;
         if ((el.getAttribute('title') || '').trim()) return true;
         return false;
     }
@@ -293,7 +294,8 @@
     const bySmallest = (a, b) => a.value - b.value;
     return {
         obstructed,
-        darkMediaQuery,
+        // data-theme olan sitede iki tema zaten ölçüldü; koyu renk şemasıyla ikinci ölçüm aynı satırları tekrarlardı.
+        darkMediaQuery: darkMediaQuery && !dark && !root.hasAttribute('data-theme'),
         measurements: {
             version: 1,
             visibleNoTextLinks,

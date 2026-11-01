@@ -35,9 +35,11 @@ public sealed class OrphanPageRule : RuleBase, ISiteRule
 
         public void Observe(PageSnapshot page)
         {
+            // Sayfanın kendine verdiği link (breadcrumb'ın son adımı, dil seçici) ona ulaşılabildiğini göstermez.
             if (PageChecks.IsHtml(page))
                 foreach (var link in page.Data.InternalLinks)
-                    if (Uri.TryCreate(link, UriKind.Absolute, out var url)) _linked.Add(UrlKey.Normalize(url));
+                    if (Uri.TryCreate(link, UriKind.Absolute, out var url) && UrlKey.Normalize(url) is var key && key != page.NormalizedUrl)
+                        _linked.Add(key);
             if (page.InSitemap && PageChecks.IsIndexable(page) && !PageChecks.IsHomePage(page))
                 _candidates.Add((page.Url, page.NormalizedUrl, page.PageTypeId));
         }

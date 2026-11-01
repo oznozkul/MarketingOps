@@ -1,0 +1,10 @@
+<Project>
+  <!-- Test paketi çıktıya testhost.exe koyar ve vstest onu başlatır. Antivirüs bu imzasız apphost'u kısıtlı yetkiyle
+       çalıştırınca testhost ana süreci, %TEMP%'i ve Docker'ı açamıyor ("Erişim engellendi"). testhost.exe yoksa vstest
+       testhost.dll'i dotnet ile başlatır; sonuç aynıdır. -->
+  <Target Name="ExcludeTestHostAppHost" BeforeTargets="AssignTargetPaths" Condition="'$(IsTestProject)' == 'true'">
+    <ItemGroup>
+      <Content Remove="@(Content)" Condition="'%(Filename)%(Extension)' == 'testhost.exe' Or '%(Filename)%(Extension)' == 'testhost.x86.exe'" />
+    </ItemGroup>
+  </Target>
+</Project>

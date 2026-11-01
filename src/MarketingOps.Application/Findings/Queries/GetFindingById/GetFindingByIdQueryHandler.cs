@@ -36,20 +36,20 @@ public sealed class GetFindingByIdQueryHandler(IAppDbContext db) : IRequestHandl
         var screenshotsByUrl = new Dictionary<string, IReadOnlyList<FindingScreenshotResponse>>(StringComparer.Ordinal);
         if (rule?.DataSource == RuleDataSource.Render && pageItems.Count > 0)
         {
-            var crawlId = pageItems.Select(o => (Guid?)o.LastSeenCrawlId).FirstOrDefault();
-            if (crawlId is Guid id)
-            {
-                var urls = pageItems.Select(o => o.Url).ToList();
-                var shots = await db.RenderScreenshots.AsNoTracking()
-                    .Where(s => s.CrawlId == id && urls.Contains(s.Url))
-                    .OrderBy(s => s.Device)
-                    .Select(s => new { s.Url, s.Device, s.Id })
-                    .ToListAsync(cancellationToken);
-                screenshotsByUrl = shots.GroupBy(s => s.Url)
-                    .ToDictionary(g => g.Key,
-                        g => (IReadOnlyList<FindingScreenshotResponse>)g.Select(s => new FindingScreenshotResponse(s.Id, s.Device)).ToList(),
-                        StringComparer.Ordinal);
-            }
+            // Örnekler farklı taramalarda görülmüş olabilir; her biri kendi son taramasının görüntüsüyle eşlenir.
+            var crawlIds = pageItems.Select(o => o.LastSeenCrawlId).Distinct().ToList();
+            var urls = pageItems.Select(o => o.Url).ToList();
+            var lastSeen = pageItems.Select(o => (o.Url, o.LastSeenCrawlId)).ToHashSet();
+            var shots = await db.RenderScreenshots.AsNoTracking()
+                .Where(s => crawlIds.Contains(s.CrawlId) && urls.Contains(s.Url))
+                .OrderBy(s => s.Device)
+                .Select(s => new { s.Url, s.CrawlId, s.Device, s.Id })
+                .ToListAsync(cancellationToken);
+            screenshotsByUrl = shots.Where(s => lastSeen.Contains((s.Url, s.CrawlId)))
+                .GroupBy(s => s.Url)
+                .ToDictionary(g => g.Key,
+                    g => (IReadOnlyList<FindingScreenshotResponse>)g.Select(s => new FindingScreenshotResponse(s.Id, s.Device)).ToList(),
+                    StringComparer.Ordinal);
         }
 
         var page = pageItems
