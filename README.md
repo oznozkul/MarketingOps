@@ -78,6 +78,18 @@ cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.j
 - **Yeni kurallar:** `seo.opportunity.striking_distance` (11–20. sıra, yüksek gösterim), `seo.index.not_indexed`, `perf.cwv.lcp|inp|cls`. Kaynağın güncel verisi yoksa kural çalışmaz; bağlantı koparsa mevcut bulgular yanlışlıkla çözülmez.
 - **Kurulum (SaaS sahibi, bir kez):** Google Cloud Console'da bir proje açın → Search Console API, Google Analytics Admin API, Google Analytics Data API, Tag Manager API ve PageSpeed Insights API'yi etkinleştirin → OAuth izin ekranını yapılandırın (geliştirmede "Testing" + test kullanıcıları) → "Web application" türünde OAuth istemcisi oluşturup yetkili yönlendirme adresine `http://localhost:8080/connectors/google/callback` (canlıda kendi domaininiz) ekleyin → Client ID/Secret'ı `appsettings.json` içindeki `Google` bölümüne yazın. Herkese açık kullanım için Google'ın hassas scope doğrulaması gerekir. İsteğe bağlı: `Google:PageSpeedApiKey`.
 
+## Tracking denetimi (Faz 6)
+- **Başlatma:** Tracking ekranındaki "Denetimi başlat" Hangfire işini (`TrackingAuditJob`) kuyruğa ekler; zamanlanmış çalışma yoktur.
+- **Tarayıcı yolculuğu:** Playwright ana sayfayı, son taramadaki sayfa tipi örneklerini ve Ayarlar > Siteler > Denetim'deki sepet, ödeme, teşekkür adreslerini birer kez açar. Çerez onayı seçicisi verildiyse sayfa yüklendikten sonra tıklanır; tıklamadan önce giden etiket istekleri "onay öncesi" işaretlenir (tıklama olmazsa işaret konmaz). GA4, GTM, Meta ve Google Ads istekleri ve kimlikleri kaydedilir; tag matrisi ve hücre ayrıntısı bu ölçümden gelir.
+- **Sipariş karşılaştırması:** Sipariş kaynağı (SQL Server sorgusu, `IOrderSource`) günlük sipariş sayısını, GA4 purchase sayısıyla 7/30 gün karşılaştırılır. Kaynak yoksa ya da sorgu düşerse satır yine yazılır, purchase boş kalır ve fark kuralı çalışmaz.
+- **Kurallar:** `track.tag.missing`, `track.tag.duplicate`, `track.tag.wrong_id` (beklenen kimliklere göre), `track.consent.prefire` (onaydan önce tetiklenen etiket), `track.meta.pixel_capi`, `track.event.anomaly` (event sayısı düşüşü), `track.purchase.gap` (eşik kural ayarında).
+
+## Skorlar, bildirimler ve raporlar (Faz 7)
+- **Skor anlık görüntüsü:** Her değerlendirmeden sonra kategori skorları kaydedilir (`RecordScoreSnapshots`); Genel Bakış'taki trend ve "Bu skor nasıl hesaplandı?" paneli bundan beslenir. Formül Faz 8'de değişti, bkz. aşağıdaki "Skor formülü".
+- **Bildirim olayları:** yeni kritik bulgu, tekrar açılan bulgu, purchase farkı eşiği, skor düşüşü (eşik puanı kuralda), tarama başarısız, bağlantı yetkisi doldu. Domain olayları dinlenir, gönderim Hangfire işinde yapılır.
+- **Kanallar:** panel içi (her zaman), e-posta (SMTP, `Mail` bölümü), Teams ve Slack webhook'u (adres şifreli saklanır). Kural başına İstanbul saatine göre sessiz saatler ve aynı bulgu için tekrar aralığı. Ayarlar ve zil için bkz. Ekranlar.
+- **Yönetici özeti:** günlük, haftalık (pazartesi) ve aylık (ayın ilk günü) e-posta; `SendDueReportsJob` 15 dakikada bir vadesi gelenleri gönderir. İçerik: skorlar ve değişimleri, en önemli 5 sorun, kapanan görevler.
+
 ## HTML denetimi ve skorlar (Faz 8, adım 1)
 Plan ve kararlar: [marketingops-faz8-plani.md](marketingops-faz8-plani.md).
 - **Sıkı denetim:** Kural tek sayfada bile ihlal görürse bulgu açılır; yeni kurallar her sitede açık başlar. SEO kuralları indekslenebilir, erişilebilirlik kuralları bütün HTML sayfalara bakar.

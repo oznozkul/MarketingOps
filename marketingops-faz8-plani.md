@@ -494,13 +494,13 @@ Bilgi tabanı: google:canonical (mevcut), google:hreflang, google:robots bölüm
   yalnızca genel ve googlebot yönergeleri sayılır.
 - Yönlenen snapshot zincirin sonundaki hedefi `PageSnapshotData.RedirectTarget`'ta taşır; yetim sayfa kuralı eski
   adrese verilen linki hedefe ulaşmış sayar.
-- Testler: Directory.Build.targets test projelerinde testhost.exe'yi çıktıdan çıkarır; bu makinede antivirüs o
-  apphost'u kısıtlı çalıştırıp testleri başlatmıyordu. Playwright testleri %TEMP% yazılamadığı için bu makinede
-  yalnızca TEMP başka klasöre yönlendirilince geçer (7/7).
+- Testler: Directory.Build.targets test projelerinde testhost.exe'yi çıktıdan çıkarır; bu makinede testhost.exe
+  kısıtlı çalışıp testleri başlatmıyordu. Sebep sanıldığı gibi antivirüs değil, repo klasöründeki Low bütünlük
+  etiketiydi (bkz. 9). Entegrasyon testleri TEMP'i kendi çıktı klasörüne alır (`TestTempDirectory`).
 
 ### 8.7 Tarayıcı doğrulaması (2026-11-02, Lastik Borsası, tarama #6 ve #7)
 - 300 sayfa, hata yok; sayfa limiti dolduğu için FullCrawl yok, yetim sayfa kuralı çalışmadı (beklenen). Sitede
-  hreflang, X-Robots-Tag ve sitemap işareti yok; canonical hedefleri sağlıklı ya da taranmamış; yönlenen tek adres
+  hreflang ve X-Robots-Tag yok; "sitemap işareti yok" gözlemi yanlıştı, sitemap BOM'la başladığı için okunamıyordu (bkz. 9); canonical hedefleri sağlıklı ya da taranmamış; yönlenen tek adres
   (kök → www) için iç link yok. Yeni SEO kuralları bu sitede bulgu üretmedi; bu doğru sonuç.
 - Render: 48 örnek, 48 kanıt görüntüsü; bulgu detayında cihaz başına "Ekran görüntüsü" bağlantısı açılıyor.
   Görünür adsız link / etiketsiz alan sayıları sıfırdan büyük, a11y bulguları doğru şekilde bastırılmadı.
@@ -511,4 +511,13 @@ Bilgi tabanı: google:canonical (mevcut), google:hreflang, google:robots bölüm
 
 ### 8.8 Hâlâ kapsam dışı
 - Odak kelime kontrolleri (Search Console verisinde sayfa başına sorgu yok).
-- Karışık içerik (HTTPS sayfada HTTP kaynak).
+
+## 9. Sonraki düzeltmeler (2026-11-02)
+- **Ortam:** Testlerin, apphost'ların ve Playwright node'unun "Erişim engellendi" hataları Avast'tan değil, repo
+  klasörüne konmuş Low zorunlu bütünlük etiketinden geliyordu: klasördeki her exe Low seviyede başlıyor, %TEMP%,
+  event log, Docker pipe ve üst sürece erişemiyordu. Etiket kaldırıldı (`icacls <repo> /setintegritylevel (OI)(CI)M`).
+  Avast'ın gerçek payı yalnızca Docker içindeki NuGet TLS'iydi. Event log yazımı `appsettings.json`'da kapalı.
+- **Sitemap BOM:** `SitemapParser`, UTF-8 BOM'la başlayan sitemap'i boş sayıyordu; Lastik Borsası'nın sitemap'i
+  böyle. Düzeltildi; sonraki taramada "sitemap'te" bilgisi ve ona dayanan kurallar (yetim sayfa, noindex sitemap'te) dolar.
+- **Karışık içerik:** `sec.mixed_content` (High, TechnicalSeo): HTTPS sayfada http:// ile yüklenen görsel, script ve
+  stylesheet. Mevcut snapshot alanlarını kullanır; iframe ve medya kaynakları (src saklanmıyor) kapsam dışı.

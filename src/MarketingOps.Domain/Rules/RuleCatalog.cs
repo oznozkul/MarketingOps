@@ -37,6 +37,7 @@ public static class RuleCatalog
         new GenericLinkTextRule(),
         new EmptyHrefRule(),
         new BlankNoopenerRule(),
+        new MixedContentRule(),
         new ThinContentRule(),
         new CompressionMissingRule(),
         new StaticCacheControlRule(),

@@ -242,4 +242,21 @@ public class MarkupRuleTests
         RuleCatalog.Find("content.image.alt_missing")!.DefaultSeverity.ShouldBe(Severity.Medium);
         RuleCatalog.All.Where(r => r.Category == FindingCategory.Accessibility).Count().ShouldBe(14);
     }
+
+    [Fact]
+    public void Mixed_content_lists_http_resources_on_https_pages()
+    {
+        var mixed = Good with
+        {
+            Images = [new ImageInfo("http://cdn.example.com/a.jpg", "a", "1", "1", null), new ImageInfo("/b.jpg", "b", "1", "1", null), new ImageInfo("//cdn.example.com/c.jpg", "c", "1", "1", null)],
+            Scripts = [new ScriptInfo("http://eski.example.com/x.js", false, false, true), new ScriptInfo(null, false, false, true)],
+            Stylesheets = ["https://example.com/site.css", "HTTP://eski.example.com/x.css"]
+        };
+
+        var violation = Run(new MixedContentRule(), Page(mixed)).ShouldHaveSingleItem();
+
+        violation.CurrentValue.ShouldBe("3 kaynak");
+        violation.Detail.ShouldBe("http://cdn.example.com/a.jpg · http://eski.example.com/x.js · HTTP://eski.example.com/x.css");
+        Run(new MixedContentRule(), Page(Good with { Images = [new ImageInfo("https://cdn.example.com/a.jpg", "a", "1", "1", null)] })).ShouldBeEmpty();
+    }
 }
