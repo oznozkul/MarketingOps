@@ -62,6 +62,14 @@
             <div class="flex min-h-screen min-w-0 flex-col lg:pl-60">
                 <partial name="_Topbar" model="shell" />
                 <main id="main" tabindex="-1" class="mx-auto w-full max-w-content flex-1 px-4 py-6 focus:outline-none lg:px-8">
+                    @* Sihirbaz kapatılsa da yarım kalan kurulum her ekranda hatırlatılır. *@
+                    @if (shell.Site.SetupStep is { } setupStep && ViewContext.RouteData.Values["controller"] as string != "Setup")
+                    {
+                        <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line bg-primary-soft px-4 py-3 text-sm text-fg">
+                            <span><strong class="font-semibold">Bu sitenin kurulumu tamamlanmadı.</strong> Sıradaki adım: @DisplayText.Of(setupStep).</span>
+                            <a class="btn btn-primary btn-sm" href="@Url.Action("Step", "Setup", new { siteId = shell.Site.Id, step = setupStep })">Kuruluma devam et<icon name="chevron-right" /></a>
+                        </div>
+                    }
                     @RenderBody()
                 </main>
             </div>

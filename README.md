@@ -120,8 +120,9 @@ dotnet test tests/MarketingOps.IntegrationTests   # Testcontainers ile gerçek P
 
 ## Ekranlar
 - **Ayarlar > Siteler** (`/sites/{siteId}/settings/sites`): site listesi, site ekleme, ad, tarama ayarları, beklenen kimlikler, sahiplik durumu, silme (domain yazarak onay).
-- **Ayarlar > Sayfa Tipleri** (`/sites/{siteId}/settings/page-types`): liste, ekleme/düzenleme (VE/VEYA, glob/regex/schema koşulları), diğer tiplerle çakışmayı da gösteren canlı önizleme, silme.
+- **Ayarlar > Sayfa Tipleri** (`/sites/{siteId}/settings/page-types`): liste, ekleme/düzenleme (VE/VEYA, glob/regex/schema koşulları), diğer tiplerle çakışmayı da gösteren canlı önizleme, silme. "AI ile tip öner": son taramada hiçbir tipe uymayan sayfalardan öneri kartları (ad ve glob düzenlenebilir; ekle / reddet).
 - Hiç site yokken `/` ilk site ekleme formunu gösterir.
+- **Yeni site sihirbazı** (`/sites/{siteId}/setup/{adım}`): domain (site ekleme formu) → Search Console ve sahiplik (Google'a bağlanınca akış sihirbaza döner) → diğer bağlantılar (beklenen kimlikler, Meta) → sayfa tipleri (sitemap'ten okunan adresler URL kalıbına göre gruplanır, AI bunlardan tip önerir; AI yoksa gruplara elle ad verilir) → tarama ayarları → ilk tarama. Sıradaki adım sitede saklanır (`sites.setup_step`, null = tamamlandı); kurulumu yarım kalan sitede her ekranın üstünde "Kuruluma devam et" şeridi görünür. Sahiplik doğrulanmamış sitede ilk tarama elle başlatılabilir, zamanlanmış taramalar doğrulamadan sonra çalışır.
 - **Bulgular** (`/sites/{siteId}/findings`): önem/kategori/durum/sayfa tipi/kural filtreleri, "son taramada yeni", arama (hepsi URL'de), sıralama, kolon görünürlüğü, toplu erteleme ve yanlış alarm, CSV.
 - **Bulgu detayı** (`/sites/{siteId}/findings/{id}`): problem, etki, kaynak, etkilenen sayfalar (arama, CSV), ayrıntılar, geçmiş; ertele, yanlış alarm / geri al. Görev alanları Faz 4'te.
 - **Ayarlar > Kurallar** (`/sites/{siteId}/settings/rules`): kategoriye göre liste ve aç/kapa; detayda eşikler (canlı etki önizlemesi), site geneli ve sayfa tipine göre önem, kuralın bulguları ve susturulduğu sayfa tipleri.

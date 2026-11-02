@@ -214,6 +214,15 @@ public static class DisplayText
         _ => "Aylık"
     };
 
+    public static string Of(SiteSetupStep v) => v switch
+    {
+        SiteSetupStep.SearchConsole => "Search Console ve sahiplik",
+        SiteSetupStep.Connectors => "Diğer bağlantılar",
+        SiteSetupStep.PageTypes => "Sayfa tipleri",
+        SiteSetupStep.CrawlSettings => "Tarama ayarları",
+        _ => "İlk tarama"
+    };
+
     public static string Of(Enum value) => value switch
     {
         Team v => Of(v),
@@ -243,6 +252,7 @@ public static class DisplayText
         NotificationEventType v => Of(v),
         NotificationChannelKind v => Of(v),
         ReportPeriod v => Of(v),
+        SiteSetupStep v => Of(v),
         _ => value.ToString()
     };
 }

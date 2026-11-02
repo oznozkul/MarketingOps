@@ -1,10 +1,12 @@
+using MarketingOps.Application.PageTypes.Suggestions;
 using MarketingOps.Application.Tasks.Suggestions;
 
 namespace MarketingOps.Application.Common.Interfaces;
 
 /// <summary>
-/// Görev önerisini zenginleştiren dil modeli. İki uygulaması var: Anthropic (Claude) ve OpenAI uyumlu API (DeepSeek, Ollama, LM Studio).
-/// Hangisinin kullanılacağı yapılandırmadan seçilir; hiçbiri ayarlı değilse kayıtlı değildir ve görevler şablonla kalır.
+/// Görev önerisini zenginleştiren ve sayfa tipi öneren dil modeli. İki uygulaması var: Anthropic (Claude) ve OpenAI uyumlu API (DeepSeek, Ollama, LM Studio).
+/// Hangisinin kullanılacağı yapılandırmadan seçilir; hiçbiri ayarlı değilse kayıtlı değildir: görevler şablonla kalır,
+/// sayfa tipi önerisi yerine yalnızca URL grupları gösterilir.
 /// </summary>
 public interface IAiSuggestionService
 {
@@ -18,4 +20,6 @@ public interface IAiSuggestionService
     bool SendsDataExternally { get; }
 
     Task<AiSuggestion> SuggestAsync(AiSuggestionRequest request, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<AiPageTypeSuggestion>> SuggestPageTypesAsync(PageTypeSuggestionRequest request, CancellationToken cancellationToken);
 }

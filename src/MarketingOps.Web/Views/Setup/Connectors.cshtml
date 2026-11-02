@@ -1,0 +1,26 @@
+@model MarketingOps.Web.ViewModels.Setup.SetupViewModel
+@{
+    Layout = "_SetupShell";
+    var footer = (Model, "Devam");
+}
+<p class="max-w-prose text-sm text-fg-muted">Bu adımdakilerin hepsi isteğe bağlıdır ve sonradan Ayarlar &gt; Siteler'den değiştirilebilir. GA4 ve Tag Manager, Google bağlantısıyla birlikte önceki adımda seçilir.</p>
+
+<div class="card card-body space-y-4">
+    <h2 class="eyebrow">Beklenen kimlikler</h2>
+    <partial name="~/Views/SiteSettings/_TrackingIdsForm.cshtml" model="Model.TrackingIds" />
+</div>
+
+<div class="card card-body space-y-4">
+    <h2 class="eyebrow">Meta Pixel / Conversions API</h2>
+    <partial name="~/Views/SiteSettings/_MetaTokenForm.cshtml" model="Model.Meta" />
+</div>
+
+<div class="card card-body flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+        <h2 class="text-sm font-semibold text-fg">Sipariş kaynağı</h2>
+        <p class="text-sm text-fg-muted">Sipariş veritabanından okunan günlük sipariş sayısı, GA4 purchase sayısıyla karşılaştırılır.</p>
+    </div>
+    <a class="btn btn-secondary shrink-0" href="@(Url.Action("Index", "SiteSettings", new { siteId = Model.Site.Id }) + "#denetim")">Ayarlarda aç<icon name="external-link" /></a>
+</div>
+
+<partial name="_StepFooter" model="footer" />

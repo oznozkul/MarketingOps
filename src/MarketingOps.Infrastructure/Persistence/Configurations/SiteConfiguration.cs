@@ -14,6 +14,7 @@ public sealed class SiteConfiguration : IEntityTypeConfiguration<Site>
         builder.Property(s => s.Name).HasMaxLength(Site.NameMaxLength).IsRequired();
         builder.Property(s => s.Domain).HasMaxLength(Site.DomainMaxLength).IsRequired();
         builder.Property(s => s.TaskKeyPrefix).HasMaxLength(Site.TaskKeyPrefixMaxLength).HasDefaultValue("");
+        builder.Property(s => s.SetupStep).HasConversion<string>().HasMaxLength(20);
         builder.HasIndex(s => new { s.OrganizationId, s.Domain }).IsUnique();
         builder.HasOne<Organization>().WithMany().HasForeignKey(s => s.OrganizationId).OnDelete(DeleteBehavior.Restrict);
 

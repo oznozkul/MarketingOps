@@ -98,4 +98,25 @@
             </p>
         }
     </section>
+
+    @if (stats.UnmatchedCount > 0)
+    {
+        @* Öneri, AI çağrısı sürdüğü için yalnızca istenince yüklenir. *@
+        <section class="space-y-3" aria-labelledby="suggest-heading" x-data="{ asked: false }">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                    <h2 id="suggest-heading" class="section-title">AI ile tip öner</h2>
+                    <p class="max-w-prose text-sm text-fg-muted">Son taramada hiçbir tipe uymayan <span class="tabular">@Format.Number(stats.UnmatchedCount)</span> sayfadan sayfa tipi önerileri üretir. Öneriyi düzenleyerek ekleyebilir ya da reddedebilirsiniz.</p>
+                </div>
+                <button type="button" class="btn btn-secondary" x-show="!asked" x-on:click="asked = true"
+                        hx-get="@Url.SiteAction("Suggestions", "PageTypes", new { source = MarketingOps.Application.PageTypes.Queries.SuggestPageTypes.PageTypeSuggestionSource.UnmatchedPages })"
+                        hx-target="#unmatched-suggestions" hx-swap="innerHTML" hx-indicator="#unmatched-loading" hx-disabled-elt="this">
+                    <icon name="sparkles" />Öneri al
+                </button>
+            </div>
+            <div id="unmatched-suggestions">
+                <p id="unmatched-loading" class="htmx-indicator flex items-center gap-2 text-sm text-fg-muted"><icon name="loader-circle" class="h-4 w-4 animate-spin motion-reduce:animate-none" />Öneriler hazırlanıyor...</p>
+            </div>
+        </section>
+    }
 </div>

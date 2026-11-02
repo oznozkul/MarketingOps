@@ -1,8 +1,12 @@
 using FluentValidation;
+using MarketingOps.Application.PageTypes;
+using MarketingOps.Application.PageTypes.Commands.AddPageType;
 using MarketingOps.Application.PageTypes.Commands.RemovePageType;
+using MarketingOps.Application.PageTypes.Queries.SuggestPageTypes;
 using MarketingOps.Application.PageTypes.Queries.GetPageTypeStats;
 using MarketingOps.Application.Sites.Queries.GetSiteById;
 using MarketingOps.Domain.Common;
+using MarketingOps.Domain.Sites;
 using MarketingOps.Web.Filters;
 using MarketingOps.Web.Infrastructure;
 using MarketingOps.Web.ViewModels.PageTypes;
@@ -71,6 +75,28 @@ public class PageTypesController(ISender sender) : SiteControllerBase
     {
         await sender.Send(new RemovePageTypeCommand(siteId, pageTypeId), HttpContext.RequestAborted);
         return HtmxRedirect(Url.SiteAction(nameof(Index), "PageTypes"), "Sayfa tipi silindi.");
+    }
+
+    /// <summary>
+    /// "AI ile tip öner": sihirbazda sitemap'ten, bu ekranda son taramanın eşleşmeyen sayfalarından. Sitemap okunup AI'a
+    /// sorulduğu için yavaştır; sayfa açıldıktan sonra htmx ile yüklenir.
+    /// </summary>
+    [HttpGet("suggestions")]
+    public async Task<IActionResult> Suggestions(Guid siteId, PageTypeSuggestionSource source, CancellationToken ct) =>
+        PartialView("_Suggestions", await sender.Send(new SuggestPageTypesQuery(siteId, source), ct));
+
+    /// <summary>Öneri kartındaki "Ekle": öneri tek bir glob koşuluyla sayfa tipi olur, kart eklendi durumuna geçer.</summary>
+    [HttpPost("suggestions")]
+    public async Task<IActionResult> AcceptSuggestion(Guid siteId, string name, string urlGlob)
+    {
+        var (ok, _) = await TrySendAsync(sender, new AddPageTypeCommand(siteId, name, MatchMode.Any, [new MatchConditionInput(MatchConditionType.UrlGlob, urlGlob)]));
+        if (!ok)
+        {
+            Response.Toast(ModelState.Values.SelectMany(v => v.Errors).First().ErrorMessage, "error");
+            return NoContent();
+        }
+        Response.Toast($"\"{name.Trim()}\" sayfa tipi eklendi.");
+        return PartialView("_AcceptedSuggestion", (name.Trim(), urlGlob.Trim()));
     }
 
     /// <summary>Canlı önizleme. Eksik ya da hatalı koşullar hata değil, panelde açıklama olarak gösterilir.</summary>

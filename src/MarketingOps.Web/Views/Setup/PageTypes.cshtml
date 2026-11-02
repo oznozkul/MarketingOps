@@ -1,0 +1,34 @@
+@model MarketingOps.Web.ViewModels.Setup.SetupViewModel
+@using MarketingOps.Application.PageTypes.Queries.SuggestPageTypes
+@{
+    Layout = "_SetupShell";
+    var types = Model.Site.PageTypes;
+    var footer = (Model, types.Count > 0 ? "Devam" : "Sayfa tipi olmadan devam et");
+}
+<p class="max-w-prose text-sm text-fg-muted">Bulgular sayfa tiplerine göre gruplanır (Ürün, Kategori, Blog...). Sitemap'teki adresler okunur ve AI bunlardan sayfa tipleri önerir; öneriyi adını ya da desenini düzenleyerek ekleyebilirsiniz. Eşleşme kurallarının ayrıntısı sonradan Ayarlar &gt; Sayfa Tipleri'nde değiştirilebilir.</p>
+
+@if (types.Count > 0)
+{
+    <section class="card" aria-labelledby="existing-types">
+        <div class="card-header"><h2 id="existing-types" class="card-title">Mevcut sayfa tipleri</h2><span class="tabular text-xs text-fg-muted">@types.Count tip</span></div>
+        <ul class="divide-y divide-line">
+            @foreach (var t in types)
+            {
+                <li class="flex flex-wrap items-baseline justify-between gap-2 px-4 py-2.5">
+                    <span class="text-sm font-medium text-fg">@t.Name</span>
+                    <span class="font-mono text-xs text-fg-muted">@string.Join(" · ", t.Conditions.Select(c => c.Value))</span>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+<section aria-labelledby="suggestions-heading" class="space-y-3">
+    <h2 id="suggestions-heading" class="section-title">Öneriler</h2>
+    <div hx-get="@Url.Action("Suggestions", "PageTypes", new { siteId = Model.Site.Id, source = PageTypeSuggestionSource.Sitemap })" hx-trigger="load" hx-swap="outerHTML" aria-busy="true">
+        <p class="flex items-center gap-2 text-sm text-fg-muted"><icon name="loader-circle" class="h-4 w-4 animate-spin motion-reduce:animate-none" />Sitemap okunuyor ve öneriler hazırlanıyor. Büyük sitelerde bu bir dakika sürebilir.</p>
+        <skeleton variant="cards" rows="3" />
+    </div>
+</section>
+
+<partial name="_StepFooter" model="footer" />

@@ -8,6 +8,7 @@ using MarketingOps.Application.Connectors.Commands.TriggerConnectorSync;
 using MarketingOps.Application.Connectors.Google;
 using MarketingOps.Application.Connectors.Queries.GetGoogleProperties;
 using MarketingOps.Domain.Connectors;
+using MarketingOps.Domain.Sites;
 using MarketingOps.Web.Filters;
 using MarketingOps.Web.Infrastructure;
 using MediatR;
@@ -50,7 +51,7 @@ public class ConnectorsController(ISender sender) : SiteControllerBase
         if (!result.Connected)
         {
             TempData[FlashMessage.Key] = result.Message;
-            return Redirect(Url.Action("Index", "SiteSettings", new { siteId = result.SiteId }) + "#baglantilar");
+            return Redirect(ReturnUrl(result.SiteId, finished: false));
         }
         return RedirectToAction(nameof(SelectGoogle), new { siteId = result.SiteId });
     }
@@ -67,7 +68,7 @@ public class ConnectorsController(ISender sender) : SiteControllerBase
         catch (Exception ex) when (ex is ConflictException or GoogleApiException)
         {
             TempData[FlashMessage.Key] = ex.Message;
-            return Redirect(Url.SiteAction("Index", "SiteSettings") + "#baglantilar");
+            return Redirect(ReturnUrl(siteId, finished: false));
         }
     }
 
@@ -77,7 +78,7 @@ public class ConnectorsController(ISender sender) : SiteControllerBase
     {
         string? Field(string name) => Request.Form.TryGetValue(name, out var value) ? value.ToString() : null;
         if (await TrySendAsync(sender, new SelectConnectorPropertyCommand(siteId, Field("searchConsoleSiteUrl"), Field("ga4PropertyId"))))
-            return HtmxRedirect(Url.SiteAction("Index", "SiteSettings") + "#baglantilar", "Google mülk seçimi kaydedildi. Senkron başladı.");
+            return HtmxRedirect(ReturnUrl(siteId, finished: true), "Google mülk seçimi kaydedildi. Senkron başladı.");
         return ErrorToast();
     }
 
@@ -106,6 +107,18 @@ public class ConnectorsController(ISender sender) : SiteControllerBase
         if (!await TrySendAsync(sender, new TriggerConnectorSyncCommand(siteId))) return ErrorToast();
         Response.Toast("Senkron kuyruğa eklendi. Birkaç dakika içinde veriler güncellenir.");
         return NoContent();
+    }
+
+    /// <summary>
+    /// Sihirbazın Search Console adımından gelindiyse oraya, değilse bağlantı ayarlarına döner. Çerez yalnızca seçim
+    /// kaydedilince silinir; başarısız denemeden sonra tekrar denenirse yine sihirbaza dönülür.
+    /// </summary>
+    private string ReturnUrl(Guid siteId, bool finished)
+    {
+        if (Request.Cookies[SetupController.ReturnCookie] != siteId.ToString())
+            return Url.Action("Index", "SiteSettings", new { siteId }) + "#baglantilar";
+        if (finished) Response.Cookies.Delete(SetupController.ReturnCookie);
+        return Url.Action("Step", "Setup", new { siteId, step = SiteSetupStep.SearchConsole })!;
     }
 
     private string CallbackUrl() => Url.Action(nameof(GoogleCallback), "Connectors", null, Request.Scheme)!;

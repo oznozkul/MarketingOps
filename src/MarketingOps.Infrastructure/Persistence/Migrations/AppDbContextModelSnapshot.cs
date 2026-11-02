@@ -1171,6 +1171,11 @@ namespace MarketingOps.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<string>("SetupStep")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("setup_step");
+
                     b.Property<string>("TaskKeyPrefix")
                         .IsRequired()
                         .ValueGeneratedOnAdd()

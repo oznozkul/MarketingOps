@@ -1,0 +1,26 @@
+@model MarketingOps.Web.ViewModels.Setup.SetupViewModel
+@{
+    Layout = "_SetupShell";
+    var verified = Model.Site.IsOwnershipVerified;
+    var footer = (Model, verified ? "Devam" : "Şimdilik atla");
+}
+<p class="max-w-prose text-sm text-fg-muted">Site sahipliği, Search Console'da doğrulanmış mülkle kanıtlanır. Google'a salt okunur bağlanın ve bu siteye ait Search Console mülkünü seçin; seçimden sonra bu adıma geri dönersiniz.</p>
+
+@if (verified)
+{
+    <div class="flex items-start gap-2 rounded-sm border border-ok-line bg-ok-soft px-4 py-3 text-sm text-fg">
+        <icon name="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-ok" />
+        <span><strong class="font-semibold">Sahiplik doğrulandı.</strong> Site, tarama ayarlarındaki sıklıkla düzenli taranır.</span>
+    </div>
+}
+else
+{
+    <div class="flex items-start gap-2 rounded-sm border border-warn-line bg-warn-soft px-4 py-3 text-sm text-fg">
+        <icon name="hourglass" class="mt-0.5 h-4 w-4 shrink-0 text-warn" />
+        <span><strong class="font-semibold">Sahiplik doğrulanmadı.</strong> Doğrulanmamış sitede düzenli (zamanlanmış) tarama çalışmaz; yalnızca elle başlatılan tarama yapılabilir. Bu adımı atlayıp sonra dönebilirsiniz.</span>
+    </div>
+}
+
+<partial name="~/Views/SiteSettings/_GoogleConnectors.cshtml" model="Model.Connectors" />
+
+<partial name="_StepFooter" model="footer" />

@@ -33,6 +33,15 @@ public class SitemapParserTests
     }
 
     [Fact]
+    public void Byte_order_mark_and_leading_whitespace_before_the_declaration_are_ignored()
+    {
+        // Gövde UTF-8 BOM'uyla geliyor (ör. IIS); GetString onu metnin başında bırakır, XML ayrıştırıcı da reddeder.
+        var content = SitemapParser.Parse("\uFEFF\r\n<?xml version=\"1.0\" encoding=\"utf-8\"?><sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"><sitemap><loc>https://a.com/sitemaps/lastik.xml</loc></sitemap></sitemapindex>");
+
+        content.Sitemaps.ShouldBe(["https://a.com/sitemaps/lastik.xml"]);
+    }
+
+    [Fact]
     public void Broken_xml_yields_nothing() =>
         SitemapParser.Parse("<html>bu bir sitemap değil").Urls.ShouldBeEmpty();
 }

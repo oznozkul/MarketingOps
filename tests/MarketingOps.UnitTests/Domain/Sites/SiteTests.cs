@@ -42,6 +42,31 @@ public class SiteTests
     }
 
     [Fact]
+    public void Setup_advances_step_by_step_and_revisiting_a_step_does_not_go_back()
+    {
+        var site = NewSite();
+        site.SetupStep.ShouldBe(SiteSetupStep.SearchConsole);
+
+        Should.Throw<DomainException>(() => site.CompleteSetupStep(SiteSetupStep.PageTypes));
+        site.CompleteSetupStep(SiteSetupStep.SearchConsole);
+        site.CompleteSetupStep(SiteSetupStep.Connectors);
+        site.CompleteSetupStep(SiteSetupStep.SearchConsole);
+
+        site.SetupStep.ShouldBe(SiteSetupStep.PageTypes);
+    }
+
+    [Fact]
+    public void Completing_the_first_crawl_step_finishes_setup()
+    {
+        var site = NewSite();
+        foreach (var step in Enum.GetValues<SiteSetupStep>()) site.CompleteSetupStep(step);
+
+        site.SetupStep.ShouldBeNull();
+        site.CompleteSetupStep(SiteSetupStep.Connectors);
+        site.SetupStep.ShouldBeNull();
+    }
+
+    [Fact]
     public void Empty_name_is_rejected() =>
         Should.Throw<DomainException>(() => Site.Create(Guid.CreateVersion7(), " ", "lastikborsasi.com", Now));
 

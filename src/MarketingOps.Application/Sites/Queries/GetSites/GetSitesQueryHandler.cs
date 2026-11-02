@@ -15,7 +15,7 @@ public sealed class GetSitesQueryHandler(IAppDbContext db) : IRequestHandler<Get
             .OrderBy(s => s.Name).ThenBy(s => s.Id)
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(s => new SiteListItemResponse(s.Id, s.Name, s.Domain, s.IsOwnershipVerified, s.PageTypes.Count))
+            .Select(s => new SiteListItemResponse(s.Id, s.Name, s.Domain, s.IsOwnershipVerified, s.PageTypes.Count, s.SetupStep))
             .ToListAsync(cancellationToken);
 
         return new PagedResponse<SiteListItemResponse>(items, request.Page, request.PageSize, total);

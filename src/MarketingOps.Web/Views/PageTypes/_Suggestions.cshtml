@@ -1,0 +1,95 @@
+@model MarketingOps.Application.PageTypes.Queries.SuggestPageTypes.PageTypeSuggestionsResponse
+@using MarketingOps.Application.PageTypes.Queries.SuggestPageTypes
+@{
+    var acceptUrl = Url.SiteAction("AcceptSuggestion", "PageTypes");
+    var editorUrl = Url.SiteAction("New", "PageTypes");
+    var fromSitemap = Model.Source == PageTypeSuggestionSource.Sitemap;
+    var where = fromSitemap ? "Okunan adreslerden" : "Eşleşmeyen sayfalardan";
+}
+<div class="space-y-4">
+    @if (Model.UrlCount == 0)
+    {
+        @if (fromSitemap)
+        {
+            <empty-state icon="scan-search" title="Sitemap okunamadı" description="robots.txt'de ya da /sitemap.xml adresinde sayfa listesi bulunamadı. Sayfa tiplerini elle ekleyebilir ya da ilk taramadan sonra Sayfa Tipleri ekranında eşleşmeyen sayfalardan öneri alabilirsiniz." />
+        }
+        else
+        {
+            <empty-state icon="circle-check" title="Eşleşmeyen sayfa yok" description="Son tamamlanan taramadaki bütün HTML sayfalar bir sayfa tipine uyuyor ya da henüz tamamlanmış tarama yok." />
+        }
+        <p class="text-center"><a class="btn btn-secondary" href="@editorUrl"><icon name="plus" />Sayfa tipi ekle</a></p>
+    }
+    else
+    {
+        <p class="text-xs text-fg-muted">@(fromSitemap ? "Sitemap'ten" : "Son taramada hiçbir sayfa tipine uymayan") <span class="tabular">@Format.Number(Model.UrlCount)</span> @(fromSitemap ? "adres okundu (her sitemap dosyasından en fazla 300; sayılar bu örnek üzerindendir)" : "sayfa var").</p>
+        @if (Model.Error is not null)
+        {
+            <p class="rounded-sm border border-warn-line bg-warn-soft px-4 py-2 text-sm text-fg">@Model.Error</p>
+        }
+        else if (!Model.AiAvailable)
+        {
+            <p class="rounded-sm border border-line bg-surface-2 px-4 py-2 text-sm text-fg-muted">AI sağlayıcısı yapılandırılmadığı için öneri yok. Aşağıdaki URL gruplarına ad verip sayfa tipi olarak ekleyebilirsiniz.</p>
+        }
+
+        @if (Model.Suggestions.Count > 0)
+        {
+            <div class="grid gap-3 xl:grid-cols-2">
+                @foreach (var (s, i) in Model.Suggestions.Select((s, i) => (s, i)))
+                {
+                    <form class="card card-body space-y-3" x-data="{ dismissed: false }" x-show="!dismissed"
+                          hx-post="@acceptUrl" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <label class="label" for="suggestion-@i-name">Ad</label>
+                                <input id="suggestion-@i-name" name="name" value="@s.Name" class="input" required maxlength="100" />
+                            </div>
+                            <div>
+                                <label class="label" for="suggestion-@i-glob">URL deseni (glob)</label>
+                                <input id="suggestion-@i-glob" name="urlGlob" value="@s.UrlGlob" class="input font-mono text-xs" required spellcheck="false" />
+                            </div>
+                        </div>
+                        <p class="text-sm text-fg-muted">@s.Reason</p>
+                        <div>
+                            <p class="text-xs text-fg-muted">@where <span class="tabular font-medium text-fg">@Format.Number(s.MatchCount)</span> tanesi uyuyor, örnekler:</p>
+                            <ul class="mt-1 space-y-0.5">
+                                @foreach (var url in s.SampleUrls)
+                                {
+                                    <li class="truncate font-mono text-2xs text-fg-muted" title="@url">@url</li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="btn btn-ghost btn-sm" x-on:click="dismissed = true">Reddet</button>
+                            <button type="submit" class="btn btn-primary btn-sm"><icon name="plus" />Ekle</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        }
+
+        @* URL grupları: AI yoksa tek kaynak, varsa önerinin dayandığı veri. *@
+        <details class="card" open="@(Model.Suggestions.Count == 0)">
+            <summary class="card-header cursor-pointer"><span class="card-title">URL grupları</span><span class="tabular text-xs text-fg-muted">@Model.Groups.Count grup</span></summary>
+            <ul class="divide-y divide-line">
+                @foreach (var (g, i) in Model.Groups.Select((g, i) => (g, i)))
+                {
+                    <li class="px-4 py-3">
+                        <form class="flex flex-col gap-2 sm:flex-row sm:items-center" hx-post="@acceptUrl" hx-target="closest li" hx-swap="innerHTML" hx-disabled-elt="find button">
+                            <div class="min-w-0 flex-1">
+                                <p class="font-mono text-sm text-fg">@g.Pattern <span class="tabular font-sans text-xs text-fg-muted">· @Format.Number(g.Count) sayfa</span></p>
+                                <p class="truncate font-mono text-2xs text-fg-muted" title="@g.SampleUrls.FirstOrDefault()">@g.SampleUrls.FirstOrDefault()</p>
+                            </div>
+                            @if (g.Pattern != "/")
+                            {
+                                <input type="hidden" name="urlGlob" value="@g.Pattern" />
+                                <label class="sr-only" for="group-@i-name">@g.Pattern için sayfa tipi adı</label>
+                                <input id="group-@i-name" name="name" class="input sm:w-48" placeholder="Sayfa tipi adı" required maxlength="100" />
+                                <button type="submit" class="btn btn-secondary btn-sm shrink-0"><icon name="plus" />Ekle</button>
+                            }
+                        </form>
+                    </li>
+                }
+            </ul>
+        </details>
+    }
+</div>

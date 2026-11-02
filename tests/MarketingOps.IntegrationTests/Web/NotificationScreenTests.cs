@@ -89,30 +89,18 @@ public partial class NotificationScreenTests(IntegrationTestContext context)
         return (siteId, $"/sites/{siteId}/settings/notifications");
     }
 
-    private Task<HttpResponseMessage> PostAsync(string page, string url, params (string Key, string Value)[] fields)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new FormUrlEncodedContent(fields.Select(f => new KeyValuePair<string, string>(f.Key, f.Value)))
-        };
-        request.Headers.Add("RequestVerificationToken", Token().Match(page).Groups[1].Value);
-        request.Headers.Add("HX-Request", "true");
-        return _client.SendAsync(request);
-    }
+    private Task<HttpResponseMessage> PostAsync(string page, string url, params (string Key, string Value)[] fields) =>
+        HtmxForm.PostAsync(_client, page, url, fields);
 
-    // Razor Türkçe karakterleri HTML varlığı, toast başlığı JSON kaçışıyla yazar.
-    private static async Task<string> BodyAsync(HttpResponseMessage response) => WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+    private static Task<string> BodyAsync(HttpResponseMessage response) => HtmxForm.BodyAsync(response);
 
-    private static string Trigger(HttpResponseMessage response) => Regex.Unescape(response.Headers.GetValues("HX-Trigger").Single());
+    private static string Trigger(HttpResponseMessage response) => HtmxForm.Trigger(response);
 
     private async Task<NotificationSettingsResponse> SettingsAsync(Guid siteId)
     {
         await using var scope = context.Factory.Services.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<ISender>().Send(new GetNotificationSettingsQuery(siteId));
     }
-
-    [GeneratedRegex("""name="request-verification-token" content="([^"]+)" """)]
-    private static partial Regex Token();
 
     [GeneratedRegex("""/sites/[0-9a-f-]{36}/notifications/[0-9a-f-]{36}""")]
     private static partial Regex OpenLink();

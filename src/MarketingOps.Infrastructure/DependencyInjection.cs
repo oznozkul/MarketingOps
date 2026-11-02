@@ -58,6 +58,7 @@ public static class DependencyInjection
                 PooledConnectionLifetime = TimeSpan.FromMinutes(5)
             });
         services.AddSingleton<SiteCrawler>();
+        services.AddTransient<ISitemapSampler, SitemapSampler>();
         services.AddTransient<CrawlJob>();
         services.AddTransient<ScheduledCrawlJob>();
         services.AddTransient<RenderCrawlJob>();

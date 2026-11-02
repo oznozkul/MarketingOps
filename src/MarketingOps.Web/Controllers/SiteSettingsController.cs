@@ -2,6 +2,7 @@ using MarketingOps.Application.Connectors.Commands.ConnectMeta;
 using MarketingOps.Application.Connectors.Queries.GetConnectors;
 using MarketingOps.Application.Sites.Commands.CreateSite;
 using MarketingOps.Domain.Connectors;
+using MarketingOps.Domain.Sites;
 using MarketingOps.Application.Sites.Commands.DeleteSite;
 using MarketingOps.Application.Sites.Commands.UpdateSite;
 using MarketingOps.Application.Sites.Commands.UpdateTaskKeyPrefix;
@@ -45,7 +46,7 @@ public class SiteSettingsController(ISender sender, ISiteContext context) : Site
         if (ModelState.IsValid)
         {
             var (ok, id) = await TrySendAsync(sender, new CreateSiteCommand(form.Name, form.Domain));
-            if (ok) return HtmxRedirect(Url.Action(nameof(Index), "SiteSettings", new { siteId = id })!, "Site eklendi.");
+            if (ok) return HtmxRedirect(Url.Action("Step", "Setup", new { siteId = id, step = SiteSetupStep.SearchConsole })!, "Site eklendi. Kurulumu adım adım tamamlayın.");
         }
         return PartialView("_CreateSiteForm", form);
     }

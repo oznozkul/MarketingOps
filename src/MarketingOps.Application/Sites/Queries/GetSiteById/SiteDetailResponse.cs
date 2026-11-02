@@ -1,3 +1,5 @@
+using MarketingOps.Domain.Sites;
+
 namespace MarketingOps.Application.Sites.Queries.GetSiteById;
 
 public sealed record SiteDetailResponse(
@@ -11,4 +13,5 @@ public sealed record SiteDetailResponse(
     IReadOnlyList<PageTypeResponse> PageTypes,
     string TaskKeyPrefix,
     TrackingJourneyResponse Journey,
-    OrderSourceResponse OrderSource);
+    OrderSourceResponse OrderSource,
+    SiteSetupStep? SetupStep);

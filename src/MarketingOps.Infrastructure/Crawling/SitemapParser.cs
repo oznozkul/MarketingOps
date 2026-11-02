@@ -10,7 +10,8 @@ public static class SitemapParser
         XDocument doc;
         try
         {
-            doc = XDocument.Parse(xml);
+            // UTF-8 BOM gövdeyi çözen GetString'den sonra metnin başında kalır; XML bildirimi ilk karakter olmalı.
+            doc = XDocument.Parse(xml.TrimStart('﻿', ' ', '\t', '\r', '\n'));
         }
         catch (XmlException)
         {

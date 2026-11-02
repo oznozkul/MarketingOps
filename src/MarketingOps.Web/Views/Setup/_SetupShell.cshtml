@@ -1,0 +1,55 @@
+@model MarketingOps.Web.ViewModels.Setup.SetupViewModel
+@using MarketingOps.Domain.Sites
+@{
+    Layout = "_Layout";
+    var steps = Enum.GetValues<SiteSetupStep>();
+}
+<div class="flex flex-col gap-6">
+    <div>
+        <p class="eyebrow">Site kurulumu · <span class="font-mono normal-case">@Model.Site.Domain</span></p>
+        <h1 class="page-title mt-1">@DisplayText.Of(Model.Step)</h1>
+        @if (Model.Current is null)
+        {
+            <p class="mt-1 text-sm text-fg-muted">Kurulum tamamlandı; adımları yeniden gözden geçiriyorsunuz.</p>
+        }
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        @* Adımlar: tamamlanan adıma geri dönülebilir, henüz gelinmemiş adım açılamaz. *@
+        <nav aria-label="Kurulum adımları">
+            <ol class="flex gap-1 overflow-x-auto lg:flex-col lg:gap-0 lg:border-l lg:border-line">
+                <li class="flex shrink-0 items-center gap-2 px-3 py-2 text-sm text-fg-muted">
+                    <icon name="circle-check" class="h-4 w-4 text-ok" /><span>1. Domain</span>
+                </li>
+                @for (var i = 0; i < steps.Length; i++)
+                {
+                    var step = steps[i];
+                    var label = $"{i + 2}. {DisplayText.Of(step)}";
+                    var done = Model.Current is null || step < Model.Current;
+                    <li class="shrink-0">
+                        @if (step == Model.Step)
+                        {
+                            <span aria-current="step" class="-ml-px flex items-center gap-2 border-l-2 border-fg px-3 py-2 text-sm font-semibold text-fg">
+                                <icon name="circle-dot" class="h-4 w-4" />@label
+                            </span>
+                        }
+                        else if (Model.IsReached(step))
+                        {
+                            <a href="@Url.Action("Step", "Setup", new { siteId = Model.Site.Id, step })" class="flex items-center gap-2 px-3 py-2 text-sm text-fg-muted hover:text-fg">
+                                <icon name="@(done ? "circle-check" : "circle-dot")" class="h-4 w-4 @(done ? "text-ok" : "")" />@label
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="flex items-center gap-2 px-3 py-2 text-sm text-fg-subtle">
+                                <icon name="circle-dashed" class="h-4 w-4" />@label
+                            </span>
+                        }
+                    </li>
+                }
+            </ol>
+        </nav>
+
+        <div class="min-w-0 space-y-6">@RenderBody()</div>
+    </div>
+</div>

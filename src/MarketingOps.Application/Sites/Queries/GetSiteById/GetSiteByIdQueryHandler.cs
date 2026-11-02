@@ -41,7 +41,8 @@ public sealed class GetSiteByIdQueryHandler(IAppDbContext db) : IRequestHandler<
                     .ToList(),
                 s.TaskKeyPrefix,
                 new TrackingJourneyResponse(s.Journey.CartUrl, s.Journey.CheckoutUrl, s.Journey.ThankYouUrl, s.Journey.ConsentButtonSelector),
-                new OrderSourceResponse(s.OrderSource.ProtectedConnection != null && s.OrderSource.Query != null, s.OrderSource.Query)))
+                new OrderSourceResponse(s.OrderSource.ProtectedConnection != null && s.OrderSource.Query != null, s.OrderSource.Query),
+                s.SetupStep))
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException("Site bulunamadı.");
 

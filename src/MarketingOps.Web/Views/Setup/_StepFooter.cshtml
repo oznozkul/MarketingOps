@@ -1,0 +1,20 @@
+@model (MarketingOps.Web.ViewModels.Setup.SetupViewModel Setup, string NextLabel)
+@using MarketingOps.Domain.Sites
+@{
+    var setup = Model.Setup;
+    var first = setup.Step == SiteSetupStep.SearchConsole;
+}
+@* Devam, adımı sitede tamamlanmış olarak kaydeder; sihirbaz kapatılırsa bir sonraki adımdan sürer. *@
+<div class="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+    @if (first)
+    {
+        <a class="btn btn-ghost" href="@Url.Action("Index", "SiteSettings", new { siteId = setup.Site.Id })">Kurulumu sonra sürdür</a>
+    }
+    else
+    {
+        <a class="btn btn-ghost" href="@Url.Action("Step", "Setup", new { siteId = setup.Site.Id, step = setup.Step - 1 })"><icon name="chevron-left" />Geri</a>
+    }
+    <button type="button" class="btn btn-primary" hx-post="@Url.Action("Complete", "Setup", new { siteId = setup.Site.Id, step = setup.Step })" hx-swap="none" hx-disabled-elt="this">
+        <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />@Model.NextLabel<icon name="chevron-right" />
+    </button>
+</div>

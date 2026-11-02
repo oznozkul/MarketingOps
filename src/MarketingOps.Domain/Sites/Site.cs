@@ -24,6 +24,9 @@ public class Site : Entity
     /// <summary>Görev anahtarlarının öneki ("LB" → "LB-142").</summary>
     public string TaskKeyPrefix { get; private set; } = null!;
     public int LastTaskNumber { get; private set; }
+
+    /// <summary>Sihirbazda sıradaki adım; null ise kurulum tamamlanmıştır (sihirbazdan önce eklenen siteler dahil).</summary>
+    public SiteSetupStep? SetupStep { get; private set; }
     public IReadOnlyList<PageType> PageTypes => _pageTypes;
 
     private Site() { }
@@ -34,7 +37,8 @@ public class Site : Entity
         Name = RequireName(name),
         Domain = NormalizeDomain(domain),
         TaskKeyPrefix = DerivePrefix(name),
-        CreatedAt = now
+        CreatedAt = now,
+        SetupStep = SiteSetupStep.SearchConsole
     };
 
     /// <summary>
@@ -86,6 +90,18 @@ public class Site : Entity
     }
 
     public void MarkOwnershipVerified() => IsOwnershipVerified = true;
+
+    /// <summary>Adımı tamamlar ve sıradakine geçer. Geri dönülüp yeniden kaydedilen adım ilerlemeyi geri almaz.</summary>
+    public void CompleteSetupStep(SiteSetupStep step)
+    {
+        if (SetupStep is null || step < SetupStep) return;
+        if (step > SetupStep)
+            throw new DomainException("Önceki kurulum adımları tamamlanmadan bu adıma geçilemez.");
+        SetupStep = step == SiteSetupStep.FirstCrawl ? null : step + 1;
+    }
+
+    /// <summary>Kurulumu sihirbazsız tamamlar (ör. hazır örnek veriyle gelen siteler).</summary>
+    public void FinishSetup() => SetupStep = null;
 
     public void UpdateTaskKeyPrefix(string prefix)
     {

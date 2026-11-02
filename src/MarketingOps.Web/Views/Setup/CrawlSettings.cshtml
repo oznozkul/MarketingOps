@@ -1,0 +1,12 @@
+@model MarketingOps.Web.ViewModels.Setup.SetupViewModel
+@{
+    Layout = "_SetupShell";
+    var footer = (Model, "Devam");
+}
+<p class="max-w-prose text-sm text-fg-muted">Varsayılanlar çoğu site için uygundur. Değiştirdiyseniz önce "Kaydet" ile kaydedin, sonra devam edin. robots.txt kurallarına her zaman uyulur.</p>
+
+<div class="card card-body">
+    <partial name="~/Views/SiteSettings/_CrawlSettingsForm.cshtml" model="Model.Crawl" />
+</div>
+
+<partial name="_StepFooter" model="footer" />

@@ -1,0 +1,44 @@
+@model MarketingOps.Web.ViewModels.Setup.SetupViewModel
+@using MarketingOps.Domain.Sites
+@{
+    Layout = "_SetupShell";
+    var site = Model.Site;
+    var settings = site.CrawlSettings;
+    (string Label, string Value, bool Ok, SiteSetupStep Step)[] summary =
+    [
+        ("Sahiplik", site.IsOwnershipVerified ? "Doğrulandı" : "Doğrulanmadı", site.IsOwnershipVerified, SiteSetupStep.SearchConsole),
+        ("Sayfa tipleri", site.PageTypes.Count > 0 ? string.Join(", ", site.PageTypes.Select(p => p.Name)) : "Yok; sayfalar \"Eşleşmeyen\" olarak gruplanır", site.PageTypes.Count > 0, SiteSetupStep.PageTypes),
+        ("Tarama", $"En fazla {Format.Number(settings.MaxPages)} sayfa · saniyede {Format.Number(settings.MaxRequestsPerSecond, 0)} istek · {DisplayText.Of(settings.Schedule)}", true, SiteSetupStep.CrawlSettings)
+    ];
+}
+<p class="max-w-prose text-sm text-fg-muted">İlk tarama siteyi okur, sayfaları sayfa tiplerine ayırır ve kuralları çalıştırır. Tarama sırasında siteye hiçbir şey yazılmaz.</p>
+
+@if (!site.IsOwnershipVerified)
+{
+    @* Domain kuralı: doğrulanmamış sitede yalnızca zamanlanmış tarama engellenir; elle tarama kullanıcının bilinçli eylemidir. *@
+    <p class="rounded-sm border border-warn-line bg-warn-soft px-4 py-3 text-sm text-fg">Sahiplik doğrulanmadığı için yalnızca bu ilk tarama yapılır; düzenli taramalar <a class="link" href="@Url.Action("Step", "Setup", new { siteId = site.Id, step = SiteSetupStep.SearchConsole })">sahiplik doğrulanınca</a> başlar.</p>
+}
+
+<div class="card">
+    <dl class="divide-y divide-line">
+        @foreach (var row in summary)
+        {
+            <div class="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-start sm:gap-4">
+                <dt class="w-32 shrink-0 text-sm text-fg-muted">@row.Label</dt>
+                <dd class="flex flex-1 items-start justify-between gap-3 text-sm text-fg">
+                    <span class="flex items-start gap-1.5">
+                        <icon name="@(row.Ok ? "circle-check" : "triangle-alert")" class="mt-0.5 h-4 w-4 shrink-0 @(row.Ok ? "text-ok" : "text-warn")" />@row.Value
+                    </span>
+                    <a class="link shrink-0 text-xs" href="@Url.Action("Step", "Setup", new { siteId = site.Id, step = row.Step })">Değiştir</a>
+                </dd>
+            </div>
+        }
+    </dl>
+</div>
+
+<div class="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+    <a class="btn btn-ghost" href="@Url.Action("Step", "Setup", new { siteId = site.Id, step = SiteSetupStep.CrawlSettings })"><icon name="chevron-left" />Geri</a>
+    <button type="button" class="btn btn-primary" hx-post="@Url.Action("StartFirstCrawl", "Setup", new { siteId = site.Id })" hx-swap="none" hx-disabled-elt="this">
+        <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" /><icon name="scan-line" />İlk taramayı başlat
+    </button>
+</div>

@@ -57,6 +57,7 @@ public sealed class DevelopmentSeeder(AppDbContext db, TimeProvider clock)
 
             var site = Site.Create(organization.Id, name, domain, clock.GetUtcNow());
             foreach (var (typeName, mode, conditions) in pageTypes) site.AddPageType(typeName, mode, conditions);
+            site.FinishSetup();
             db.Sites.Add(site);
         }
 
