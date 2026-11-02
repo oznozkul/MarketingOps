@@ -2,7 +2,6 @@ using FluentValidation;
 using MarketingOps.Application.Common.Exceptions;
 using MarketingOps.Domain.Common;
 using MarketingOps.Web.Infrastructure;
-using MarketingOps.Web.ViewModels;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,13 +11,6 @@ namespace MarketingOps.Web.Controllers;
 [AutoValidateAntiforgeryToken]
 public abstract class SiteControllerBase : Controller
 {
-    /// <summary>İçeriği sonraki adımlarda hazırlanacak ekranlar için geçici görünüm.</summary>
-    protected ViewResult Placeholder(string title, string description, string icon)
-    {
-        ViewData["Title"] = title;
-        return View("Placeholder", new PlaceholderViewModel(title, description, icon));
-    }
-
     /// <summary>
     /// Formdan gelen komutu gönderir. Doğrulama hataları alan adına, domain ve çakışma hataları formun geneline
     /// ModelState üzerinden yazılır; böylece form aynı değerlerle hata mesajlarıyla yeniden gösterilebilir.

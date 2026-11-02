@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace MarketingOps.Web.Hubs;
 
-/// <summary>Tarama ilerlemesi. İstemci açtığı sitenin grubuna katılır; yayını CrawlProgressBroadcaster yapar.</summary>
+/// <summary>
+/// Açık sitenin canlı olayları: tarama ilerlemesi (CrawlProgressBroadcaster) ve zildeki okunmamış sayısı
+/// (NotificationCountBroadcaster). İstemci açtığı sitenin grubuna katılır.
+/// </summary>
 public sealed class CrawlHub : Hub
 {
     public const string Path = "/hubs/crawls";

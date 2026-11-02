@@ -1,0 +1,49 @@
+@model MarketingOps.Web.ViewModels.Notifications.NotificationChannelsForm
+@{
+    (string Name, string RemoveName, string Label, bool Saved, string Hint)[] webhooks =
+    [
+        ("TeamsWebhook", "RemoveTeams", "Microsoft Teams webhook", Model.HasTeams, "Kanalın Incoming Webhook adresi."),
+        ("SlackWebhook", "RemoveSlack", "Slack webhook", Model.HasSlack, "Slack uygulamasının Incoming Webhook adresi.")
+    ];
+}
+<form id="channels-form" class="space-y-5" hx-post="@Url.SiteAction("SaveChannels", "NotificationSettings")" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button" novalidate>
+    <form-errors />
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+            <p class="label">Panel içi</p>
+            <p class="flex items-center gap-1.5 text-sm text-fg"><icon name="circle-check" class="h-4 w-4 text-ok" />Her zaman açık</p>
+            <p class="hint">Üst bardaki zil ikonunda listelenir.</p>
+        </div>
+        <div>
+            <p class="label">E-posta (SMTP)</p>
+            @if (Model.MailConfigured)
+            {
+                <p class="flex items-center gap-1.5 text-sm text-fg"><icon name="circle-check" class="h-4 w-4 text-ok" />Yapılandırıldı</p>
+            }
+            else
+            {
+                <p class="flex items-center gap-1.5 text-sm text-fg"><icon name="circle-minus" class="h-4 w-4 text-fg-muted" />Yapılandırılmadı</p>
+            }
+            <p class="hint">Sunucu ayarı (appsettings.json, Mail bölümü). Alıcılar her kuralda ayrı yazılır.</p>
+        </div>
+        @foreach (var w in webhooks)
+        {
+            var error = ViewData.ModelState.FirstError(w.Name);
+            <div>
+                <label class="label" for="channel-@w.Name">@w.Label</label>
+                <input id="channel-@w.Name" name="@w.Name" type="password" class="input font-mono" autocomplete="off" spellcheck="false"
+                       placeholder="@(w.Saved ? "Kayıtlı · değiştirmek için yazın" : "https://...")"
+                       aria-invalid="@(error is null ? null : "true")" aria-describedby="@(error is null ? $"channel-{w.Name}-hint" : w.Name + "-error")" />
+                <field-error for="@w.Name" />
+                <p id="channel-@w.Name-hint" class="hint">@w.Hint Adres tekrar gösterilmez; boş bırakmak kayıtlı adresi korur.</p>
+                @if (w.Saved)
+                {
+                    <label class="mt-2 flex items-center gap-2 text-sm text-fg-muted">
+                        <input type="checkbox" name="@w.RemoveName" value="true" class="checkbox" />Kayıtlı adresi kaldır
+                    </label>
+                }
+            </div>
+        }
+    </div>
+    <div class="flex justify-end"><partial name="_SubmitButton" model="@("Kanalları kaydet")" /></div>
+</form>

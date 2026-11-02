@@ -1,0 +1,91 @@
+@model MarketingOps.Web.ViewModels.Notifications.NotificationRuleForm
+@using MarketingOps.Domain.Notifications
+@{
+    var key = Model.EventType.ToString();
+    var description = Model.EventType switch
+    {
+        NotificationEventType.NewCriticalFinding => "Değerlendirmede Kritik önemde yeni bir bulgu açıldığında.",
+        NotificationEventType.FindingReopened => "Düzeldiği doğrulanan bir bulgu sonraki taramada tekrar görüldüğünde.",
+        NotificationEventType.PurchaseGap => "Sipariş veritabanı ile GA4 purchase sayısı arasındaki fark eşiği aştığında.",
+        NotificationEventType.ScoreDropped => "Bir kategori skoru önceki değerlendirmeye göre eşik kadar düştüğünde.",
+        NotificationEventType.CrawlFailed => "Tarama hata ile sonlandığında.",
+        _ => "Bir Google ya da Meta bağlantısının yetkisi sona erdiğinde."
+    };
+    (NotificationChannelKind Kind, bool Ready, string? Warning)[] channels =
+    [
+        (NotificationChannelKind.InApp, true, null),
+        (NotificationChannelKind.Email, Model.Available.MailConfigured, "SMTP yok"),
+        (NotificationChannelKind.Teams, Model.Available.HasTeams, "webhook yok"),
+        (NotificationChannelKind.Slack, Model.Available.HasSlack, "webhook yok")
+    ];
+    string? E(string field) => ViewData.ModelState.FirstError(field);
+    string? Time(TimeOnly? t) => t?.ToString("HH:mm");
+}
+<form id="rule-@key" class="space-y-4" hx-post="@Url.SiteAction("SaveRule", "NotificationSettings", new { eventType = Model.EventType })" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button[type=submit]" novalidate>
+    <div class="flex items-start justify-between gap-3">
+        <div>
+            <h3 class="text-sm font-semibold text-fg">@DisplayText.Of(Model.EventType)</h3>
+            <p class="text-xs text-fg-muted">@description</p>
+        </div>
+        <label class="flex shrink-0 items-center gap-2 text-sm text-fg">
+            <input type="checkbox" name="Enabled" value="true" class="checkbox" checked="@Model.Enabled" />Açık
+        </label>
+    </div>
+    <form-errors />
+
+    <fieldset>
+        <legend class="label">Kanallar</legend>
+        <div class="flex flex-wrap gap-x-5 gap-y-2">
+            @foreach (var c in channels)
+            {
+                <label class="flex items-center gap-2 text-sm text-fg">
+                    <input type="checkbox" name="Channels" value="@c.Kind" class="checkbox" checked="@Model.Channels.Contains(c.Kind)" />
+                    @DisplayText.Of(c.Kind)
+                    @if (!c.Ready)
+                    {
+                        <span class="text-2xs text-warn">(@c.Warning)</span>
+                    }
+                </label>
+            }
+        </div>
+    </fieldset>
+
+    <div>
+        <label class="label" for="rule-@key-recipients">E-posta alıcıları</label>
+        <textarea id="rule-@key-recipients" name="Recipients" rows="2" class="textarea font-mono text-xs" spellcheck="false" placeholder="ad@ornek.com (satır başına bir adres)"
+                  aria-invalid="@(E("Recipients") is null ? null : "true")" aria-describedby="@(E("Recipients") is null ? null : "Recipients-error")">@Model.Recipients</textarea>
+        <field-error for="Recipients" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+            <label class="label" for="rule-@key-quiet-start">Sessiz başlangıç</label>
+            <input id="rule-@key-quiet-start" name="QuietStart" type="time" value="@Time(Model.QuietStart)" class="input tabular"
+                   aria-invalid="@(E("QuietStart") is null ? null : "true")" aria-describedby="@(E("QuietStart") is null ? null : "QuietStart-error")" />
+            <field-error for="QuietStart" />
+        </div>
+        <div>
+            <label class="label" for="rule-@key-quiet-end">Sessiz bitiş</label>
+            <input id="rule-@key-quiet-end" name="QuietEnd" type="time" value="@Time(Model.QuietEnd)" class="input tabular"
+                   aria-invalid="@(E("QuietEnd") is null ? null : "true")" aria-describedby="@(E("QuietEnd") is null ? null : "QuietEnd-error")" />
+            <field-error for="QuietEnd" />
+        </div>
+        <div>
+            <label class="label" for="rule-@key-repeat">Tekrar aralığı (saat)</label>
+            <input id="rule-@key-repeat" name="RepeatIntervalHours" type="number" min="@NotificationRule.MinRepeatHours" max="@NotificationRule.MaxRepeatHours" value="@Model.RepeatIntervalHours" class="input tabular"
+                   aria-invalid="@(E("RepeatIntervalHours") is null ? null : "true")" aria-describedby="@(E("RepeatIntervalHours") is null ? null : "RepeatIntervalHours-error")" />
+            <field-error for="RepeatIntervalHours" />
+        </div>
+        @if (Model.EventType == NotificationEventType.ScoreDropped)
+        {
+            <div>
+                <label class="label" for="rule-@key-drop">Düşüş eşiği (puan)</label>
+                <input id="rule-@key-drop" name="ScoreDropPoints" type="number" min="1" max="100" value="@Model.ScoreDropPoints" class="input tabular"
+                       aria-invalid="@(E("ScoreDropPoints") is null ? null : "true")" aria-describedby="@(E("ScoreDropPoints") is null ? null : "ScoreDropPoints-error")" />
+                <field-error for="ScoreDropPoints" />
+            </div>
+        }
+    </div>
+
+    <div class="flex justify-end"><partial name="_SubmitButton" model="@("Kuralı kaydet")" /></div>
+</form>

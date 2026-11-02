@@ -159,12 +159,13 @@
     );
   });
 
-  // SignalR: açık sitenin tarama ilerlemesini dinle; olaylar DOM'a yayılır, Alpine bileşenleri kendini günceller.
+  // SignalR: açık sitenin tarama ilerlemesini ve okunmamış bildirim sayısını dinle; olaylar DOM'a yayılır, Alpine bileşenleri kendini günceller.
   var liveSiteId = document.body.dataset.siteId;
   if (liveSiteId && window.signalR) {
     var hub = new signalR.HubConnectionBuilder().withUrl('/hubs/crawls').withAutomaticReconnect().build();
     hub.on('crawlProgress', function (p) { window.dispatchEvent(new CustomEvent('mo:crawl-progress', { detail: p })); });
     hub.on('crawlFinished', function (p) { window.dispatchEvent(new CustomEvent('mo:crawl-finished', { detail: p })); });
+    hub.on('notificationCount', function (p) { window.dispatchEvent(new CustomEvent('mo:notification-count', { detail: p })); });
     var join = function () { return hub.invoke('JoinSite', liveSiteId); };
     hub.onreconnected(join);
     hub.start().then(join).catch(function () { /* canlı ilerleme olmadan da sayfa çalışır */ });

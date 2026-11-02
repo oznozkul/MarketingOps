@@ -57,6 +57,7 @@ builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("postgres");
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR().AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHostedService<CrawlProgressBroadcaster>();
+builder.Services.AddHostedService<NotificationCountBroadcaster>();
 
 var app = builder.Build();
 

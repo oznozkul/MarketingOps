@@ -1,0 +1,74 @@
+@model MarketingOps.Web.ViewModels.Notifications.NotificationSettingsViewModel
+@using MarketingOps.Domain.Notifications
+@{
+    (NotificationChannelKind Kind, string Hint, bool Ready)[] tests =
+    [
+        (NotificationChannelKind.InApp, "Zildeki listeye yazılır.", true),
+        (NotificationChannelKind.Email, Model.Channels.MailConfigured ? "Kurallardaki e-posta alıcılarına gider." : "SMTP yapılandırılmadı.", Model.Channels.MailConfigured),
+        (NotificationChannelKind.Teams, Model.Channels.HasTeams ? "Kayıtlı webhook'a gider." : "Webhook yok.", Model.Channels.HasTeams),
+        (NotificationChannelKind.Slack, Model.Channels.HasSlack ? "Kayıtlı webhook'a gider." : "Webhook yok.", Model.Channels.HasSlack)
+    ];
+}
+
+<div class="flex flex-col gap-8">
+    <div>
+        <p class="eyebrow">Ayarlar</p>
+        <h1 class="page-title mt-1">Bildirimler</h1>
+        <p class="mt-1 max-w-prose text-sm text-fg-muted">Hangi olayın hangi kanala ve kime gideceği, sessiz saatler ve yönetici özet raporları. Ayarlar bu siteye aittir.</p>
+    </div>
+
+    @* ---------- Kanallar ---------- *@
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" aria-labelledby="channels-heading">
+        <div class="card card-body space-y-4">
+            <h2 id="channels-heading" class="eyebrow">Kanallar</h2>
+            <partial name="_ChannelsForm" model="Model.Channels" />
+        </div>
+        <div class="card card-body space-y-3">
+            <h2 class="eyebrow">Test mesajı</h2>
+            <p class="text-sm text-fg-muted">Kanalın çalıştığını görmek için tek bir test mesajı gönderir.</p>
+            <ul class="divide-y divide-line">
+                @foreach (var t in tests)
+                {
+                    <li class="flex items-center justify-between gap-3 py-2.5">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-fg">@DisplayText.Of(t.Kind)</p>
+                            <p class="text-xs text-fg-muted">@t.Hint</p>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm shrink-0" disabled="@(!t.Ready)"
+                                hx-post="@Url.SiteAction("SendTest", "NotificationSettings", new { channel = t.Kind })" hx-swap="none" hx-disabled-elt="this">
+                            <icon name="loader-circle" class="htmx-indicator h-4 w-4 animate-spin motion-reduce:animate-none" />Test gönder
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+    </section>
+
+    @* ---------- Kurallar ---------- *@
+    <section class="space-y-3" aria-labelledby="rules-heading">
+        <div>
+            <h2 id="rules-heading" class="section-title">Bildirim kuralları</h2>
+            <p class="max-w-prose text-sm text-fg-muted">Sessiz saatlerde (İstanbul saati) gelen bildirim aralık bitince gönderilir. Aynı bulgu için tekrar aralığı dolmadan ikinci bildirim gitmez.</p>
+        </div>
+        <div class="grid gap-4 xl:grid-cols-2">
+            @foreach (var rule in Model.Rules)
+            {
+                <div class="card card-body"><partial name="_RuleForm" model="rule" /></div>
+            }
+        </div>
+    </section>
+
+    @* ---------- Özet raporlar ---------- *@
+    <section class="space-y-3" aria-labelledby="reports-heading">
+        <div>
+            <h2 id="reports-heading" class="section-title">Yönetici özet raporları</h2>
+            <p class="max-w-prose text-sm text-fg-muted">Skorlar ve değişimleri, en önemli 5 sorun ve kapanan görevler e-postayla gider. Haftalık özet pazartesi, aylık özet ayın ilk günü gönderilir.</p>
+        </div>
+        <div class="space-y-4">
+            @foreach (var report in Model.Reports)
+            {
+                <div class="card card-body"><partial name="_ReportForm" model="report" /></div>
+            }
+        </div>
+    </section>
+</div>

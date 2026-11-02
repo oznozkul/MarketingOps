@@ -1,0 +1,42 @@
+@model MarketingOps.Application.Notifications.Queries.GetNotifications.NotificationsResponse
+@inject ISiteContext SiteContext
+@{
+    // Zil route'unda site olmayan sayfalarda da (ör. /_design) görünür; adresler site bağlamından üretilir.
+    var siteId = SiteContext.Site!.Id;
+}
+@* Zil menüsünün içeriği. Okunmamış sayısı Alpine'a bildirilir; zil rozeti onu gösterir. *@
+<div class="flex items-center justify-between border-b border-line px-4 py-2.5" x-init="unread = @Model.Unread">
+    <p class="text-sm font-semibold text-fg">Bildirimler @if (Model.Unread > 0) { <span class="tabular text-fg-muted">· @Format.Number(Model.Unread) okunmamış</span> }</p>
+    <div class="flex items-center gap-3">
+        @if (Model.Unread > 0)
+        {
+            <button type="button" class="link text-xs" hx-post="@Url.Action("MarkRead", "Notifications", new { siteId })" hx-target="#notification-panel">Tümünü okundu say</button>
+        }
+        <a class="link text-xs" href="@Url.Action("Index", "NotificationSettings", new { siteId })">Ayarlar</a>
+    </div>
+</div>
+@if (Model.Items.Count == 0)
+{
+    <empty-state icon="bell-off" compact="true" title="Bildirim yok" description="Yeni kritik bulgu, regresyon veya bağlantı sorunu olduğunda burada görünür." />
+}
+else
+{
+    <ul class="max-h-[60vh] divide-y divide-line overflow-y-auto">
+        @foreach (var n in Model.Items)
+        {
+            <li>
+                <a href="@Url.Action("Open", "Notifications", new { siteId, notificationId = n.Id })" class="flex gap-3 px-4 py-3 transition-colors duration-150 hover:bg-surface-2 focus-visible:bg-surface-2">
+                    <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full @(n.Unread ? "bg-primary" : "bg-transparent")" aria-hidden="true"></span>
+                    <span class="min-w-0 flex-1">
+                        <span class="flex items-baseline justify-between gap-2">
+                            <span class="truncate text-sm @(n.Unread ? "font-semibold text-fg" : "text-fg")">@n.Title</span>
+                            <time class="shrink-0 tabular text-2xs text-fg-muted" datetime="@Format.Iso(n.CreatedAt)">@Format.DateTime(n.CreatedAt)</time>
+                        </span>
+                        <span class="mt-0.5 line-clamp-2 block text-xs text-fg-muted">@n.Body</span>
+                        <span class="mt-1 block text-2xs text-fg-subtle">@DisplayText.Of(n.EventType)@(n.Unread ? " · okunmadı" : "")</span>
+                    </span>
+                </a>
+            </li>
+        }
+    </ul>
+}

@@ -65,19 +65,20 @@
 
         <div class="ml-auto flex items-center gap-1">
             @* Bildirimler *@
-            <div class="relative" x-data="{ open: false }" @@keydown.escape="open = false; $refs.btn.focus()" @@click.outside="open = false">
+            @* Okunmamış sayısı SignalR ile canlı gelir (mo:notification-count); değişince liste de yenilenir. *@
+            <div class="relative" x-data="{ open: false, unread: @Model.Notifications.Unread, refresh() { htmx.ajax('GET', '@Url.Action("Panel", "Notifications", new { siteId })', { target: '#notification-panel', swap: 'innerHTML' }) } }"
+                 @@keydown.escape="open = false; $refs.btn.focus()" @@click.outside="open = false"
+                 @@mo:notification-count.window="if ($event.detail.unread !== unread) { unread = $event.detail.unread; refresh() }"
+                 @@mo:notifications-changed.window="refresh()">
                 <button type="button" x-ref="btn" class="icon-btn relative" :aria-expanded="open" aria-haspopup="true"
-                        @@click="open = !open" aria-label="Bildirimler">
+                        @@click="open = !open" :aria-label="unread > 0 ? 'Bildirimler, ' + unread + ' okunmamış' : 'Bildirimler'" aria-label="Bildirimler">
                     <icon name="bell" />
+                    <span x-show="unread > 0" x-cloak x-text="unread > 99 ? '99+' : unread" aria-hidden="true"
+                          class="tabular absolute right-0.5 top-0.5 min-w-[1.125rem] rounded-full bg-critical px-1 text-center text-2xs font-semibold leading-[1.125rem] text-white">@Model.Notifications.Unread</span>
                 </button>
                 <div x-cloak x-show="open" x-transition.opacity.duration.100ms class="menu right-0 w-[min(24rem,calc(100vw-1rem))] p-0">
-                    <div class="flex items-center justify-between border-b border-line px-4 py-2.5">
-                        <p class="text-sm font-semibold text-fg">Bildirimler</p>
-                        <a class="link text-xs" href="@Url.Action("Index", "NotificationSettings", new { siteId })">Ayarlar</a>
-                    </div>
-                    <div id="notification-panel" class="max-h-[60vh] overflow-y-auto">
-                        @* Bildirim merkezi Faz 7'de gelecek. *@
-                        <empty-state icon="bell-off" compact="true" title="Bildirim yok" description="Yeni kritik bulgu, regresyon veya bağlantı sorunu olduğunda burada görünür." />
+                    <div id="notification-panel">
+                        <partial name="~/Views/Notifications/_NotificationPanel.cshtml" model="Model.Notifications" />
                     </div>
                 </div>
             </div>

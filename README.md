@@ -54,7 +54,7 @@ cd src/MarketingOps.Web && ../../tools/tailwind/tailwindcss -c tailwind.config.j
 - **Kurallar** kodda tanımlıdır (`Domain/Rules/Definitions`, her biri ayrı sınıf; liste `RuleCatalog`). 21 kural: 13 teknik SEO/içerik, 8 performans. Sayfa kuralları (`IPageRule`) tek snapshot'a, site kuralları (`ISiteRule`; title/meta tekrarı, TTFB ortalaması, statik dosya önbelleği) taramanın tamamına bakar.
 - **Değerlendirme:** Tarama bitince tarayıcı `EvaluateCrawlJob`'u kuyruğa ekler; iş `EvaluateCrawlCommand`'ı gönderir. Snapshot'lar tek geçişte akış halinde okunur. Aynı kural + aynı sayfa tipi tek bulgudur (parmak izi `sha256(siteId|kural|sayfaTipi)`); yeniden görülen sorun yeni kayıt açmaz.
 - **Yaşam döngüsü:** Açık → (görülmedi) Çözüldü → (yeniden görüldü) Tekrar açıldı. Kısmi tarama hiçbir bulguyu çözülmüş saymaz. Yanlış alarm taramalardan etkilenmez ve geri alınabilir; ertelenen bulgu tarih gelene kadar durumunu korur. Kapalı kuralın bulgularına dokunulmaz.
-- **Domain olayları:** `FindingOpened` ve `FindingReopened`, kayıt başarılı olduktan sonra `DomainEventNotification<T>` olarak MediatR ile yayınlanır (outbox yok). Faz 4 görev üretimi ve Faz 7 bildirimleri bunları dinleyecek.
+- **Domain olayları:** `FindingOpened` ve `FindingReopened`, kayıt başarılı olduktan sonra `DomainEventNotification<T>` olarak MediatR ile yayınlanır (outbox yok). Faz 4 görev üretimi ve Faz 7 bildirimleri bunları dinler.
 - **Statik dosyalar:** Tarayıcı, sayfalardan sonra en fazla 10 iç CSS/JS dosyasının başlıklarını (sıkıştırma, Cache-Control) hız limitine uyarak kontrol eder.
 - **Eski taramalar:** Kural motorundan önce yapılmış ya da değerlendirmesi hata almış tarama, tarama detayındaki "Kuralları çalıştır" ile kayıtlı sayfa verisi üzerinden değerlendirilir; site yeniden taranmaz. Daha yeni bir tarama değerlendirildiyse eskisi değerlendirilemez.
 
@@ -129,6 +129,8 @@ dotnet test tests/MarketingOps.IntegrationTests   # Testcontainers ile gerçek P
 - **Performans** (`/sites/{siteId}/performance`): sayfa tipi bazında Core Web Vitals (mobil/masaüstü, Google eşiklerine göre İyi / İyileştirilmeli / Zayıf, 28 günlük trend), performans kuralları ve bulgu sayıları, TTFB kartı ("Kesin bulgu" / "Kontrol önerisi").
 - **Bulgu detayı / Etki:** Search Console bağlıysa etkilenen sayfaların son 28 günlük tıklama, gösterim, CTR ve ortalama sırası.
 - **Görevler** (`/sites/{siteId}/tasks`): tablo ve pano görünümü; durum, ekip, önem filtreleri. Görev detayı bulgu detayının içindedir (önerilen çözüm, kabul kriterleri, durum/ekip, yorumlar, geri bildirim).
+- **Ayarlar > Bildirimler** (`/sites/{siteId}/settings/notifications`): kanallar (panel içi, SMTP durumu, Teams/Slack webhook'u; adres tekrar gösterilmez) ve kanal başına test mesajı; olay başına kural (kanallar, e-posta alıcıları, İstanbul saatine göre sessiz saatler, tekrar aralığı, skor düşüş eşiği); günlük/haftalık/aylık yönetici özeti (saat, alıcılar, e-postanın iframe içinde önizlemesi).
+- **Zil (üst bar):** son 20 panel içi bildirim, okunmamış sayısı, "Tümünü okundu say"; tıklanan bildirim okundu sayılır ve ilgili ekrana gider. Okunmamış sayısı `NotificationCountBroadcaster` ile 5 saniyede bir, değiştiğinde SignalR üzerinden canlı gelir.
 
 ## API
 - `GET/POST /api/sites`, `GET/PUT/DELETE /api/sites/{siteId}`
