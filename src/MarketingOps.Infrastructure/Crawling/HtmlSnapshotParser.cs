@@ -50,7 +50,7 @@ public static partial class HtmlSnapshotParser
                     i.GetAttribute("width"), i.GetAttribute("height"), i.GetAttribute("loading")))
                 .ToList(),
             Scripts = document.QuerySelectorAll("script")
-                .Where(s => !StructuredDataExtractor.IsJsonLd(s))
+                .Where(IsExecutable)
                 .Select(s => new ScriptInfo(Resolve(s.GetAttribute("src"))?.AbsoluteUri, s.HasAttribute("async"), s.HasAttribute("defer"),
                     head is not null && head.Contains(s)))
                 .ToList(),
@@ -78,6 +78,17 @@ public static partial class HtmlSnapshotParser
             Landmarks = MarkupExtractor.Landmarks(document)
         };
         return new ParsedPage(data, internalLinks);
+    }
+
+    // Tarayıcı yalnızca JavaScript türündeki script'i çalıştırır. Onay bekleyen etiketler (type="text/plain"), şablonlar
+    // ve JSON-LD indirilmez; preconnect, bloklama ve karışık içerik kurallarına girmemeli.
+    private static bool IsExecutable(IElement script)
+    {
+        var type = script.GetAttribute("type")?.Trim();
+        return string.IsNullOrEmpty(type)
+            || type.Equals("module", StringComparison.OrdinalIgnoreCase)
+            || type.Contains("javascript", StringComparison.OrdinalIgnoreCase)
+            || type.Contains("ecmascript", StringComparison.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<string> Texts(IDocument document, string selector) =>

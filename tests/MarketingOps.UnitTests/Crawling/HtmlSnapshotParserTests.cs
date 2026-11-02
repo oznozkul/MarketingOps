@@ -70,6 +70,21 @@ public class HtmlSnapshotParserTests
     }
 
     [Fact]
+    public void Scripts_the_browser_does_not_run_are_ignored()
+    {
+        var data = HtmlSnapshotParser.Parse("""
+            <html><head>
+            <script type="text/plain" data-category="analytics" src="https://www.googletagmanager.com/gtag/js?id=G-1"></script>
+            <script type="text/x-template" id="kart"><a href="#">x</a></script>
+            <script type="module" src="/app.mjs"></script>
+            <script type="text/javascript" src="/eski.js"></script>
+            </head><body></body></html>
+            """, new Uri("https://ornek.com/"), _ => true).Data;
+
+        data.Scripts.Select(s => s.Src).ShouldBe(["https://ornek.com/app.mjs", "https://ornek.com/eski.js"]);
+    }
+
+    [Fact]
     public void Counts_words_without_script_content()
     {
         var count = ParseFixture().Data.WordCount;

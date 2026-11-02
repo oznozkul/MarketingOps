@@ -123,6 +123,20 @@ public class MarkupRuleTests
     }
 
     [Fact]
+    public void A_language_home_page_pointing_to_the_root_counts_as_home()
+    {
+        var languageHome = GoodMarkup with
+        {
+            StructuredData = Schema(Node("WebPage", "url")),
+            Hreflangs = [new HreflangLink("tr", "https://example.com/"), new HreflangLink("en", "https://example.com/en")]
+        };
+
+        Run(new BreadcrumbSchemaRule(), Page(languageHome, path: "/en")).ShouldBeEmpty();
+        Run(new BreadcrumbSchemaRule(), Page(languageHome, path: "/en/about")).ShouldHaveSingleItem();
+        Run(new BreadcrumbSchemaRule(), Page(languageHome with { Hreflangs = [] }, path: "/en")).ShouldHaveSingleItem();
+    }
+
+    [Fact]
     public void Share_tags_must_all_be_present_and_absolute()
     {
         Run(new OpenGraphIncompleteRule(), Page(GoodMarkup with { OpenGraph = null })).ShouldHaveSingleItem().CurrentValue.ShouldBe("5 sorun");

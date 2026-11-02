@@ -22,9 +22,20 @@ public static class PageChecks
     /// <summary>Snapshot hreflang ve X-Robots-Tag alanlarını taşıyor.</summary>
     public static bool HasSignals(PageSnapshot page) => page.Data.Version >= PageSnapshotData.SignalsVersion;
 
-    /// <summary>Sitenin kök adresi (sorgu dizesi olmadan "/").</summary>
-    public static bool IsHomePage(PageSnapshot page) =>
-        Uri.TryCreate(page.Url, UriKind.Absolute, out var url) && url.AbsolutePath == "/" && url.Query.Length == 0;
+    /// <summary>
+    /// Sitenin kök adresi (sorgu dizesi olmadan "/") ya da bir dilin ana sayfası: tek klasörlü adres ("/en") ve hreflang
+    /// kümesi kökü gösteriyor. Dil ana sayfası kök gibi breadcrumb taşımaz, site kimliğini taşır.
+    /// </summary>
+    public static bool IsHomePage(PageSnapshot page)
+    {
+        if (!Uri.TryCreate(page.Url, UriKind.Absolute, out var url) || url.Query.Length > 0) return false;
+        if (IsRoot(url)) return true;
+        return url.AbsolutePath.Trim('/').Split('/').Length == 1
+            && page.Data.Hreflangs.Any(h => Uri.TryCreate(h.Url, UriKind.Absolute, out var alt)
+                                            && alt.Host.Equals(url.Host, StringComparison.OrdinalIgnoreCase) && IsRoot(alt));
+    }
+
+    private static bool IsRoot(Uri url) => url.AbsolutePath == "/" && url.Query.Length == 0;
 
     /// <summary>Arama sonuçlarında görünmesi beklenen sayfa: HTML ve noindex değil.</summary>
     public static bool IsIndexable(PageSnapshot page) => IsHtml(page) && !IsNoindex(page);

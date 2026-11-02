@@ -200,6 +200,11 @@
         measureContrast('koyu');
     } else if (root.hasAttribute('data-theme')) {
         const initial = root.getAttribute('data-theme');
+        // Tema geçişinde renk transition'ı varsa getComputedStyle geçişin başındaki değeri döner; yazı eski temanın
+        // renginde, arka plan yenisinde ölçülür ve sahte 1:1 çıkar. Ölçüm süresince transition kapatılır.
+        const freeze = doc.createElement('style');
+        freeze.textContent = '*,*::before,*::after{transition:none!important;animation:none!important}';
+        (doc.head || root).appendChild(freeze);
         try {
             for (const theme of ['light', 'dark']) {
                 root.setAttribute('data-theme', theme);
@@ -208,6 +213,7 @@
             }
         } finally {
             root.setAttribute('data-theme', initial);
+            freeze.remove();
         }
     } else {
         measureContrast(null);
