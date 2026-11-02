@@ -3,6 +3,8 @@
 services:
   postgres:
     image: postgres:17
+    # Makine yeniden başlayınca veritabanı da kalksın; yoksa uygulama ve testler bağlantı hatasıyla açılır.
+    restart: unless-stopped
     environment:
       # appsettings.json'daki bağlantı cümlesiyle aynı olmalı.
       POSTGRES_DB: marketingops
