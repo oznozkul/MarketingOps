@@ -1,0 +1,2 @@
+# Kabuk betikleri Linux konteynerinde çalışır; Windows'ta CRLF ile çekilirse sh "set: Illegal option -" verir.
+*.sh text eol=lf

@@ -492,12 +492,23 @@ Bilgi tabanı: google:canonical (mevcut), google:hreflang, google:robots bölüm
   data-theme olan sitede koyu renk şeması ikinci kez ölçülmez; yetim sayfada kendine link sayılmaz ve FullCrawl
   hata veren sayfa olmayan taramayı ister; ekran görüntüsü örneğin kendi taramasıyla eşlenir; X-Robots-Tag'de
   yalnızca genel ve googlebot yönergeleri sayılır.
-- Bilinen sınır: yalnızca yönlenen eski adresten link alan sayfa yetim görünebilir (yönlenen snapshot hedefini
-  saklamıyor).
+- Yönlenen snapshot zincirin sonundaki hedefi `PageSnapshotData.RedirectTarget`'ta taşır; yetim sayfa kuralı eski
+  adrese verilen linki hedefe ulaşmış sayar.
 - Testler: Directory.Build.targets test projelerinde testhost.exe'yi çıktıdan çıkarır; bu makinede antivirüs o
   apphost'u kısıtlı çalıştırıp testleri başlatmıyordu. Playwright testleri %TEMP% yazılamadığı için bu makinede
   yalnızca TEMP başka klasöre yönlendirilince geçer (7/7).
 
-### 8.7 Hâlâ kapsam dışı
+### 8.7 Tarayıcı doğrulaması (2026-11-02, Lastik Borsası, tarama #6 ve #7)
+- 300 sayfa, hata yok; sayfa limiti dolduğu için FullCrawl yok, yetim sayfa kuralı çalışmadı (beklenen). Sitede
+  hreflang, X-Robots-Tag ve sitemap işareti yok; canonical hedefleri sağlıklı ya da taranmamış; yönlenen tek adres
+  (kök → www) için iç link yok. Yeni SEO kuralları bu sitede bulgu üretmedi; bu doğru sonuç.
+- Render: 48 örnek, 48 kanıt görüntüsü; bulgu detayında cihaz başına "Ekran görüntüsü" bağlantısı açılıyor.
+  Görünür adsız link / etiketsiz alan sayıları sıfırdan büyük, a11y bulguları doğru şekilde bastırılmadı.
+- Bulunan ve düzeltilen: mobil düzende içerik body içinde kaydığında görüntü yalnızca ilk ekranı alıyordu
+  (html/body kısıtı tarayıcı kopyasında kaldırılır); ekranlarda kayıt bulunamadığında 404 yerine 500 dönüyordu
+  (ErrorController istisnayı koda çevirir); .sh dosyaları Windows'ta CRLF çekildiği için Docker derlemesi düşüyordu
+  (.gitattributes). `docker compose up` artık temiz ortamda çalışıyor.
+
+### 8.8 Hâlâ kapsam dışı
 - Odak kelime kontrolleri (Search Console verisinde sayfa başına sorgu yok).
 - Karışık içerik (HTTPS sayfada HTTP kaynak).

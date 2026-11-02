@@ -45,6 +45,12 @@ public sealed record PageSnapshotData
     /// <summary>X-Robots-Tag yanıt başlığı; noindex yalnızca başlıktaysa seo.noindex.header kuralı kullanır.</summary>
     public string? RobotsHeader { get; init; }
 
+    /// <summary>
+    /// Yönlenen adresin zincir sonundaki hedefi (yalnızca yönlenen snapshot'ta dolu; diğer alanlar boştur). Eski adrese
+    /// verilen link hedefe ulaştırır; yetim sayfa kuralı bunu kullanır.
+    /// </summary>
+    public string? RedirectTarget { get; init; }
+
     public const int MarkupVersion = 2;
 
     /// <summary>Sürüm 3: <see cref="Hreflangs"/> ve <see cref="RobotsHeader"/> alanları dolu.</summary>

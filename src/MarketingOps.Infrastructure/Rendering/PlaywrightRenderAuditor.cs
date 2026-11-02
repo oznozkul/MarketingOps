@@ -125,8 +125,11 @@ public sealed class PlaywrightRenderAuditor(ILogger<PlaywrightRenderAuditor> log
         {
             // Her seçici ayrı kural: tarayıcı geçersiz seçicili kuralı tümden atar, biri bozuksa diğerleri yine çerçevelenir.
             var outline = string.Concat(selectors.Select(s => s + "{outline:3px solid #e11d48 !important;outline-offset:1px}\n"));
-            await page.AddStyleTagAsync(new PageAddStyleTagOptions { Content = outline });
-            var scrollHeight = await page.EvaluateAsync<int>("document.documentElement.scrollHeight");
+            // Bazı mobil düzenlerde html kaydırmayı kapatıp içeriği body içinde kaydırır; belge yüksekliği ekran kadar
+            // görünür ve tam sayfa görüntü yalnızca ilk ekranı alır. Kısıt yalnızca bu tarayıcı kopyasında kaldırılır.
+            const string unclamp = "html,body{height:auto !important;max-height:none !important;overflow:visible !important}\n";
+            await page.AddStyleTagAsync(new PageAddStyleTagOptions { Content = unclamp + outline });
+            var scrollHeight = await page.EvaluateAsync<int>("Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0)");
             var height = Math.Clamp(scrollHeight, 1, RenderScreenshot.MaxHeight);
             var width = Math.Max(1, measurements.ViewportWidth);
             var bytes = await page.ScreenshotAsync(new PageScreenshotOptions

@@ -271,6 +271,7 @@ public sealed class SiteCrawler(IServiceScopeFactory scopes, ICrawlerHttpClient 
             // Yönlenen adres içerik taşımaz: içerik hedef sayfaya aittir ve hedef kendi snapshot'ıyla bir kez taranır.
             // Aksi halde aynı sayfa iki kez sayılır, kurallar (ör. title tekrarı) sahte bulgu üretir.
             state.Enqueue(result.FinalUrl);
+            data = data with { RedirectTarget = result.FinalUrl.AbsoluteUri };
         }
         else if (response.StatusCode is >= 200 and < 300 && response.Body is { } html && IsHtml(response.ContentType))
         {

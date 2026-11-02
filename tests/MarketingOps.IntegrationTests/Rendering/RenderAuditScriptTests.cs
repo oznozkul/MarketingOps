@@ -138,6 +138,19 @@ public class RenderAuditScriptTests
     }
 
     [Fact]
+    public async Task Evidence_screenshot_covers_pages_that_scroll_inside_the_body()
+    {
+        // html kaydırmayı kapatır, içerik body içinde kaydırılır: belge yüksekliği ekran kadar görünür.
+        var html = Page.Replace("</head>", "<style>html{height:100%;overflow:hidden}body{height:100%;overflow:auto;margin:0}</style></head>")
+            .Replace("</body>", """<div style="height:2000px"></div></body>""");
+
+        var result = await Measure(html, RenderDevice.Mobile);
+
+        result.ScreenshotHeight.ShouldBeGreaterThan(812);
+        JpegHeight(result.ScreenshotJpeg!).ShouldBe(result.ScreenshotHeight);
+    }
+
+    [Fact]
     public async Task An_image_link_with_empty_alt_counts_as_a_visible_link_without_name()
     {
         var html = $$"""<!doctype html><html><body><a href="/sepet"><img src="{{Pixel}}" width="40" height="40" alt=""></a><a href="/x"><img src="{{Pixel}}" width="40" height="40" alt="Sepet"></a></body></html>""";

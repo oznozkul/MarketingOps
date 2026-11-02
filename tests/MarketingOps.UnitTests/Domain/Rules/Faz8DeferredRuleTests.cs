@@ -84,6 +84,18 @@ public class Faz8DeferredRuleTests
     }
 
     [Fact]
+    public void A_link_to_an_old_address_reaches_the_redirect_target()
+    {
+        var target = Page(path: "/yeni", inSitemap: true);
+        var oldAddress = Page(PageSnapshotData.Empty with { RedirectTarget = "https://example.com/yeni" }, path: "/eski", status: 301,
+            chain: [new RedirectHop("https://example.com/eski", 301)]);
+        var linking = Page(Good with { InternalLinks = ["https://example.com/eski"] }, path: "/a");
+
+        Run(new OrphanPageRule(), target, oldAddress, linking).ShouldBeEmpty();
+        Run(new OrphanPageRule(), target, oldAddress).ShouldHaveSingleItem().Url.ShouldBe("https://example.com/yeni");
+    }
+
+    [Fact]
     public void Orphan_rule_uses_the_full_crawl_data_source()
     {
         new OrphanPageRule().DataSource.ShouldBe(RuleDataSource.FullCrawl);

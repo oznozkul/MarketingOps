@@ -33,6 +33,20 @@ public class ShellTests(IntegrationTestContext context)
     }
 
     [Fact]
+    public async Task Missing_record_on_a_screen_shows_the_404_page_not_500()
+    {
+        var overview = (await _client.GetAsync("/")).Headers.Location!.ToString();
+        var siteBase = overview[..overview.LastIndexOf('/')];
+
+        var finding = await _client.GetAsync($"{siteBase}/findings/{Guid.NewGuid()}");
+        var screenshot = await _client.GetAsync($"{siteBase}/findings/{Guid.NewGuid()}/screenshot/{Guid.NewGuid()}");
+
+        finding.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await finding.Content.ReadAsStringAsync()).ShouldContain("Sayfa bulunamadı");
+        screenshot.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task Design_page_renders_in_development() =>
         (await _client.GetAsync("/_design")).StatusCode.ShouldBe(HttpStatusCode.OK);
 }

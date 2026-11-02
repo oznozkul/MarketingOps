@@ -12,6 +12,8 @@ namespace MarketingOps.Domain.Rules.Definitions;
 /// </summary>
 public sealed class OrphanPageRule : RuleBase, ISiteRule
 {
+    private const int MaxRedirectHops = 10;
+
     public override RuleDataSource DataSource => RuleDataSource.FullCrawl;
     public override string Code => "seo.links.orphan";
     public override string Name => "Yetim sayfa";
@@ -31,6 +33,7 @@ public sealed class OrphanPageRule : RuleBase, ISiteRule
     private sealed class Run(string ruleCode) : ISiteRuleRun
     {
         private readonly HashSet<string> _linked = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _redirects = new(StringComparer.Ordinal);
         private readonly List<(string Url, string Key, Guid? PageTypeId)> _candidates = [];
 
         public void Observe(PageSnapshot page)
@@ -38,17 +41,33 @@ public sealed class OrphanPageRule : RuleBase, ISiteRule
             // Sayfanın kendine verdiği link (breadcrumb'ın son adımı, dil seçici) ona ulaşılabildiğini göstermez.
             if (PageChecks.IsHtml(page))
                 foreach (var link in page.Data.InternalLinks)
-                    if (Uri.TryCreate(link, UriKind.Absolute, out var url) && UrlKey.Normalize(url) is var key && key != page.NormalizedUrl)
+                    if (Key(link) is { } key && key != page.NormalizedUrl)
                         _linked.Add(key);
+            if (page.RedirectChain.Count > 0 && Key(page.Data.RedirectTarget) is { } target)
+                _redirects[page.NormalizedUrl] = target;
             if (page.InSitemap && PageChecks.IsIndexable(page) && !PageChecks.IsHomePage(page))
                 _candidates.Add((page.Url, page.NormalizedUrl, page.PageTypeId));
         }
 
         public IEnumerable<RuleViolation> Complete()
         {
+            // Yönlenen eski adrese verilen link, zincirin sonundaki sayfaya ulaştırır.
+            foreach (var key in _linked.ToList())
+            {
+                var current = key;
+                for (var hop = 0; hop < MaxRedirectHops && _redirects.TryGetValue(current, out var next); hop++)
+                {
+                    _linked.Add(next);
+                    current = next;
+                }
+            }
+
             foreach (var (url, key, pageTypeId) in _candidates)
                 if (!_linked.Contains(key))
                     yield return new RuleViolation(ruleCode, pageTypeId, url, "Bağlantı yok", "Sitemap'te listeleniyor ama taranan hiçbir sayfadan link almıyor.");
         }
+
+        private static string? Key(string? url) =>
+            url is not null && Uri.TryCreate(url, UriKind.Absolute, out var uri) ? UrlKey.Normalize(uri) : null;
     }
 }
